@@ -18,7 +18,7 @@ function DayEditor({ iso, rec, onSave, onCancel }) {
       if (!r.out && !(iso === dayKey() && i === rows.length - 1)) { setErr('Add a check-out time, or remove the session.'); return; }
       if (r.out && r.out <= r.in) { setErr('Check-out must be later than check-in.'); return; }
       if (i > 0 && rows[i - 1].out && r.in < rows[i - 1].out) { setErr('Sessions overlap. Put them in time order.'); return; }
-      out.push({ in: toTs(iso, r.in), out: r.out ? toTs(iso, r.out) : null, loc: r.loc });
+      out.push({ in: toTs(iso, r.in), out: r.out ? toTs(iso, r.out) : null, loc: r.loc || 'office' });
     }
     onSave(out);
   };
@@ -27,7 +27,6 @@ function DayEditor({ iso, rec, onSave, onCancel }) {
     ${rows.map((r, i) => html`<div className="hed-r" key=${i}>
       <label>In<input className="inp" type="time" value=${r.in} onChange=${ev => set(i, { in: ev.target.value })} aria-label=${'Check-in ' + (i + 1)}/></label>
       <label>Out<input className="inp" type="time" value=${r.out} onChange=${ev => set(i, { out: ev.target.value })} aria-label=${'Check-out ' + (i + 1)}/></label>
-      <label>Where<select className="inp" value=${r.loc} onChange=${ev => set(i, { loc: ev.target.value })} aria-label=${'Location ' + (i + 1)}><option value="office">Office</option><option value="home">Home</option></select></label>
       <button className="link" onClick=${() => setRows(x => x.filter((_, k) => k !== i))}>Remove</button></div>`)}
     ${err && html`<div className="lg-err" role="alert" style=${{ marginTop: 8 }}>${err}</div>`}
     <div className="hed-a"><button className="btn ghost sm" onClick=${() => setRows(r => [...r, { in: '', out: '', loc: 'office' }])}><${Icon} n="plus" s=${14}/> Add session</button>
@@ -47,7 +46,7 @@ export function HoursPanel({ emp, att, setAtt, leaves, canEdit, editor }) {
   const rows = days.map(d => ({ d, i: dayInfo(att, emp, d, now, away) }));
   const present = rows.filter(r => r.i.sessions.length);
   const total = present.reduce((t, r) => t + r.i.worked, 0);
-  const late = present.filter(r => r.i.lateFlag).length, home = present.filter(r => r.i.sessions.some(s => s.loc === 'home')).length;
+  const late = present.filter(r => r.i.lateFlag).length;
   const step = n => { const t = new Date(Date.UTC(mo.y, mo.m + n, 1)); setMo({ y: t.getUTCFullYear(), m: t.getUTCMonth() }); setEdit(null); };
   const atNow = mo.y === T0.getUTCFullYear() && mo.m === T0.getUTCMonth();
   return html`<div>
@@ -55,7 +54,7 @@ export function HoursPanel({ emp, att, setAtt, leaves, canEdit, editor }) {
       <${Tile} icon="check" tone="blue" label="Days present" value=${present.length} sub=${'of ' + rows.filter(r => !['off', 'leave', 'na'].includes(r.i.state)).length + ' working days'}/>
       <${Tile} icon="clock" tone="green" label="Total hours" value=${hm(total).replace(' ', '')} sub=${'daily target ' + fmtTime(emp.shiftStart) + ' – ' + fmtTime(emp.shiftEnd)}/>
       <${Tile} icon="timer" tone="purple" label="Average per day" value=${present.length ? hm(total / present.length).replace(' ', '') : '–'} sub="lunch hour included"/>
-      <${Tile} icon="bell" tone="orange" label="Late arrivals" value=${late} sub=${'after 20 min grace · ' + plural(home, 'home day')}/>
+      <${Tile} icon="bell" tone="orange" label="Late arrivals" value=${late} sub="after the 20 min grace"/>
     </div>
     <div className="sec-h" style=${{ marginTop: 36 }}><h2>${MONL[mo.m]} ${mo.y}</h2>
       <div className="car-n"><button className="ib" onClick=${() => step(-1)} aria-label="Previous month"><${Icon} n="chevL" s=${16}/></button>
@@ -68,7 +67,7 @@ export function HoursPanel({ emp, att, setAtt, leaves, canEdit, editor }) {
             <span className="hd-d"><b>${fmtDay(pd(d))}</b></span>
             <span className="hd-s">${has ? i.sessions.map(s => clock(s.in) + ' – ' + (s.out ? clock(s.out) : 'now')).join('  ·  ') : HOL[d] ? 'Holiday: ' + HOL[d] : STATE_L[i.state] || '—'}</span>
             <span className="hd-h">${has ? hm(i.worked) : ''}</span>
-            <span className="hd-b">${has && i.lateFlag ? html`<${Badge} c="#FF9F0A">Late ${i.late} min<//>` : null}${has && i.short ? html`<${Badge} c="#FF453A">Short<//>` : null}${has && i.over ? html`<${Badge} c="#30D158">Overtime<//>` : null}${has && i.sessions.some(s => s.loc === 'home') ? html`<${Badge} c="#BF5AF2">${i.sessions.every(s => s.loc === 'home') ? 'Home' : 'Home + Office'}<//>` : null}${i.edited ? html`<${Badge} c="#0A84FF">Edited by ${i.edited.by.split(' ')[0]}<//>` : null}</span>
+            <span className="hd-b">${has && i.lateFlag ? html`<${Badge} c="#FF9F0A">Late ${i.late} min<//>` : null}${has && i.short ? html`<${Badge} c="#FF453A">Short<//>` : null}${has && i.over ? html`<${Badge} c="#30D158">Overtime<//>` : null}${i.edited ? html`<${Badge} c="#0A84FF">Edited by ${i.edited.by.split(' ')[0]}<//>` : null}</span>
             ${canEdit && !['off', 'na', 'future'].includes(i.state) ? html`<button className="link" onClick=${() => setEdit(edit === d ? null : d)}>${edit === d ? 'Close' : 'Edit'}</button>` : html`<span></span>`}
           </div>
           ${edit === d && html`<${DayEditor} iso=${d} rec=${{ sessions: i.sessions }} onCancel=${() => setEdit(null)} onSave=${ss => { setAtt(a => saveDay(a, emp.n, d, ss, editor.name)); setEdit(null); }}/>`}

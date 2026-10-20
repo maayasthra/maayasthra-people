@@ -13,7 +13,7 @@ import { Requests } from './screens/Requests.jsx';
 import { Settings } from './screens/Settings.jsx';
 import { QuickSearch } from './QuickSearch.jsx';
 import { CheckWidget } from './Attendance.jsx';
-import { loadAtt, saveAtt, loadLoc, saveLoc, setMe } from './attendance.js';
+import { loadAtt, saveAtt, setMe } from './attendance.js';
 import { MyHours } from './screens/Hours.jsx';
 import { AttendancePage } from './screens/AttendancePage.jsx';
 import './styles.css';
@@ -56,11 +56,9 @@ function App() {
   const [pf, setPf] = useState({ q: '', dept: 'All', city: 'All', sort: 'name', former: false });
   const [ver, setVer] = useState(0);
   const [att, setAtt] = useState(loadAtt);
-  const [loc, setLoc] = useState(loadLoc);
   const [sOpen, setSOpen] = useState(false);
   const bump = () => setVer(v => v + 1);
   useEffect(() => { saveAtt(att); }, [att]);
-  useEffect(() => { saveLoc(loc); }, [loc]);
 
   if (!auth) return html`<${Login} onLogin=${(user, role) => { setMe(user.n); setNav({ view: 'home' }); setAuth({ user, role }); window.scrollTo({ top: 0 }); }}/>`;
   const user = auth.user, role = auth.role;
@@ -75,7 +73,7 @@ function App() {
   const active = nav.view === 'profile' || nav.view === 'form' ? (nav.from || 'people') : nav.view;
   const pending = role === 'admin' ? leaves.filter(l => !l.past && l.emp !== user.n && l.state === 'pending').length : 0;
 
-  const home = html`<${Home} role=${role} user=${user} leaves=${leaves} setLeaves=${setLeaves} ann=${ann} setAnn=${setAnn} att=${att} setAtt=${setAtt} loc=${loc} setLoc=${setLoc} go=${go} openForm=${openForm} open=${open}/>`;
+  const home = html`<${Home} role=${role} user=${user} leaves=${leaves} setLeaves=${setLeaves} ann=${ann} setAnn=${setAnn} att=${att} setAtt=${setAtt} go=${go} openForm=${openForm} open=${open}/>`;
   const screen = nav.view === 'home' ? home
     : nav.view === 'people' ? html`<${People} pf=${pf} setPf=${setPf} open=${open} openForm=${openForm} role=${role} ver=${ver}/>`
     : nav.view === 'org' ? html`<${OrgChart} open=${open} user=${user} key=${ver}/>`
@@ -99,7 +97,7 @@ function App() {
       <header className="hdr"><div className="hdr-b">${brand}</div>
         <div className=${'hs' + (sOpen ? ' open' : '')}><${QuickSearch} open=${id => { setSOpen(false); open(id); }}/></div>
         <button className="ib hs-b" onClick=${() => { setSOpen(o => !o); setTimeout(() => { const el = document.getElementById('quick-search'); if (el) el.focus(); }, 30); }} aria-label="Search people"><${Icon} n="search" s=${17}/></button>
-        <${CheckWidget} user=${user} att=${att} setAtt=${setAtt} loc=${loc} setLoc=${setLoc}/>
+        <${CheckWidget} user=${user} att=${att} setAtt=${setAtt}/>
         <${TopRight} user=${user} role=${role} open=${open} openForm=${openForm} signOut=${signOut}/></header>
       <main className="main" key=${nav.view + (nav.id || '')}>${screen}</main>
     </div>

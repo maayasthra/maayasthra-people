@@ -1,48 +1,40 @@
-import { useState, useRef, useLayoutEffect } from 'react';
+import { useState } from 'react';
 import { html, Icon, Av } from '../ui.jsx';
-import { activeEmps, BY } from '../data.js';
+import { activeEmps, plural } from '../data.js';
 
-// The chart always fits the page: the tree is scaled down instead of scrolling.
+// Teams are laid out as readable cards instead of one wide tree, so nothing has to shrink or scroll.
 export function OrgChart({ open, user }) {
   const people = activeEmps();
+  const [q, setQ] = useState('');
   const ids = new Set(people.map(e => e.n));
   const kids = n => people.filter(e => e.mgr === n).sort((a, b) => a.name.localeCompare(b.name));
   const roots = people.filter(e => !e.mgr || !ids.has(e.mgr));
-  const startOpen = () => { const o = {}; roots.forEach(r => { o[r.n] = true; }); let c = user; while (c && c.mgr && BY[c.mgr]) { o[c.mgr] = true; c = BY[c.mgr]; } return o; };
-  const [on, setOn] = useState(startOpen);
-  const wrap = useRef(null), inner = useRef(null);
-  const [fit, setFit] = useState({ s: 1, h: 'auto' });
-  const all = () => { const o = {}; people.forEach(e => { o[e.n] = true; }); setOn(o); };
+  const count = n => kids(n).reduce((s, x) => s + 1 + count(x.n), 0);
+  const term = q.trim().toLowerCase();
+  const hit = e => !term || (e.name + ' ' + e.role + ' ' + e.dept).toLowerCase().includes(term);
+  const has = e => hit(e) || kids(e.n).some(has);
 
-  useLayoutEffect(() => {
-    const measure = () => {
-      const w = wrap.current, i = inner.current; if (!w || !i) return;
-      const s = Math.min(1, w.clientWidth / i.offsetWidth);
-      setFit(f => (Math.abs(f.s - s) < 0.001 && f.h === i.offsetHeight * s) ? f : { s, h: i.offsetHeight * s });
-    };
-    measure();
-    const ro = new ResizeObserver(measure); ro.observe(wrap.current);
-    return () => ro.disconnect();
-  }, [on]);
+  const Person = ({ e, size = 38 }) => html`<button className=${'oc2-p' + (e.n === user.n ? ' me' : '') + (term && hit(e) ? ' hit' : '')} onClick=${() => open(e.n)}>
+    <${Av} e=${e} s=${size}/><span className="row-t"><b>${e.name}</b><span>${e.role}</span></span></button>`;
+  const Tree = ({ list }) => html`<ul className="oc2-l">${list.filter(has).map(x => html`<li key=${x.n}><${Person} e=${x}/>${kids(x.n).some(has) && html`<${Tree} list=${kids(x.n)}/>`}</li>`)}</ul>`;
 
-  const Card = ({ e, k }) => {
-    const isOn = !!on[e.n], mine = e.n === user.n;
-    return html`<div className=${'ot' + (mine ? ' me' : '') + (k.length ? ' has' : '')}>
-      <button className="ot-p" onClick=${() => open(e.n)} aria-label=${'Open profile of ' + e.name}><${Av} e=${e} s=${44}/><b>${e.name}</b><span>${e.role}</span></button>
-      ${k.length > 0 && html`<button className=${'ot-x' + (isOn ? ' on' : '')} onClick=${() => setOn(o => ({ ...o, [e.n]: !o[e.n] }))} aria-expanded=${isOn} aria-label=${(isOn ? 'Hide ' : 'Show ') + k.length + ' reports of ' + e.name}>${k.length}<${Icon} n="next" s=${12}/></button>`}
-    </div>`;
-  };
-  // Below the second level, teams stack vertically so the chart never grows wide.
-  const Stack = ({ e }) => { const k = kids(e.n); return html`<li><${Card} e=${e} k=${k}/>${k.length > 0 && on[e.n] && html`<ul className="vl">${k.map(x => html`<${Stack} key=${x.n} e=${x}/>`)}</ul>`}</li>`; };
-  const Top = ({ e }) => {
-    const k = kids(e.n);
-    return html`<li><${Card} e=${e} k=${k}/>${k.length > 0 && on[e.n] && html`<ul className="hz">${k.map(x => html`<${Stack} key=${x.n} e=${x}/>`)}</ul>`}</li>`;
-  };
+  const lead = roots[0];
+  const direct = lead ? kids(lead.n) : [];
+  const teams = direct.filter(e => kids(e.n).length > 0 && has(e));
+  const solo = direct.filter(e => kids(e.n).length === 0 && has(e));
+
   return html`<div>
-    <div className="pg-h"><div><h1>Org chart</h1><p>Click the number under a person to show their team. Click a person to open their profile.</p></div>
-      <div style=${{ display: 'flex', gap: 8 }}><button className="btn ghost sm" onClick=${all}>Show everyone</button><button className="btn ghost sm" onClick=${() => setOn(startOpen())}>Reset</button></div></div>
-    <div className="tree" ref=${wrap} style=${{ height: fit.h }}>
-      <div className="tree-in" ref=${inner} style=${{ transform: 'translateX(-50%) scale(' + fit.s + ')' }}><ul className="top">${roots.map(r => html`<${Top} key=${r.n} e=${r}/>`)}</ul></div>
+    <div className="pg-h"><div><h1>Org chart</h1><p>${people.length} people in ${plural(teams.length + (solo.length ? 1 : 0), 'group')}. Click anyone to open their profile.</p></div>
+      <div className="search" style=${{ margin: 0 }}><${Icon} n="search"/><input id="org-search" value=${q} placeholder="Find a person or role" onChange=${ev => setQ(ev.target.value)} aria-label="Find in org chart"/></div></div>
+    ${lead && html`<div className="oc2-top"><button className=${'oc2-lead' + (lead.n === user.n ? ' me' : '')} onClick=${() => open(lead.n)}>
+      <${Av} e=${lead} s=${64}/><b>${lead.name}</b><span>${lead.role}</span><small>${count(lead.n)} people across the studio</small></button><i className="oc2-line"></i></div>`}
+    <div className="oc2-g">
+      ${teams.map(t => html`<section className="oc2-c" key=${t.n}>
+        <header><${Person} e=${t} size=${48}/><span className="oc2-n">${count(t.n)}<small>${count(t.n) === 1 ? 'person' : 'people'}</small></span></header>
+        <${Tree} list=${kids(t.n)}/></section>`)}
+      ${solo.length > 0 && html`<section className="oc2-c" key="solo"><header className="oc2-sh"><b>Reporting directly</b><span>${plural(solo.length, 'person')}</span></header>
+        <ul className="oc2-l flat">${solo.map(x => html`<li key=${x.n}><${Person} e=${x}/></li>`)}</ul></section>`}
     </div>
+    ${term && teams.length === 0 && solo.length === 0 && !hit(lead) && html`<div className="none"><b>No one matches "${q}"</b>Try a different name or role.</div>`}
   </div>`;
 }

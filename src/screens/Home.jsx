@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { html, Icon, Av, Tile, first } from '../ui.jsx';
 import { downloadLeaveReport } from '../report.js';
-import { SessionList, useDay, dayNote, LocPick } from '../Attendance.jsx';
+import { SessionList, useDay, dayNote } from '../Attendance.jsx';
 import { hm, lunchInfo, checkIn, checkOut, dayInfo, useNow, clock } from '../attendance.js';
 import {
   TOD, DAY, WDL, MONL, pd, fmtDM, fmtDay, rel, plural, range, addMonths, isoOf, TODISO, HOL, BY,
@@ -144,20 +144,19 @@ function TeamPanel({ user, open }) {
   <//>`;
 }
 
-function YourDay({ user, att, setAtt, loc, setLoc }) {
+function YourDay({ user, att, setAtt }) {
   const { now, sessions, live, worked } = useDay(user, att);
   const lunch = lunchInfo(now);
   return html`<${Panel} title="Your day" sub=${'Shift ' + fmtTime(user.shiftStart) + ' – ' + fmtTime(user.shiftEnd)}>
     <div className=${'dy-l' + (lunch.state === 'on' ? ' on' : '')}><${Icon} n="cup" s=${16}/> ${lunch.state === 'over' ? 'Lunch was 1:00 – 2:00 PM' : lunch.text}</div>
     <${SessionList} sessions=${sessions} now=${now}/>
     <div className="dy-f"><span>${dayNote(sessions, user)}</span>
-      ${!live && html`<${LocPick} loc=${loc} setLoc=${setLoc} small=${true}/>`}
-      <button className=${'btn sm ' + (live ? 'ghost' : 'pri')} onClick=${() => setAtt(a => live ? checkOut(a, user.n) : checkIn(a, user.n, loc))}>${live ? 'Check out' : sessions.length ? 'Check in again' : 'Check in'}</button></div>
+      <button className=${'btn sm ' + (live ? 'ghost' : 'pri')} onClick=${() => setAtt(a => live ? checkOut(a, user.n) : checkIn(a, user.n))}>${live ? 'Check out' : sessions.length ? 'Check in again' : 'Check in'}</button></div>
   <//>`;
 }
 
 /* ---------- Home ---------- */
-export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, loc, setLoc, go, openForm, open }) {
+export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, go, openForm, open }) {
   const h = new Date().getHours(), t = new Date(TOD);
   const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
   const mine = leaves.filter(l => l.emp === user.n);
@@ -177,7 +176,7 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
     const depts = new Set(people.map(e => e.dept)).size;
     const nowT = Date.now();
     const infos = people.map(e => dayInfo(att, e, TODISO, nowT, away));
-    const inNow = infos.filter(i => i.state === 'in').length, homeNow = infos.filter(i => i.state === 'in' && i.loc === 'home').length;
+    const inNow = infos.filter(i => i.state === 'in').length;
     const expected = infos.filter(i => !['leave', 'off'].includes(i.state)).length;
     return html`<div>
       <div className="home-h"><div>
@@ -189,7 +188,7 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
         <${Tile} icon="people" tone="blue" label="Headcount" value=${people.length} sub=${'across ' + plural(depts, 'department')} onClick=${() => go('people')}/>
         <${Tile} icon="leaves" tone="purple" label="On leave today" value=${onLeave} sub=${HOL[TODISO] ? 'Holiday: ' + HOL[TODISO] : onLeave ? 'people are away' : 'everyone is in'} onClick=${() => go('calendar')}/>
         <${Tile} icon="requests" tone="orange" hot=${pending > 0} label="Waiting for you" value=${pending} sub=${pending === 1 ? 'leave request to review' : 'leave requests to review'} onClick=${() => go('requests')}/>
-        <${Tile} icon="check" tone="green" label="Checked in now" value=${inNow} sub=${expected ? 'of ' + expected + ' expected · ' + homeNow + ' at home' : 'studio closed today'} onClick=${() => go('attendance')}/>
+        <${Tile} icon="check" tone="green" label="Checked in now" value=${inNow} sub=${expected ? 'of ' + expected + ' expected today' : 'studio closed today'} onClick=${() => go('attendance')}/>
       </div>
       <section className="eq3 sec">
         <${ApprovalsCarousel} queue=${queue} setLeaves=${setLeaves} open=${open}/>
@@ -219,7 +218,7 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
       <${Tile} icon="clock" tone="green" label="Worked today" value=${hm(worked)} sub=${live ? 'timer is running' : sessions.length ? 'checked out' : 'not checked in yet'}/>
     </div>
     <section className="eq3 sec">
-      <${YourDay} user=${user} att=${att} setAtt=${setAtt} loc=${loc} setLoc=${setLoc}/>
+      <${YourDay} user=${user} att=${att} setAtt=${setAtt}/>
       <${Panel} title="Announcements" sub="From People and Ops"><${AnnList} ann=${ann} setAnn=${setAnn} canPost=${false}/><//>
       <${TeamPanel} user=${user} open=${open}/>
     </section>
