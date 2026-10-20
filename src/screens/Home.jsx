@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { html, Icon, Av, Tile, first } from '../ui.jsx';
 import { downloadLeaveReport } from '../report.js';
 import { SessionList, useDay, dayNote, LocPick } from '../Attendance.jsx';
-import { hm, lunchInfo, checkIn, checkOut } from '../attendance.js';
+import { hm, lunchInfo, checkIn, checkOut, dayInfo, useNow, clock } from '../attendance.js';
 import {
   TOD, DAY, WDL, MONL, pd, fmtDM, fmtDay, rel, plural, range, addMonths, isoOf, TODISO, HOL, BY,
   balances, awayList, isAway, activeEmps, fmtTime, nextOcc, EMP
@@ -109,6 +109,19 @@ function Composer({ user, setAnn, close }) {
     <div style=${{ display: 'flex', gap: 10, marginTop: 18 }}><button className="btn pri sm" type="submit" disabled=${!t.trim()}>Post to everyone</button><button className="btn ghost sm" type="button" onClick=${close}>Cancel</button></div></form>`;
 }
 
+function NotYet({ att, leaves, open }) {
+  const now = useNow(30000), away = awayList(leaves);
+  const rows = activeEmps().map(e => ({ e, i: dayInfo(att, e, TODISO, now, away) })).filter(x => x.i.state === 'absent' || x.i.state === 'notyet')
+    .sort((a, b) => (b.i.behind - a.i.behind) || a.e.name.localeCompare(b.e.name)).slice(0, 8);
+  const closed = HOL[TODISO] || [0, 6].includes(new Date(TOD).getUTCDay());
+  return html`<${Panel} title="Not checked in yet" sub=${rows.length ? rows.length + (rows.length === 1 ? ' person' : ' people') : 'Today'}>
+    ${rows.length === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="check" s=${22}/></span><b>${closed ? 'Studio closed today' : 'Everyone is in'}</b><span>${closed ? 'No check-ins are expected.' : 'No one is waiting to check in.'}</span></div>` :
+      rows.map(x => html`<button key=${x.e.n} className="row" onClick=${() => open(x.e.n, 'hours')}><${Av} e=${x.e} s=${38}/>
+        <span className="row-t"><b>${x.e.name}</b><span>${x.e.dept}</span></span>
+        <span className="row-d">${x.i.state === 'absent' ? html`<span className="at-late">${x.i.behind * 60000 < x.i.target ? 'Late ' + x.i.behind + ' min' : 'Absent'}</span>` : 'Starts ' + fmtTime(x.e.shiftStart)}<em>${x.i.state === 'absent' ? 'Shift ' + fmtTime(x.e.shiftStart) : 'Not yet'}</em></span></button>`)}
+  <//>`;
+}
+
 function AwayWeek({ leaves, open }) {
   const end = isoOf(TOD + 6 * DAY);
   const rows = awayList(leaves).filter(l => BY[l.emp] && BY[l.emp].status !== 'Exited' && l.from <= end && l.to >= TODISO).sort((a, b) => a.from.localeCompare(b.from));
@@ -162,6 +175,10 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
     const probation = people.filter(e => e.status === 'Probation');
     const due = probation.filter(e => Math.round((pd(addMonths(e.join, 3)) - TOD) / DAY) <= 45).length;
     const depts = new Set(people.map(e => e.dept)).size;
+    const nowT = Date.now();
+    const infos = people.map(e => dayInfo(att, e, TODISO, nowT, away));
+    const inNow = infos.filter(i => i.state === 'in').length, homeNow = infos.filter(i => i.state === 'in' && i.loc === 'home').length;
+    const expected = infos.filter(i => !['leave', 'off'].includes(i.state)).length;
     return html`<div>
       <div className="home-h"><div>
       <div className="date-l">${dateL}</div>
@@ -172,18 +189,19 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
         <${Tile} icon="people" tone="blue" label="Headcount" value=${people.length} sub=${'across ' + plural(depts, 'department')} onClick=${() => go('people')}/>
         <${Tile} icon="leaves" tone="purple" label="On leave today" value=${onLeave} sub=${HOL[TODISO] ? 'Holiday: ' + HOL[TODISO] : onLeave ? 'people are away' : 'everyone is in'} onClick=${() => go('calendar')}/>
         <${Tile} icon="requests" tone="orange" hot=${pending > 0} label="Waiting for you" value=${pending} sub=${pending === 1 ? 'leave request to review' : 'leave requests to review'} onClick=${() => go('requests')}/>
-        <${Tile} icon="clock" tone="amber" label="On probation" value=${probation.length} sub=${due ? plural(due, 'review') + ' due soon' : 'no reviews due soon'}/>
+        <${Tile} icon="check" tone="green" label="Checked in now" value=${inNow} sub=${expected ? 'of ' + expected + ' expected · ' + homeNow + ' at home' : 'studio closed today'} onClick=${() => go('attendance')}/>
       </div>
       <section className="eq3 sec">
         <${ApprovalsCarousel} queue=${queue} setLeaves=${setLeaves} open=${open}/>
         <${Reviews} people=${people} open=${open}/>
         <${Birthdays} open=${open}/>
       </section>
-      <section className="eq2 sec" ref=${annRef}>
+      <section className="eq3 sec" ref=${annRef}>
         <${Panel} title="Announcements" sub="Visible to everyone" right=${!composing && html`<button className="btn sec2 sm" onClick=${() => setComposing(true)}><${Icon} n="plus" s=${15}/> New</button>`}>
           ${composing ? html`<${Composer} user=${user} setAnn=${setAnn} close=${() => setComposing(false)}/>` : html`<${AnnList} ann=${ann} setAnn=${setAnn} canPost=${true}/>`}
         <//>
         <${AwayWeek} leaves=${leaves} open=${open}/>
+        <${NotYet} att=${att} leaves=${leaves} open=${open}/>
       </section>
     </div>`;
   }

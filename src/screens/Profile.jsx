@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react';
 import { html, Icon, Av, Photo } from '../ui.jsx';
+import { HoursPanel } from './Hours.jsx';
 import { BY, fmtTime, fmt, fmtDM, rel, ago, plural, tenure, tenureText, nextOcc, journey, balances, activeEmps, ROLEMAP } from '../data.js';
 
-export function Profile({ id, from, back, open, openForm, user, role, leaves, ver }) {
-  const e = BY[id]; const [copied, setCopied] = useState(false);
+export function Profile({ id, tab: tab0, from, back, open, openForm, user, role, leaves, att, setAtt, ver }) {
+  const e = BY[id]; const [copied, setCopied] = useState(false); const [tab, setTab] = useState(tab0 === 'hours' ? 'hours' : 'overview');
   const mgr = BY[e.mgr], team = activeEmps().filter(x => x.mgr === e.n);
   const ten = tenure(e.join), nx = nextOcc(e.join), nxYrs = nx.year - Number(e.join.slice(0, 4));
   const pct = Math.max(4, Math.min(100, Math.round((1 - nx.days / 365) * 100)));
@@ -41,7 +42,8 @@ export function Profile({ id, from, back, open, openForm, user, role, leaves, ve
       </div>
     </div>
 
-    <div className="lower grid2b">
+    ${canSee && html`<div className="seg" style=${{ width: 260, margin: '48px 0 0' }} role="group" aria-label="Profile section"><button className=${tab === 'overview' ? 'on' : ''} onClick=${() => setTab('overview')}>Overview</button><button className=${tab === 'hours' ? 'on' : ''} onClick=${() => setTab('hours')}>Hours</button></div>`}
+    ${tab === 'hours' && canSee ? html`<div style=${{ marginTop: 28 }}><${HoursPanel} emp=${e} att=${att} setAtt=${setAtt} leaves=${leaves} canEdit=${role === 'admin'} editor=${user}/></div>` : html`<div className="lower grid2b" style=${canSee ? { marginTop: 40 } : null}>
       <section><div className="sec-h"><h2>Career milestones</h2><span>${J.length} moments</span></div>
         <div className="tl">${J.map((m, i) => html`<div key=${i} className=${'tl-i' + (m.hi ? ' hi' : '') + (m.up ? ' up' : '')}>
           <time>${fmt(m.date)}${m.up ? ' · upcoming' : ''}</time><b>${m.title}</b>${m.note && html`<p>${m.note}</p>`}</div>`)}</div></section>
@@ -62,6 +64,6 @@ export function Profile({ id, from, back, open, openForm, user, role, leaves, ve
         <div className="side-sec"><h3>Contact</h3>
           <div className="mail"><span>${e.email}</span><button className="btn ghost sm" onClick=${copy}><${Icon} n=${copied ? 'check' : 'copy'} s=${14}/> ${copied ? 'Copied' : 'Copy'}</button></div></div>
       </aside>
-    </div>
+    </div>`}
   </div>`;
 }
