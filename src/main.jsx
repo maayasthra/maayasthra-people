@@ -20,7 +20,7 @@ import { TaskBoard } from './task/TaskBoard.jsx';
 import { MyTasks } from './task/MyTasks.jsx';
 import { TeamView } from './task/TeamView.jsx';
 import { TaskDetail } from './task/TaskDetail.jsx';
-import { loadTasks, loadProjects, saveTasks, saveProjects } from './tasks.js';
+import { loadTasks, loadBoards, saveTasks, saveBoards } from './tasks.js';
 import './styles.css';
 
 const ALL = { board: 'Board', mytasks: 'My Tasks', team: 'Team', home: 'Home', people: 'People', org: 'Org chart', calendar: 'Calendar', attendance: 'Attendance', hours: 'My Hours', leaves: 'My Leaves', requests: 'Requests', settings: 'Settings' };
@@ -32,7 +32,7 @@ const SEED_ANN = [
   { id: 3, kind: 'general', title: 'Keep your profile current', body: 'Add your phone number and an emergency contact from your profile. It takes a minute.', date: isoOf(TOD - 5 * DAY), by: 'Meera Iyer' }
 ];
 
-const APPS = [['people', 'People', 'people', 'Directory, leave and attendance', '#0A84FF'], ['task', 'Task', 'board', 'Kanban boards for every project', '#BF5AF2']];
+const APPS = [['people', 'People', 'people', 'Directory, leave and attendance', '#0A84FF'], ['task', 'Task', 'board', 'Retainers, General and your own boards', '#BF5AF2']];
 /* The logo doubles as the app switcher */
 function Brand({ app, setApp }) {
   const [menu, setMenu] = useState(false); const ref = useRef(null);
@@ -82,13 +82,14 @@ function App() {
   const [att, setAtt] = useState(loadAtt);
   const [sOpen, setSOpen] = useState(false);
   const [app, setAppState] = useState('people');
-  const [tasks, setTasks] = useState(loadTasks), [projects, setProjects] = useState(loadProjects);
+  const [tasks, setTasks] = useState(loadTasks), [boards, setBoards] = useState(loadBoards);
+  const [focus, setFocus] = useState(null);
   const [taskSel, setTaskSel] = useState(null), [tq, setTq] = useState('');
-  const [tf, setTf] = useState({ project: 'all', assignee: 'all', prio: 'all', mine: false });
+  const [tf, setTf] = useState({ board: loadBoards()[0].id, dept: 'All', hideEmpty: false });
   const bump = () => setVer(v => v + 1);
   useEffect(() => { saveAtt(att); }, [att]);
   useEffect(() => { saveTasks(tasks); }, [tasks]);
-  useEffect(() => { saveProjects(projects); }, [projects]);
+  useEffect(() => { saveBoards(boards); }, [boards]);
 
   if (!auth) return html`<${Login} onLogin=${(user, role) => { setMe(user.n); setNav({ view: 'home' }); setAuth({ user, role }); window.scrollTo({ top: 0 }); }}/>`;
   const user = auth.user, role = auth.role;
@@ -108,9 +109,9 @@ function App() {
   const pending = role === 'admin' ? leaves.filter(l => !l.past && l.emp !== user.n && l.state === 'pending').length : 0;
 
   const home = html`<${Home} role=${role} user=${user} leaves=${leaves} setLeaves=${setLeaves} ann=${ann} setAnn=${setAnn} att=${att} setAtt=${setAtt} tasks=${tasks} goTask=${goTask} go=${go} openForm=${openForm} open=${open}/>`;
-  const taskScreen = nav.view === 'mytasks' ? html`<${MyTasks} tasks=${tasks} setTasks=${setTasks} projects=${projects} user=${user} tq=${tq} openTask=${openTask}/>`
-    : nav.view === 'team' && role === 'admin' ? html`<${TeamView} tasks=${tasks} onPick=${n => { setTf(f => ({ ...f, assignee: String(n), project: 'all', mine: false })); go('board'); }}/>`
-    : html`<${TaskBoard} tasks=${tasks} setTasks=${setTasks} projects=${projects} setProjects=${setProjects} user=${user} role=${role} tf=${tf} setTf=${setTf} tq=${tq} openTask=${openTask}/>`;
+  const taskScreen = nav.view === 'mytasks' ? html`<${MyTasks} tasks=${tasks} setTasks=${setTasks} boards=${boards} user=${user} tq=${tq} openTask=${openTask}/>`
+    : nav.view === 'team' && role === 'admin' ? html`<${TeamView} tasks=${tasks} boards=${boards} onPick=${(n, b) => { setTf(f => ({ ...f, board: b, dept: 'All' })); setFocus(n); go('board'); }}/>`
+    : html`<${TaskBoard} tasks=${tasks} setTasks=${setTasks} boards=${boards} setBoards=${setBoards} user=${user} role=${role} tf=${tf} setTf=${setTf} tq=${tq} openTask=${openTask} focus=${focus}/>`;
   const screen = app === 'task' ? taskScreen : nav.view === 'home' ? home
     : nav.view === 'people' ? html`<${People} pf=${pf} setPf=${setPf} open=${open} openForm=${openForm} role=${role} ver=${ver}/>`
     : nav.view === 'org' ? html`<${OrgChart} open=${open} user=${user} key=${ver}/>`
@@ -138,7 +139,7 @@ function App() {
         <${TopRight} user=${user} role=${role} open=${open} openForm=${openForm} signOut=${signOut}/></header>
       <main className="main" key=${app + nav.view + (nav.id || '')}>${screen}</main>
     </div>
-    ${taskSel && html`<${TaskDetail} key=${taskSel.id} id=${taskSel.id} ctx=${taskSel.ctx} tasks=${tasks} setTasks=${setTasks} projects=${projects} user=${user} role=${role} leaves=${leaves} close=${() => setTaskSel(null)}/>`}
+    ${taskSel && html`<${TaskDetail} key=${taskSel.id} id=${taskSel.id} ctx=${taskSel.ctx} tasks=${tasks} setTasks=${setTasks} boards=${boards} user=${user} role=${role} leaves=${leaves} close=${() => setTaskSel(null)}/>`}
     <nav className="bnav" style=${{ gridTemplateColumns: 'repeat(' + keys.length + ', 1fr)' }} aria-label="Main">${keys.map(k => html`<button key=${k} className=${active === k ? 'on' : ''} onClick=${() => go(k)}>
       <${Icon} n=${k} s=${21}/>${SHORT[k] || ALL[k]}${k === 'requests' && pending > 0 && html`<span className="cnt">${pending}</span>`}</button>`)}</nav>
   </div>`;

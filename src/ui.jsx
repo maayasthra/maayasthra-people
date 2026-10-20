@@ -58,6 +58,7 @@ const IC = {
   flag:['M6 21V4','M6 5h11l-2 4 2 4H6'],
   comment:['M5 5h14v10H10l-4 4v-4H5z'],
   trash:['M5 7h14','M9 7V4h6v3','M7 7l1 13h8l1-13'],
+  dots:['M6 12h.01','M12 12h.01','M18 12h.01'],
   home2:['M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z']
 };
 export const Icon = ({ n, s = 18 }) => html`<svg width=${s} height=${s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">${IC[n].map((d,i) => html`<path key=${i} d=${d}/>`)}</svg>`;

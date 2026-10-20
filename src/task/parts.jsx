@@ -18,8 +18,8 @@ export function Sheet({ title, onClose, children, footer }) {
     </aside>`;
 }
 
-export function DueChip({ due, status }) {
-  const s = dueState(due, status);
+export function DueChip({ due, done }) {
+  const s = dueState(due, done);
   if (s === 'none') return null;
   const days = Math.round((pd(due) - TOD) / DAY);
   const text = s === 'over' ? 'Overdue · ' + Math.abs(days) + 'd' : s === 'today' ? 'Due today' : fmtDM(due);
