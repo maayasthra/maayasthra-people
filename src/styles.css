@@ -1103,7 +1103,7 @@ button.ovc:hover{filter:brightness(1.18)}
 .mt-t span{font-size:12.5px;color:var(--muted)}
 .mt-r.done .mt-t b{color:var(--muted);text-decoration:line-through}
 .mt-m{display:flex;align-items:center;gap:12px}
-.tv-r{display:grid;grid-template-columns:minmax(200px,2.2fr) repeat(5,minmax(70px,1fr));gap:12px;align-items:center;width:100%;padding:11px 8px;font-size:14px}
+.tv-r{display:grid;grid-template-columns:minmax(200px,2.2fr) repeat(var(--n,3),minmax(90px,1fr));gap:12px;align-items:center;width:100%;padding:11px 8px;font-size:14px}
 .tv-h{font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--line);border-radius:0;padding-top:12px}
 .tv-h span:not(:first-child),.tv-n{text-align:center}
 .tv-n{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
@@ -1185,3 +1185,40 @@ button.ovc:hover{filter:brightness(1.18)}
 .kc2-h .row-t{min-width:0;flex:1}
 .kc2-h .row-t b,.kc2-h .row-t span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:860px){.kc2{flex-basis:84%}}
+
+/* ---------- Task v3: pinned columns, hide/show, app buttons ---------- */
+.apps2{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:4px;background:var(--fill);border-radius:16px;margin:0 12px 26px 0}
+.apps2 button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;height:62px;border-radius:12px;font-size:13.5px;font-weight:600;color:var(--muted);transition:background .15s,color .15s}
+.apps2 button svg{color:var(--muted)}
+.apps2 button:hover{color:var(--text)}
+.apps2 button.on{background:#636366;color:#fff;box-shadow:0 1px 3px rgba(0,0,0,.45)}
+.apps2 button.on svg{color:#fff}
+.side .brand{padding-bottom:22px}
+.hdr-b .apps2{margin:0;padding:3px;grid-template-columns:auto auto;gap:4px;border-radius:999px}
+.hdr-b .apps2 button{flex-direction:row;height:40px;padding:0 16px;gap:8px;border-radius:999px;font-size:14px}
+.hdr-b .apps2 button svg{width:18px;height:18px}
+.kc2.pin{position:sticky;z-index:6;background:#1E1E20;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--c) 70%,transparent),14px 0 26px rgba(0,0,0,.5)}
+.kc2.pin .kc2-h{background:var(--c);margin:-12px -10px 12px;padding:14px 14px 14px;border-radius:21px 21px 0 0}
+.kc2.pin .kc2-t{font-size:17px;font-weight:700;letter-spacing:-.02em;color:#fff}
+.kc2.pin .kc-n{background:rgba(255,255,255,.25);color:#fff}
+.kc2.pin .ib{background:rgba(255,255,255,.22);color:#fff}
+.kc2.doneCol .kc2-t{color:var(--muted)}
+.kc2-t{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.kc2.shut{flex:0 0 56px;padding:10px 6px;cursor:pointer}
+.kc2-s{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;color:var(--muted)}
+.kc2-v{writing-mode:vertical-rl;font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;max-height:260px;overflow:hidden;text-overflow:ellipsis}
+.kc2.pin.shut{background:var(--c)}
+.kc2.pin.shut .kc2-s,.kc2.pin.shut .kc2-v{color:#fff}
+.kc2.pin.shut .kc-n{background:rgba(255,255,255,.25);color:#fff}
+.kt-body{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:6px;cursor:text;border-radius:10px}
+.kt-t{font-size:15px;font-weight:500;line-height:1.35;letter-spacing:-.01em;overflow-wrap:anywhere}
+.kt-edit{width:100%;font:inherit;font-size:15px;font-weight:500;line-height:1.35;color:var(--text);background:rgba(0,0,0,.35);border:0;border-radius:10px;padding:7px 9px;resize:none;box-shadow:0 0 0 2px var(--accent);outline:none}
+.kt-top{align-items:flex-start;gap:6px}
+.kt-f{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-left:0}
+.kt-c{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px 0 9px;border-radius:999px;background:var(--fill);font-size:12.5px;font-weight:600;color:var(--muted);transition:background .15s,color .15s}
+.kt-c:hover{background:rgba(48,209,88,.2);color:var(--ok)}
+.kt-c.on{background:var(--ok);color:#fff}
+.kt.isdone .kt-t{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--faint)}
+.kt.isdone{opacity:.85}
+.cm-pi{width:28px;height:28px;border-radius:9px;background:var(--c);flex:none}
+@media (max-width:860px){.kc2.pin{position:relative;left:auto!important}.apps2 button svg{width:18px;height:18px}}

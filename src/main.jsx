@@ -20,7 +20,7 @@ import { TaskBoard } from './task/TaskBoard.jsx';
 import { MyTasks } from './task/MyTasks.jsx';
 import { TeamView } from './task/TeamView.jsx';
 import { TaskDetail } from './task/TaskDetail.jsx';
-import { loadTasks, loadBoards, saveTasks, saveBoards } from './tasks.js';
+import { loadTasks, saveTasks, loadCollapsed, saveCollapsed } from './tasks.js';
 import './styles.css';
 
 const ALL = { board: 'Board', mytasks: 'My Tasks', team: 'Team', home: 'Home', people: 'People', org: 'Org chart', calendar: 'Calendar', attendance: 'Attendance', hours: 'My Hours', leaves: 'My Leaves', requests: 'Requests', settings: 'Settings' };
@@ -32,24 +32,11 @@ const SEED_ANN = [
   { id: 3, kind: 'general', title: 'Keep your profile current', body: 'Add your phone number and an emergency contact from your profile. It takes a minute.', date: isoOf(TOD - 5 * DAY), by: 'Meera Iyer' }
 ];
 
-const APPS = [['people', 'People', 'people', 'Directory, leave and attendance', '#0A84FF'], ['task', 'Task', 'board', 'Retainers, General and your own boards', '#BF5AF2']];
-/* The logo doubles as the app switcher */
-function Brand({ app, setApp }) {
-  const [menu, setMenu] = useState(false); const ref = useRef(null);
-  useEffect(() => {
-    if (!menu) return;
-    const f = ev => { if (ref.current && !ref.current.contains(ev.target)) setMenu(false); };
-    const k = ev => { if (ev.key === 'Escape') setMenu(false); };
-    document.addEventListener('mousedown', f); document.addEventListener('keydown', k);
-    return () => { document.removeEventListener('mousedown', f); document.removeEventListener('keydown', k); };
-  }, [menu]);
-  return html`<div className="brand-w" ref=${ref}>
-    <button className="brand sw" onClick=${() => setMenu(m => !m)} aria-haspopup="menu" aria-expanded=${menu} aria-label="Switch app">
-      <span className="mark"></span><span className="brand-t"><b>Maayasthra</b><span>${app === 'task' ? 'Task' : 'People'}</span></span><span className="sw-c"><${Icon} n="chevR" s=${13}/></span></button>
-    ${menu && html`<div className="menu apps" role="menu">${APPS.map(([k, l, ic, d, c]) => html`<button key=${k} role="menuitemradio" aria-checked=${app === k} onClick=${() => { setMenu(false); setApp(k); }}>
-      <span className="tile-i" style=${{ '--c': c, width: 36, height: 36 }}><${Icon} n=${ic} s=${18}/></span><span><b>Maayasthra ${l}</b><small>${d}</small></span>${app === k && html`<span className="ap-ck"><${Icon} n="check" s=${15}/></span>`}</button>`)}</div>`}
-  </div>`;
+/* Two clear buttons switch between the apps */
+function AppSwitch({ app, setApp }) {
+  return html`<div className="apps2" role="tablist" aria-label="Apps">${[['people', 'People', 'people'], ['task', 'Task', 'board']].map(([k, l, ic]) => html`<button key=${k} role="tab" aria-selected=${app === k} className=${app === k ? 'on' : ''} onClick=${() => setApp(k)}><${Icon} n=${ic} s=${20}/>${l}</button>`)}</div>`;
 }
+const Brand = () => html`<div className="brand"><span className="mark"></span><span className="brand-t"><b>Maayasthra</b><span>Workspace</span></span></div>`;
 
 function TopRight({ user, role, open, openForm, signOut }) {
   const [menu, setMenu] = useState(false);
@@ -82,14 +69,14 @@ function App() {
   const [att, setAtt] = useState(loadAtt);
   const [sOpen, setSOpen] = useState(false);
   const [app, setAppState] = useState('people');
-  const [tasks, setTasks] = useState(loadTasks), [boards, setBoards] = useState(loadBoards);
+  const [tasks, setTasks] = useState(loadTasks), [collapsed, setCollapsed] = useState(loadCollapsed);
   const [focus, setFocus] = useState(null);
   const [taskSel, setTaskSel] = useState(null), [tq, setTq] = useState('');
-  const [tf, setTf] = useState({ board: loadBoards()[0].id, dept: 'All', hideEmpty: false });
+  const [tf, setTf] = useState({ dept: 'All', hideEmpty: false });
   const bump = () => setVer(v => v + 1);
   useEffect(() => { saveAtt(att); }, [att]);
   useEffect(() => { saveTasks(tasks); }, [tasks]);
-  useEffect(() => { saveBoards(boards); }, [boards]);
+  useEffect(() => { saveCollapsed(collapsed); }, [collapsed]);
 
   if (!auth) return html`<${Login} onLogin=${(user, role) => { setMe(user.n); setNav({ view: 'home' }); setAuth({ user, role }); window.scrollTo({ top: 0 }); }}/>`;
   const user = auth.user, role = auth.role;
@@ -109,9 +96,9 @@ function App() {
   const pending = role === 'admin' ? leaves.filter(l => !l.past && l.emp !== user.n && l.state === 'pending').length : 0;
 
   const home = html`<${Home} role=${role} user=${user} leaves=${leaves} setLeaves=${setLeaves} ann=${ann} setAnn=${setAnn} att=${att} setAtt=${setAtt} tasks=${tasks} goTask=${goTask} go=${go} openForm=${openForm} open=${open}/>`;
-  const taskScreen = nav.view === 'mytasks' ? html`<${MyTasks} tasks=${tasks} setTasks=${setTasks} boards=${boards} user=${user} tq=${tq} openTask=${openTask}/>`
-    : nav.view === 'team' && role === 'admin' ? html`<${TeamView} tasks=${tasks} boards=${boards} onPick=${(n, b) => { setTf(f => ({ ...f, board: b, dept: 'All' })); setFocus(n); go('board'); }}/>`
-    : html`<${TaskBoard} tasks=${tasks} setTasks=${setTasks} boards=${boards} setBoards=${setBoards} user=${user} role=${role} tf=${tf} setTf=${setTf} tq=${tq} openTask=${openTask} focus=${focus}/>`;
+  const taskScreen = nav.view === 'mytasks' ? html`<${MyTasks} tasks=${tasks} setTasks=${setTasks} user=${user} tq=${tq} openTask=${openTask}/>`
+    : nav.view === 'team' && role === 'admin' ? html`<${TeamView} tasks=${tasks} onPick=${n => { setTf(f => ({ ...f, dept: 'All' })); setFocus(n); go('board'); }}/>`
+    : html`<${TaskBoard} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} tf=${tf} setTf=${setTf} tq=${tq} openTask=${openTask} focus=${focus} collapsed=${collapsed} setCollapsed=${setCollapsed}/>`;
   const screen = app === 'task' ? taskScreen : nav.view === 'home' ? home
     : nav.view === 'people' ? html`<${People} pf=${pf} setPf=${setPf} open=${open} openForm=${openForm} role=${role} ver=${ver}/>`
     : nav.view === 'org' ? html`<${OrgChart} open=${open} user=${user} key=${ver}/>`
@@ -125,21 +112,22 @@ function App() {
     : nav.view === 'settings' && role === 'admin' ? html`<${Settings} onChange=${bump}/>`
     : home;
 
-  const brand = html`<${Brand} app=${app} setApp=${setApp}/>`;
+  const brand = html`<${Brand}/>`;
   return html`<div className="app">
     <aside className="side">${brand}
+      <${AppSwitch} app=${app} setApp=${setApp}/>
       <nav className="nav" aria-label="Main">${keys.map(k => html`<button key=${k} className=${'nav-b' + (active === k ? ' on' : '')} onClick=${() => go(k)} aria-current=${active === k ? 'page' : undefined}>
         <${Icon} n=${k}/>${ALL[k]}${k === 'requests' && pending > 0 && html`<span className="cnt">${pending}</span>`}</button>`)}</nav>
     </aside>
     <div className="col">
-      <header className="hdr"><div className="hdr-b">${brand}</div>
+      <header className="hdr"><div className="hdr-b"><${AppSwitch} app=${app} setApp=${setApp}/></div>
         <div className=${'hs' + (sOpen ? ' open' : '')}>${app === 'task' ? html`<div className="qs"><${Icon} n="search"/><input id="quick-search" className="qs-in" value=${tq} placeholder="Search tasks" onChange=${ev => setTq(ev.target.value)} aria-label="Search tasks"/></div>` : html`<${QuickSearch} open=${id => { setSOpen(false); open(id); }}/>`}</div>
         <button className="ib hs-b" onClick=${() => { setSOpen(o => !o); setTimeout(() => { const el = document.getElementById('quick-search'); if (el) el.focus(); }, 30); }} aria-label="Search"><${Icon} n="search" s=${17}/></button>
         <${CheckWidget} user=${user} att=${att} setAtt=${setAtt}/>
         <${TopRight} user=${user} role=${role} open=${open} openForm=${openForm} signOut=${signOut}/></header>
       <main className="main" key=${app + nav.view + (nav.id || '')}>${screen}</main>
     </div>
-    ${taskSel && html`<${TaskDetail} key=${taskSel.id} id=${taskSel.id} ctx=${taskSel.ctx} tasks=${tasks} setTasks=${setTasks} boards=${boards} user=${user} role=${role} leaves=${leaves} close=${() => setTaskSel(null)}/>`}
+    ${taskSel && html`<${TaskDetail} key=${taskSel.id} id=${taskSel.id} ctx=${taskSel.ctx} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} leaves=${leaves} close=${() => setTaskSel(null)}/>`}
     <nav className="bnav" style=${{ gridTemplateColumns: 'repeat(' + keys.length + ', 1fr)' }} aria-label="Main">${keys.map(k => html`<button key=${k} className=${active === k ? 'on' : ''} onClick=${() => go(k)}>
       <${Icon} n=${k} s=${21}/>${SHORT[k] || ALL[k]}${k === 'requests' && pending > 0 && html`<span className="cnt">${pending}</span>`}</button>`)}</nav>
   </div>`;
