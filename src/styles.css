@@ -485,9 +485,9 @@ textarea.inp{height:auto;min-height:84px;padding:12px 14px;resize:vertical;line-
 .qa{display:flex;gap:10px;flex-wrap:wrap}
 .bals .bl>small{margin-bottom:0}
 .bals .bl b{font-size:40px}
-.ck{display:flex;align-items:center;gap:10px;margin-top:18px;font-size:14px}
-.ck input{width:18px;height:18px;accent-color:var(--orange)}
-.ck span{color:var(--faint);font-size:12.5px}
+.cbx{display:flex;align-items:center;gap:10px;margin-top:18px;font-size:14px}
+.cbx input{width:18px;height:18px;accent-color:var(--accent)}
+.cbx span{color:var(--faint);font-size:12.5px}
 
 /* directory list view */
 .pl{display:grid;grid-template-columns:38px minmax(0,1.6fr) minmax(0,1fr) minmax(0,.8fr) auto;gap:14px;align-items:center}

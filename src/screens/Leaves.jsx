@@ -44,7 +44,7 @@ export function MyLeaves({ leaves, setLeaves, user }) {
           <div className="fld"><label htmlFor="lv-from">From</label><input id="lv-from" className="inp" type="date" min=${TODISO} value=${f.from} onChange=${ev => up({ from: ev.target.value })}/></div>
           <div className="fld"><label htmlFor="lv-to">To</label><input id="lv-to" className="inp" type="date" min=${f.from || TODISO} value=${f.to} onChange=${ev => up({ to: ev.target.value })}/></div>
         </div>
-        ${POLICY.half && html`<label className="ck" htmlFor="lv-half"><input id="lv-half" type="checkbox" checked=${f.half} disabled=${f.from !== f.to} onChange=${ev => up({ half: ev.target.checked })}/> Half day <span>${f.from !== f.to ? '(single-day requests only)' : ''}</span></label>`}
+        ${POLICY.half && html`<label className="cbx" htmlFor="lv-half"><input id="lv-half" type="checkbox" checked=${f.half} disabled=${f.from !== f.to} onChange=${ev => up({ half: ev.target.checked })}/> Half day <span>${f.from !== f.to ? '(single-day requests only)' : ''}</span></label>`}
         <div className="fld"><label htmlFor="lv-why">Note for ${mgr.name.split(' ')[0]} ${POLICY.note ? '' : '(optional)'}</label><textarea id="lv-why" className="inp" value=${f.reason} onChange=${ev => up({ reason: ev.target.value })} placeholder="Add a short reason or handover note"></textarea></div>
         ${sent ? html`<div className="sum"><div className="sent"><${Icon} n="check" s=${18}/><div><strong>Request sent to ${mgr.name}</strong><span className="ok">You will see the decision in this list.</span></div></div></div>`
         : html`<div className="sum">${err ? html`<strong className="err">${err}</strong>`

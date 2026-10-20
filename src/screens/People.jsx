@@ -32,7 +32,7 @@ export function People({ pf, setPf, open, openForm, role, ver }) {
       <select id="sort-by" className="sel" value=${pf.sort} onChange=${ev => setPf({ ...pf, sort: ev.target.value })} aria-label="Sort people">
         <option value="name">Name A–Z</option><option value="new">Newest first</option><option value="old">Longest serving</option></select>
     </div>
-    ${role === 'admin' && html`<label className="ck" htmlFor="former"><input id="former" type="checkbox" checked=${!!pf.former} onChange=${ev => setPf({ ...pf, former: ev.target.checked })}/> Include former employees</label>`}
+    ${role === 'admin' && html`<label className="cbx" htmlFor="former"><input id="former" type="checkbox" checked=${!!pf.former} onChange=${ev => setPf({ ...pf, former: ev.target.checked })}/> Include former employees</label>`}
     <div className="count">${list.length === act.length ? 'Showing everyone' : 'Showing ' + list.length + ' of ' + act.length}</div>
     ${list.length === 0 ? html`<div className="none"><b>No one matches those filters</b>Try a different name or department.<br/><button className="btn ghost" onClick=${clear}>Clear filters</button></div>` :
     html`<div className="dir">${list.map(e => html`<button key=${e.n} className="di" onClick=${() => open(e.n)}>
