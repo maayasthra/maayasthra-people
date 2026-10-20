@@ -1,4 +1,6 @@
-const TOD = Date.UTC(2026, 9, 19), DAY = 864e5;
+/* Dates are live: today in the viewer's timezone */
+const _now = new Date();
+const TOD = Date.UTC(_now.getFullYear(), _now.getMonth(), _now.getDate()), DAY = 864e5;
 const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const WD = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const WDL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -8,7 +10,7 @@ const fmtDM = iso => { const [,b,c] = iso.split('-').map(Number); return c + ' '
 const fmtDay = t => { const d = new Date(t); return WD[d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + MON[d.getUTCMonth()]; };
 const nextOcc = iso => {
   const [y,m,d] = iso.split('-').map(Number);
-  let yr = 2026, t = Date.UTC(yr, m-1, d);
+  let yr = new Date(TOD).getUTCFullYear(), t = Date.UTC(yr, m-1, d);
   if (t < TOD) { yr++; t = Date.UTC(yr, m-1, d); }
   return { days: Math.round((t - TOD) / DAY), t, year: yr };
 };
@@ -23,7 +25,8 @@ const ago = iso => {
 };
 const tenure = join => {
   const [y,m,d] = join.split('-').map(Number);
-  const total = (2026 - y) * 12 + (10 - m) - (19 < d ? 1 : 0);
+  const n = new Date(TOD);
+  const total = (n.getUTCFullYear() - y) * 12 + (n.getUTCMonth() + 1 - m) - (n.getUTCDate() < d ? 1 : 0);
   return { total, yrs: Math.floor(total / 12), mos: total % 12, days: Math.round((TOD - pd(join)) / DAY) };
 };
 const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
@@ -88,13 +91,14 @@ const RAW = [
 [39,'Leela Menon','f','Studio Coordinator','Production','2022-05-16','1994-10-19','Full-time',7,'Chennai'],
 [40,'Jai Arora','m','Art Director','Creative','2018-02-12','1989-01-19','Full-time',1,'Jaipur']
 ];
-const EMP = RAW.map(r => ({ n:r[0], name:r[1], g:r[2], role:r[3], dept:r[4], join:r[5], dob:r[6], status:r[7], mgr:r[8], city:r[9] }));
+const EMP = RAW.map(r => ({ n:r[0], name:r[1], g:r[2], role:r[3], dept:r[4], join:r[5], dob:r[6], status:r[7], mgr:r[8], city:r[9], phone:'', emergency:'', emergencyPhone:'', bio:'', photo:'' }));
 [...EMP].sort((a,b) => pd(a.join) - pd(b.join) || a.n - b.n).forEach((e,i) => { e.empId = 'MAY-' + String(i+1).padStart(3,'0'); });
-EMP.forEach(e => { e.email = e.name.toLowerCase().replace(/[^a-z ]/g,'').replace(' ','.') + '@maayasthra.com'; });
+const emailFor = name => name.toLowerCase().replace(/[^a-z ]/g,'').trim().replace(/\s+/g,'.') + '@maayasthra.com';
+EMP.forEach(e => { e.email = emailFor(e.name); });
 const BY = {}; EMP.forEach(e => BY[e.n] = e);
 const DEPTS = [...new Set(EMP.map(e => e.dept))].sort();
-const STATUSES = ['Full-time','Probation','Contract','On leave'];
-const STAT_C = { 'Full-time':'#46D39A', 'Probation':'#E8B93F', 'Contract':'#9DB4F5', 'On leave':'#B79BF2' };
+const STATUSES = ['Full-time','Probation','Contract','On leave','Exited'];
+const STAT_C = { 'Full-time':'#46D39A', 'Probation':'#E8B93F', 'Contract':'#9DB4F5', 'On leave':'#B79BF2', 'Exited':'#6B7280' };
 
 // role changes: [date, title], first entry is the role on joining
 const PATH = {
@@ -140,14 +144,6 @@ function journey(e) {
             .sort((a,b) => pd(b.date) - pd(a.date));
 }
 
-const EVENTS = [
-  { id:'e1', date:'2026-10-22', time:'4:00 PM', kind:'Studio', title:'Design Crit Live', where:'Google Meet', desc:'Three teams put work in progress on screen and get direct feedback from Rohan and Arjun. Bring one thing you are unsure about.' },
-  { id:'e2', date:'2026-10-30', time:'3:00 PM', kind:'Studio', title:'Studio Showcase: Q3 Work', where:'Google Meet', desc:'Finished projects from the quarter, presented by the people who made them.' },
-  { id:'e3', date:'2026-11-06', time:'6:30 PM', kind:'Culture', title:'Diwali Celebration', where:'Online, all studio', desc:'A relaxed evening call with games, a gift reveal and a short note from Aarav.' },
-  { id:'e4', date:'2026-11-13', time:'11:00 AM', kind:'Company', title:'All-hands: Planning 2027', where:'Google Meet', desc:'Priorities for next year, new hires and the roadmap for the studio.' },
-  { id:'e5', date:'2026-12-11', end:'2026-12-13', time:'All day', kind:'Company', title:'Annual Offsite', where:'Pondicherry', desc:'Three days together in person. Travel and stay details follow from People & Ops.' }
-];
-
 const LEAVES0 = [
   { id:1, emp:9,  type:'Casual leave', from:'2026-10-28', to:'2026-10-30', days:3,  reason:'Family function in Kochi.', sent:'2 days ago' },
   { id:2, emp:14, type:'Annual leave', from:'2026-11-09', to:'2026-11-20', days:10, reason:'Travelling over the Diwali break.', sent:'Yesterday' },
@@ -157,8 +153,8 @@ const LEAVES0 = [
 
 /* ---------- Calendar and leave data ---------- */
 const MONL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-const TODISO = '2026-10-19';
 const isoOf = t => { const d = new Date(t); return d.getUTCFullYear() + '-' + String(d.getUTCMonth()+1).padStart(2,'0') + '-' + String(d.getUTCDate()).padStart(2,'0'); };
+const TODISO = isoOf(TOD);
 // Sample holiday list, to be replaced with the company's confirmed calendar
 const HOL = {
   '2026-01-01':"New Year's Day",'2026-01-26':'Republic Day','2026-03-04':'Holi','2026-04-03':'Good Friday','2026-05-01':'May Day',
@@ -173,7 +169,14 @@ const TEAM_LEAVES = [
   { emp:26, type:'Casual leave', from:'2026-11-24', to:'2026-11-25' },
   { emp:23, type:'Annual leave', from:'2026-12-21', to:'2026-12-31' }
 ];
-const LEAVE_TYPES = [['Annual leave',18],['Casual leave',8],['Sick leave',8],['Comp-off',2]];
+// Leave rules. Edited from Settings, applied to every new request.
+const POLICY = { allow: { 'Annual leave':18, 'Casual leave':8, 'Sick leave':8, 'Comp-off':2 }, notice:3, half:true, note:false };
+const leaveTypes = () => Object.entries(POLICY.allow);
+const balances = mine => leaveTypes().map(([t, total]) => {
+  const used = mine.filter(l => l.type === t && l.state === 'approved').reduce((n, l) => n + l.days, 0);
+  const pend = mine.filter(l => l.type === t && l.state === 'pending').reduce((n, l) => n + l.days, 0);
+  return { t, total, used, pend, left: total - used };
+});
 const HIST0 = [
   { id:101, emp:2, type:'Annual leave', from:'2026-08-10', to:'2026-08-13', days:4, reason:'Trip to Munnar.', state:'approved', past:true },
   { id:102, emp:2, type:'Casual leave', from:'2026-05-22', to:'2026-05-22', days:1, reason:'Personal errand.', state:'approved', past:true },
@@ -181,7 +184,22 @@ const HIST0 = [
   { id:111, emp:9, type:'Annual leave', from:'2026-06-08', to:'2026-06-11', days:4, reason:'Family trip.', state:'approved', past:true },
   { id:112, emp:9, type:'Casual leave', from:'2026-02-13', to:'2026-02-13', days:1, reason:'Passport appointment.', state:'approved', past:true }
 ];
-const ADMINS = [1, 2, 26];
+const ROLE_NAMES = ['Employee','Manager','HR','Admin'];
+const ROLEMAP = {};
+EMP.forEach(e => { ROLEMAP[e.n] = e.n <= 2 ? 'Admin' : e.n === 26 ? 'HR' : EMP.some(x => x.mgr === e.n) ? 'Manager' : 'Employee'; });
+const isAdminRole = e => ROLEMAP[e.n] === 'Admin' || ROLEMAP[e.n] === 'HR';
+const activeEmps = () => EMP.filter(e => e.status !== 'Exited');
+const refreshDepts = () => { DEPTS.splice(0, DEPTS.length, ...[...new Set(EMP.map(e => e.dept))].sort()); };
+const addEmployee = d => {
+  const n = Math.max(...EMP.map(e => e.n)) + 1, idn = Math.max(...EMP.map(e => Number(e.empId.slice(4)))) + 1;
+  const e = { phone:'', emergency:'', emergencyPhone:'', bio:'', photo:'', ...d, n, empId:'MAY-' + String(idn).padStart(3,'0'), email: emailFor(d.name) };
+  EMP.push(e); BY[n] = e; ROLEMAP[n] = 'Employee'; refreshDepts(); return e;
+};
+const updateEmployee = (n, patch) => { const e = BY[n]; Object.assign(e, patch); if (patch.name) e.email = emailFor(patch.name); refreshDepts(); return e; };
+const awayList = leaves => [...TEAM_LEAVES, ...leaves.filter(l => l.state === 'approved').map(l => ({ emp:l.emp, type:l.type, from:l.from, to:l.to }))];
+const isAway = (n, iso, away) => { const w = new Date(pd(iso)).getUTCDay(); return w !== 0 && w !== 6 && !HOL[iso] && away.some(l => l.emp === n && iso >= l.from && iso <= l.to); };
+// Working days strictly between today and a start date, for the minimum-notice rule
+const noticeDays = from => { let c = 0; for (let t = TOD + DAY; t < pd(from); t += DAY) { const w = new Date(t).getUTCDay(); if (w !== 0 && w !== 6 && !HOL[isoOf(t)]) c++; } return c; };
 const DEMO_PW = 'maayasthra';
 const workDays = (a, b) => {
   let days = 0, wk = 0; const hol = [];
@@ -192,10 +210,11 @@ const workDays = (a, b) => {
   return { days, wk, hol };
 };
 
-const searchPeople = q => {
+const searchPeople = (q, incl = false) => {
   const t = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  if (!t.length) return EMP;
-  return EMP.filter(e => { const s = (e.name + ' ' + e.role + ' ' + e.dept + ' ' + e.city + ' ' + e.empId).toLowerCase(); return t.every(x => s.includes(x)); });
+  const pool = incl ? EMP : activeEmps();
+  if (!t.length) return pool;
+  return pool.filter(e => { const s = (e.name + ' ' + e.role + ' ' + e.dept + ' ' + e.city + ' ' + e.empId).toLowerCase(); return t.every(x => s.includes(x)); });
 };
 
-export { TOD, DAY, MON, WD, WDL, pd, fmt, fmtDM, fmtDay, nextOcc, rel, ago, tenure, plural, tenureText, range, addMonths, RAW, EMP, BY, DEPTS, STATUSES, STAT_C, PATH, journey, EVENTS, LEAVES0, MONL, TODISO, isoOf, HOL, TEAM_LEAVES, LEAVE_TYPES, HIST0, ADMINS, DEMO_PW, workDays, searchPeople };
+export { TOD, DAY, MON, WD, WDL, pd, fmt, fmtDM, fmtDay, nextOcc, rel, ago, tenure, plural, tenureText, range, addMonths, EMP, BY, DEPTS, STATUSES, STAT_C, PATH, journey, LEAVES0, MONL, TODISO, isoOf, HOL, TEAM_LEAVES, POLICY, leaveTypes, balances, HIST0, ROLE_NAMES, ROLEMAP, isAdminRole, activeEmps, addEmployee, updateEmployee, emailFor, awayList, isAway, noticeDays, DEMO_PW, workDays, searchPeople };
