@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { html, Icon, Av, Switch } from '../ui.jsx';
-import { EMP, HOL, TODISO, WD, POLICY, ROLE_NAMES, ROLEMAP, fmt, pd, plural, searchPeople } from '../data.js';
+import { EMP, HOL, TODISO, WD, POLICY, ROLE_NAMES, ROLEMAP, setRole, fmt, pd, plural, searchPeople } from '../data.js';
 
 const PERMS = [
   ['See the people directory and org chart', [1, 1]], ['Apply for leave and see own balances', [1, 1]], ['Edit own photo and contact details', [1, 1]],
@@ -19,7 +19,7 @@ function Access({ onChange }) {
     <div className="st-s"><h2 className="st-h">Who has which role</h2><p className="st-p">Search for anyone to change their role. It takes effect the next time they sign in.</p>
       <div className="search" style=${{ maxWidth: 'none', marginBottom: 8 }}><${Icon} n="search"/><input id="role-search" value=${q} onChange=${ev => setQ(ev.target.value)} placeholder="Search by name or department" aria-label="Search people to change role"/></div>
       ${list.map(e => html`<div className="pr" key=${e.n}><${Av} e=${e} s=${38}/><span className="row-t"><b>${e.name}</b><span>${e.role} · ${e.dept}</span></span>
-        <select className="sel" value=${ROLEMAP[e.n]} aria-label=${'Role for ' + e.name} onChange=${ev => { ROLEMAP[e.n] = ev.target.value; onChange(); }}>${ROLE_NAMES.map(r => html`<option key=${r} value=${r}>${r}</option>`)}</select></div>`)}
+        <select className="sel" value=${ROLEMAP[e.n]} aria-label=${'Role for ' + e.name} onChange=${ev => { setRole(e.n, ev.target.value); onChange(); }}>${ROLE_NAMES.map(r => html`<option key=${r} value=${r}>${r}</option>`)}</select></div>`)}
       ${list.length === 0 && html`<div className="empty" style=${{ textAlign: 'left' }}>No one matches "${q}".</div>`}
       <div className="bar-l">${q.trim() ? 'Showing ' + list.length + ' result' + (list.length === 1 ? '' : 's') : 'Showing 8 people. Search to find anyone.'}</div></div>
   </div>`;

@@ -91,7 +91,7 @@ const RAW = [
 [39,'Leela Menon','f','Studio Coordinator','Production','2022-05-16','1994-10-19','Full-time',7,'Chennai'],
 [40,'Jai Arora','m','Art Director','Creative','2018-02-12','1989-01-19','Full-time',1,'Jaipur']
 ];
-const EMP = RAW.map(r => ({ n:r[0], name:r[1], g:r[2], role:r[3], dept:r[4], join:r[5], dob:r[6], status:r[7], mgr:r[8], city:r[9], phone:'', emergency:'', emergencyPhone:'', bio:'', photo:'' }));
+const EMP = RAW.map(r => ({ n:r[0], name:r[1], g:r[2], role:r[3], dept:r[4], join:r[5], dob:r[6], status:r[7], mgr:r[8], city:r[9], phone:'', emergency:'', emergencyPhone:'', bio:'', photo:'', shiftStart:'10:00', shiftEnd:'18:00' }));
 [...EMP].sort((a,b) => pd(a.join) - pd(b.join) || a.n - b.n).forEach((e,i) => { e.empId = 'MAY-' + String(i+1).padStart(3,'0'); });
 const emailFor = name => name.toLowerCase().replace(/[^a-z ]/g,'').trim().replace(/\s+/g,'.') + '@maayasthra.com';
 EMP.forEach(e => { e.email = emailFor(e.name); });
@@ -148,7 +148,7 @@ const LEAVES0 = [
   { id:1, emp:9,  type:'Casual leave', from:'2026-10-28', to:'2026-10-30', days:3,  reason:'Family function in Kochi.', sent:'2 days ago' },
   { id:2, emp:14, type:'Annual leave', from:'2026-11-09', to:'2026-11-20', days:10, reason:'Travelling over the Diwali break.', sent:'Yesterday' },
   { id:3, emp:15, type:'Sick leave',   from:'2026-10-20', to:'2026-10-20', days:1,  reason:'Medical appointment.', sent:'Today' },
-  { id:4, emp:20, type:'Comp-off',     from:'2026-10-23', to:'2026-10-23', days:1,  reason:'Weekend shoot support on 10 Oct.', sent:'3 days ago' }
+  { id:4, emp:20, type:'Casual leave', from:'2026-10-23', to:'2026-10-23', days:1,  reason:'Personal errand.', sent:'3 days ago' }
 ];
 
 /* ---------- Calendar and leave data ---------- */
@@ -170,7 +170,7 @@ const TEAM_LEAVES = [
   { emp:23, type:'Annual leave', from:'2026-12-21', to:'2026-12-31' }
 ];
 // Leave rules. Edited from Settings, applied to every new request.
-const POLICY = { allow: { 'Annual leave':18, 'Casual leave':8, 'Sick leave':8, 'Comp-off':2 }, notice:3, half:true, note:false };
+const POLICY = { allow: { 'Annual leave':18, 'Casual leave':8, 'Sick leave':8 }, notice:3, half:true, note:false };
 const leaveTypes = () => Object.entries(POLICY.allow);
 const balances = mine => leaveTypes().map(([t, total]) => {
   const used = mine.filter(l => l.type === t && l.state === 'approved').reduce((n, l) => n + l.days, 0);
@@ -187,12 +187,17 @@ const HIST0 = [
 const ROLE_NAMES = ['Employee','Admin'];
 const ROLEMAP = {};
 EMP.forEach(e => { ROLEMAP[e.n] = e.n <= 2 || e.n === 26 ? 'Admin' : 'Employee'; });
+// Working hours: admins start at 9:00, everyone else at 10:00, and the day ends at 18:00. Editable per person.
+const defaultStart = role => role === 'Admin' ? '09:00' : '10:00';
+EMP.forEach(e => { e.shiftStart = defaultStart(ROLEMAP[e.n]); });
+const setRole = (n, role) => { const e = BY[n]; if (e && e.shiftStart === defaultStart(ROLEMAP[n])) e.shiftStart = defaultStart(role); ROLEMAP[n] = role; };
+const fmtTime = hm => { if (!hm) return ''; const [h, m] = hm.split(':').map(Number); return ((h + 11) % 12 + 1) + ':' + String(m).padStart(2, '0') + ' ' + (h < 12 ? 'AM' : 'PM'); };
 const isAdminRole = e => ROLEMAP[e.n] === 'Admin';
 const activeEmps = () => EMP.filter(e => e.status !== 'Exited');
 const refreshDepts = () => { DEPTS.splice(0, DEPTS.length, ...[...new Set(EMP.map(e => e.dept))].sort()); };
 const addEmployee = d => {
   const n = Math.max(...EMP.map(e => e.n)) + 1, idn = Math.max(...EMP.map(e => Number(e.empId.slice(4)))) + 1;
-  const e = { phone:'', emergency:'', emergencyPhone:'', bio:'', photo:'', ...d, n, empId:'MAY-' + String(idn).padStart(3,'0'), email: emailFor(d.name) };
+  const e = { phone:'', emergency:'', emergencyPhone:'', bio:'', photo:'', shiftStart:'10:00', shiftEnd:'18:00', ...d, n, empId:'MAY-' + String(idn).padStart(3,'0'), email: emailFor(d.name) };
   EMP.push(e); BY[n] = e; ROLEMAP[n] = 'Employee'; refreshDepts(); return e;
 };
 const updateEmployee = (n, patch) => { const e = BY[n]; Object.assign(e, patch); if (patch.name) e.email = emailFor(patch.name); refreshDepts(); return e; };
@@ -217,4 +222,4 @@ const searchPeople = (q, incl = false) => {
   return pool.filter(e => { const s = (e.name + ' ' + e.role + ' ' + e.dept + ' ' + e.city + ' ' + e.empId).toLowerCase(); return t.every(x => s.includes(x)); });
 };
 
-export { TOD, DAY, MON, WD, WDL, pd, fmt, fmtDM, fmtDay, nextOcc, rel, ago, tenure, plural, tenureText, range, addMonths, EMP, BY, DEPTS, STATUSES, STAT_C, PATH, journey, LEAVES0, MONL, TODISO, isoOf, HOL, TEAM_LEAVES, POLICY, leaveTypes, balances, HIST0, ROLE_NAMES, ROLEMAP, isAdminRole, activeEmps, addEmployee, updateEmployee, emailFor, awayList, isAway, noticeDays, DEMO_PW, workDays, searchPeople };
+export { TOD, DAY, MON, WD, WDL, pd, fmt, fmtDM, fmtDay, nextOcc, rel, ago, tenure, plural, tenureText, range, addMonths, EMP, BY, DEPTS, STATUSES, STAT_C, PATH, journey, LEAVES0, MONL, TODISO, isoOf, HOL, TEAM_LEAVES, POLICY, leaveTypes, balances, HIST0, ROLE_NAMES, ROLEMAP, isAdminRole, activeEmps, addEmployee, updateEmployee, defaultStart, setRole, fmtTime, emailFor, awayList, isAway, noticeDays, DEMO_PW, workDays, searchPeople };

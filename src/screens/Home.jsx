@@ -1,15 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { html, Icon, Av, Tile, first } from '../ui.jsx';
 import { downloadLeaveReport } from '../report.js';
+import { SessionList, useDay, dayNote } from '../Attendance.jsx';
+import { hm, lunchInfo, checkIn, checkOut } from '../attendance.js';
 import {
   TOD, DAY, WDL, MONL, pd, fmtDM, fmtDay, rel, plural, range, addMonths, isoOf, TODISO, HOL, BY,
-  balances, awayList, isAway, activeEmps
+  balances, awayList, isAway, activeEmps, fmtTime
 } from '../data.js';
 
 const LS_C = { pending: '#E8B93F', approved: '#46D39A', declined: '#E5736B' };
-const TYPE_ICON = { 'Annual leave': 'sun', 'Casual leave': 'cup', 'Sick leave': 'heart', 'Comp-off': 'swap' };
+const TYPE_ICON = { 'Annual leave': 'sun', 'Casual leave': 'cup', 'Sick leave': 'heart' };
 export const typeIcon = t => TYPE_ICON[t] || 'leaves';
-export const typeTone = t => t === 'Sick leave' ? 'orange' : t === 'Casual leave' ? 'amber' : t === 'Comp-off' ? 'purple' : 'blue';
+export const typeTone = t => t === 'Sick leave' ? 'orange' : t === 'Casual leave' ? 'amber' : 'blue';
 
 /* A fixed-height card so panels in a row line up */
 function Panel({ title, sub, right, children }) {
@@ -114,16 +116,30 @@ function AwayWeek({ leaves, open }) {
   <//>`;
 }
 
-function TeamCard({ user, open }) {
+function TeamPanel({ user, open }) {
   const mgr = BY[user.mgr];
   const reports = activeEmps().filter(e => e.mgr === user.n);
   const peers = activeEmps().filter(e => user.mgr && e.mgr === user.mgr && e.n !== user.n);
-  const rows = [...(mgr ? [[mgr, 'Reports to']] : []), ...reports.slice(0, 4).map(e => [e, 'Reports to you']), ...peers.slice(0, 4).map(e => [e, 'Teammate'])];
-  return html`<div className="card" style=${{ padding: '8px 12px' }}>${rows.length ? rows.map(([e, l]) => html`<button key=${e.n + l} className="row" onClick=${() => open(e.n)}><${Av} e=${e} s=${38}/><span className="row-t"><b>${e.name}</b><span>${e.role}</span></span><span className="row-d"><em>${l}</em></span></button>`) : html`<div className="empty">No team listed yet.</div>`}</div>`;
+  const rows = [...(mgr ? [[mgr, 'Reports to']] : []), ...reports.slice(0, 5).map(e => [e, 'Reports to you']), ...peers.slice(0, 6).map(e => [e, 'Teammate'])];
+  return html`<${Panel} title="Your team" sub=${rows.length ? plural(rows.length, 'person') : ''}>
+    ${rows.length ? rows.map(([e, l]) => html`<button key=${e.n + l} className="row" onClick=${() => open(e.n)}><${Av} e=${e} s=${38}/><span className="row-t"><b>${e.name}</b><span>${e.role}</span></span><span className="row-d"><em>${l}</em></span></button>`)
+      : html`<div className="pn-e"><span className="pn-ei"><${Icon} n="people" s=${22}/></span><b>No team listed yet</b></div>`}
+  <//>`;
+}
+
+function YourDay({ user, att, setAtt }) {
+  const { now, sessions, live, worked } = useDay(user, att);
+  const lunch = lunchInfo(now);
+  return html`<${Panel} title="Your day" sub=${'Shift ' + fmtTime(user.shiftStart) + ' – ' + fmtTime(user.shiftEnd)}>
+    <div className=${'dy-l' + (lunch.state === 'on' ? ' on' : '')}><${Icon} n="cup" s=${16}/> ${lunch.state === 'over' ? 'Lunch was 1:00 – 2:00 PM' : lunch.text}</div>
+    <${SessionList} sessions=${sessions} now=${now}/>
+    <div className="dy-f"><span>${dayNote(sessions, user)}</span>
+      <button className=${'btn sm ' + (live ? 'ghost' : 'pri')} onClick=${() => setAtt(a => live ? checkOut(a, user.n) : checkIn(a, user.n))}>${live ? 'Check out' : sessions.length ? 'Check in again' : 'Check in'}</button></div>
+  <//>`;
 }
 
 /* ---------- Home ---------- */
-export function Home({ role, user, leaves, setLeaves, ann, setAnn, go, openForm, open }) {
+export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, go, openForm, open }) {
   const h = new Date().getHours(), t = new Date(TOD);
   const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
   const mine = leaves.filter(l => l.emp === user.n);
@@ -166,22 +182,31 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, go, openForm,
   }
 
   const bal = balances(mine);
-  const nextHol = Object.keys(HOL).sort().find(k => k >= TODISO);
-  const recent = [...mine].filter(l => !l.past).sort((a, b) => b.from.localeCompare(a.from)).slice(0, 2);
+  const { sessions, worked, live } = useDay(user, att);
+  const hols = Object.keys(HOL).sort().filter(k => k >= TODISO);
+  const recent = [...mine].filter(l => !l.past).sort((a, b) => b.from.localeCompare(a.from)).slice(0, 4);
   return html`<div>
     <div className="date-l">${dateL}</div>
     <h1 className="h-greet">${greet}, ${first(user)}.</h1>
-    <p className="lede"><span>You have <b>${bal[0].left} days</b> of annual leave left${nextHol ? '. Next holiday is ' + HOL[nextHol] + ' on ' + fmtDay(pd(nextHol)) : ''}.</span></p>
-    <section className="sec grid2b">
-      <div><div className="sec-h"><h2>Announcements</h2></div><div className="card" style=${{ padding: '8px 20px' }}><${AnnList} ann=${ann} setAnn=${setAnn} canPost=${false}/></div></div>
-      <div>
-        <div className="sec-h"><h2>Your time off</h2><span>${t.getUTCFullYear()}</span></div>
-        <div className="tiles two">${bal.map(b => html`<${Tile} key=${b.t} icon=${typeIcon(b.t)} tone=${typeTone(b.t)} label=${b.t} value=${b.left} sub=${b.pend ? 'days left · ' + b.pend + ' pending' : 'days left'}/>`)}</div>
-        ${recent.map(l => html`<div className="hx" key=${l.id} style=${{ paddingBottom: 0, borderBottom: 0, marginTop: 14 }}><span className="row-t"><b>${l.type}</b><span>${range(l.from, l.to)} · ${plural(l.days, 'day')}</span></span>
-          <span className="pill" style=${{ '--c': LS_C[l.state] }}><i></i>${l.state[0].toUpperCase() + l.state.slice(1)}</span></div>`)}
-        <button className="btn pri" style=${{ marginTop: 18 }} onClick=${() => go('leaves')}>Apply for leave</button>
-        <div className="sec-h" style=${{ marginTop: 40 }}><h2>Your team</h2></div><${TeamCard} user=${user} open=${open}/>
-      </div>
+    <p className="lede"><span>You have <b>${bal[0].left} days</b> of annual leave left${hols[0] ? '. Next holiday is ' + HOL[hols[0]] + ' on ' + fmtDay(pd(hols[0])) : ''}.</span></p>
+    <div className="tiles">
+      ${bal.map(b => html`<${Tile} key=${b.t} icon=${typeIcon(b.t)} tone=${typeTone(b.t)} label=${b.t} value=${b.left} sub=${b.pend ? 'days left · ' + b.pend + ' pending' : 'of ' + b.total + ' days left'} onClick=${() => go('leaves')}/>`)}
+      <${Tile} icon="clock" tone="green" label="Worked today" value=${hm(worked)} sub=${live ? 'timer is running' : sessions.length ? 'checked out' : 'not checked in yet'}/>
+    </div>
+    <section className="eq3 sec">
+      <${YourDay} user=${user} att=${att} setAtt=${setAtt}/>
+      <${Panel} title="Announcements" sub="From People and Ops"><${AnnList} ann=${ann} setAnn=${setAnn} canPost=${false}/><//>
+      <${TeamPanel} user=${user} open=${open}/>
+    </section>
+    <section className="eq2 sec">
+      <${Panel} title="Your leave requests" sub=${t.getUTCFullYear()} right=${html`<button className="btn sec2 sm" onClick=${() => go('leaves')}><${Icon} n="plus" s=${15}/> Apply</button>`}>
+        ${recent.length === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="leaves" s=${22}/></span><b>No requests yet</b><span>Apply for leave and track it here.</span></div>` :
+          recent.map(l => html`<div className="hx" key=${l.id}><span className="row-t"><b>${l.type}${l.half ? ' · half day' : ''}</b><span>${range(l.from, l.to)} · ${plural(l.days, 'day')}</span></span>
+            <span className="pill" style=${{ '--c': LS_C[l.state] }}><i></i>${l.state[0].toUpperCase() + l.state.slice(1)}</span></div>`)}
+      <//>
+      <${Panel} title="Upcoming holidays" sub="Studio closed">
+        ${hols.slice(0, 5).map(k => html`<div className="hl" key=${k}>${HOL[k]}<span>${fmtDay(pd(k))} · ${rel(Math.round((pd(k) - TOD) / DAY)).toLowerCase()}</span></div>`)}
+      <//>
     </section>
   </div>`;
 }

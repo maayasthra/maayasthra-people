@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { html, Icon, Av, Photo } from '../ui.jsx';
-import { BY, fmt, fmtDM, rel, ago, plural, tenure, tenureText, nextOcc, journey, balances, activeEmps, ROLEMAP } from '../data.js';
+import { BY, fmtTime, fmt, fmtDM, rel, ago, plural, tenure, tenureText, nextOcc, journey, balances, activeEmps, ROLEMAP } from '../data.js';
 
 export function Profile({ id, from, back, open, openForm, user, role, leaves, ver }) {
   const e = BY[id]; const [copied, setCopied] = useState(false);
@@ -33,6 +33,7 @@ export function Profile({ id, from, back, open, openForm, user, role, leaves, ve
           <${Fact} l="Reporting manager">${mgr ? html`<button onClick=${() => open(mgr.n)}>${mgr.name}</button>` : 'Founder'}<//>
           <${Fact} l="Employment status">${e.status}<//>
           <${Fact} l="Location">${e.city}, India<//>
+          <${Fact} l="Working hours">${fmtTime(e.shiftStart)} – ${fmtTime(e.shiftEnd)}<//>
           ${e.phone && html`<${Fact} l="Phone">${e.phone}<//>`}
           ${canSee && (e.emergency || e.emergencyPhone) && html`<${Fact} l="Emergency contact">${[e.emergency, e.emergencyPhone].filter(Boolean).join(' · ')}<//>`}
         </div>

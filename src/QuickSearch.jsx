@@ -20,7 +20,7 @@ export function QuickSearch({ open }) {
   };
   return html`<div className="qs">
     <${Icon} n="search"/>
-    <input ref=${ref} id="quick-search" className="qs-in" value=${q} placeholder="Find anyone by name or role"
+    <input ref=${ref} id="quick-search" className="qs-in" value=${q} placeholder="Search people"
       onChange=${ev => { setQ(ev.target.value); setHi(0); }} onFocus=${() => setOn(true)} onBlur=${() => setOn(false)} onKeyDown=${key} autoComplete="off" aria-label="Quick employee search"/>
     <kbd>/</kbd>
     ${on && q.trim() && html`<div className="qs-dd">

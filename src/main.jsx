@@ -12,6 +12,8 @@ import { MyLeaves } from './screens/Leaves.jsx';
 import { Requests } from './screens/Requests.jsx';
 import { Settings } from './screens/Settings.jsx';
 import { QuickSearch } from './QuickSearch.jsx';
+import { CheckWidget } from './Attendance.jsx';
+import { loadAtt, saveAtt } from './attendance.js';
 import './styles.css';
 
 const ALL = { home: 'Home', people: 'People', org: 'Org chart', calendar: 'Calendar', leaves: 'My Leaves', requests: 'Requests', settings: 'Settings' };
@@ -23,9 +25,7 @@ const SEED_ANN = [
   { id: 3, kind: 'general', title: 'Keep your profile current', body: 'Add your phone number and an emergency contact from your profile. It takes a minute.', date: isoOf(TOD - 5 * DAY), by: 'Meera Iyer' }
 ];
 
-function readTheme() { try { return localStorage.getItem('mp-theme') || 'dark'; } catch (x) { return 'dark'; } }
-
-function TopRight({ user, role, theme, setTheme, open, openForm, signOut }) {
+function TopRight({ user, role, open, openForm, signOut }) {
   const [menu, setMenu] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
@@ -35,9 +35,7 @@ function TopRight({ user, role, theme, setTheme, open, openForm, signOut }) {
     document.addEventListener('mousedown', f); document.addEventListener('keydown', k);
     return () => { document.removeEventListener('mousedown', f); document.removeEventListener('keydown', k); };
   }, [menu]);
-  const dark = theme === 'dark';
   return html`<div className="tr" ref=${ref}>
-    <button className="ib" onClick=${() => setTheme(dark ? 'light' : 'dark')} aria-label=${dark ? 'Switch to light mode' : 'Switch to dark mode'} title=${dark ? 'Light mode' : 'Dark mode'}><${Icon} n=${dark ? 'sun' : 'moon'} s=${17}/></button>
     <button className="tr-me" onClick=${() => setMenu(m => !m)} aria-haspopup="menu" aria-expanded=${menu} aria-label="Account menu">
       <${Av} e=${user} s=${32}/><span className="tr-n"><b>${user.name}</b><span>${role === 'admin' ? 'Admin' : 'Employee'}</span></span></button>
     ${menu && html`<div className="menu" role="menu">
@@ -55,13 +53,10 @@ function App() {
   const [ann, setAnn] = useState(SEED_ANN);
   const [pf, setPf] = useState({ q: '', dept: 'All', city: 'All', sort: 'name', former: false });
   const [ver, setVer] = useState(0);
-  const [theme, setTheme] = useState(readTheme);
+  const [att, setAtt] = useState(loadAtt);
   const [sOpen, setSOpen] = useState(false);
   const bump = () => setVer(v => v + 1);
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    try { localStorage.setItem('mp-theme', theme); } catch (x) {}
-  }, [theme]);
+  useEffect(() => { saveAtt(att); }, [att]);
 
   if (!auth) return html`<${Login} onLogin=${(user, role) => { setNav({ view: 'home' }); setAuth({ user, role }); window.scrollTo({ top: 0 }); }}/>`;
   const user = auth.user, role = auth.role;
@@ -76,7 +71,7 @@ function App() {
   const active = nav.view === 'profile' || nav.view === 'form' ? (nav.from || 'people') : nav.view;
   const pending = role === 'admin' ? leaves.filter(l => !l.past && l.emp !== user.n && l.state === 'pending').length : 0;
 
-  const home = html`<${Home} role=${role} user=${user} leaves=${leaves} setLeaves=${setLeaves} ann=${ann} setAnn=${setAnn} go=${go} openForm=${openForm} open=${open}/>`;
+  const home = html`<${Home} role=${role} user=${user} leaves=${leaves} setLeaves=${setLeaves} ann=${ann} setAnn=${setAnn} att=${att} setAtt=${setAtt} go=${go} openForm=${openForm} open=${open}/>`;
   const screen = nav.view === 'home' ? home
     : nav.view === 'people' ? html`<${People} pf=${pf} setPf=${setPf} open=${open} openForm=${openForm} role=${role} ver=${ver}/>`
     : nav.view === 'org' ? html`<${OrgChart} open=${open} user=${user} key=${ver}/>`
@@ -98,7 +93,8 @@ function App() {
       <header className="hdr"><div className="hdr-b">${brand}</div>
         <div className=${'hs' + (sOpen ? ' open' : '')}><${QuickSearch} open=${id => { setSOpen(false); open(id); }}/></div>
         <button className="ib hs-b" onClick=${() => { setSOpen(o => !o); setTimeout(() => { const el = document.getElementById('quick-search'); if (el) el.focus(); }, 30); }} aria-label="Search people"><${Icon} n="search" s=${17}/></button>
-        <${TopRight} user=${user} role=${role} theme=${theme} setTheme=${setTheme} open=${open} openForm=${openForm} signOut=${signOut}/></header>
+        <${CheckWidget} user=${user} att=${att} setAtt=${setAtt}/>
+        <${TopRight} user=${user} role=${role} open=${open} openForm=${openForm} signOut=${signOut}/></header>
       <main className="main" key=${nav.view + (nav.id || '')}>${screen}</main>
     </div>
     <nav className="bnav" style=${{ gridTemplateColumns: 'repeat(' + keys.length + ', 1fr)' }} aria-label="Main">${keys.map(k => html`<button key=${k} className=${active === k ? 'on' : ''} onClick=${() => go(k)}>

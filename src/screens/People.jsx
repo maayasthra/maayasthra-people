@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
-import { html, Icon, Av, Photo, Portrait, Status } from '../ui.jsx';
+import { html, Icon, Av, Photo } from '../ui.jsx';
 import {
-  EMP, BY, DEPTS, STATUSES, TODISO, ROLE_NAMES, ROLEMAP, fmtDM, pd, searchPeople, activeEmps, addEmployee, updateEmployee, emailFor
+  EMP, BY, DEPTS, STATUSES, TODISO, ROLE_NAMES, ROLEMAP, defaultStart, fmtDM, pd, searchPeople, activeEmps, addEmployee, updateEmployee, emailFor
 } from '../data.js';
 
 /* ---------- Directory ---------- */
@@ -45,7 +45,7 @@ export function People({ pf, setPf, open, openForm, role, ver }) {
 export function EmployeeForm({ id, role, user, done, bump }) {
   const e = id ? BY[id] : null;
   const isAdmin = role === 'admin';
-  const [f, setF] = useState(() => e ? { ...e } : { name: '', role: '', dept: '', city: '', mgr: 1, status: 'Full-time', join: TODISO, dob: '', g: 'f', phone: '', emergency: '', emergencyPhone: '', bio: '', photo: '' });
+  const [f, setF] = useState(() => e ? { ...e } : { name: '', role: '', dept: '', city: '', mgr: 1, status: 'Full-time', join: TODISO, dob: '', g: 'f', phone: '', emergency: '', emergencyPhone: '', bio: '', photo: '', shiftStart: '10:00', shiftEnd: '18:00' });
   const [access, setAccess] = useState(e ? ROLEMAP[e.n] : 'Employee');
   const [err, setErr] = useState('');
   const set = p => { setF(o => ({ ...o, ...p })); setErr(''); };
@@ -72,7 +72,8 @@ export function EmployeeForm({ id, role, user, done, bump }) {
     if (!f.name.trim() || !f.role.trim() || !f.dept.trim() || !f.join || !f.dob) { setErr('Fill in name, job title, department, joining date and birthday.'); return; }
     const dupe = EMP.find(x => x.email === emailFor(f.name) && (!e || x.n !== e.n));
     if (dupe) { setErr('Another person already has the email ' + dupe.email + '. Add a middle initial to the name.'); return; }
-    const core = { name: f.name.trim(), role: f.role.trim(), dept: f.dept.trim(), city: f.city.trim() || 'Chennai', mgr: Number(f.mgr) || 0, status: f.status, join: f.join, dob: f.dob, g: f.g };
+    if (!f.shiftStart || !f.shiftEnd || f.shiftEnd <= f.shiftStart) { setErr('Working hours need a start time that is earlier than the end time.'); return; }
+    const core = { shiftStart: f.shiftStart, shiftEnd: f.shiftEnd, name: f.name.trim(), role: f.role.trim(), dept: f.dept.trim(), city: f.city.trim() || 'Chennai', mgr: Number(f.mgr) || 0, status: f.status, join: f.join, dob: f.dob, g: f.g };
     const saved = e ? updateEmployee(e.n, { ...core, ...contact }) : addEmployee({ ...core, ...contact });
     ROLEMAP[saved.n] = access; bump(); done(saved.n);
   };
@@ -103,8 +104,10 @@ export function EmployeeForm({ id, role, user, done, bump }) {
           <div className="fld"><label htmlFor="ef-dob">Birthday</label><input id="ef-dob" className="inp" type="date" value=${f.dob} disabled=${dis} onChange=${ev => set({ dob: ev.target.value })}/></div></div>
         <div className="two"><div className="fld"><label htmlFor="ef-mgr">Reporting manager</label><select id="ef-mgr" className="inp" value=${f.mgr} disabled=${dis} onChange=${ev => set({ mgr: ev.target.value })}><option value="0">No one (leads the studio)</option>${mgrs.map(m => html`<option key=${m.n} value=${m.n}>${m.name}</option>`)}</select></div>
           <div className="fld"><label htmlFor="ef-status">Employment status</label><select id="ef-status" className="inp" value=${f.status} disabled=${dis} onChange=${ev => set({ status: ev.target.value })}>${STATUSES.map(s => html`<option key=${s} value=${s}>${s}</option>`)}</select></div></div>
+        <div className="two"><div className="fld"><label htmlFor="ef-ss">Login time</label><input id="ef-ss" className="inp" type="time" value=${f.shiftStart} disabled=${dis} onChange=${ev => set({ shiftStart: ev.target.value })}/></div>
+          <div className="fld"><label htmlFor="ef-se">Logout time</label><input id="ef-se" className="inp" type="time" value=${f.shiftEnd} disabled=${dis} onChange=${ev => set({ shiftEnd: ev.target.value })}/></div></div>
         ${isAdmin && html`<div className="two"><div className="fld"><label htmlFor="ef-g">Portrait style</label><select id="ef-g" className="inp" value=${f.g} onChange=${ev => set({ g: ev.target.value })}><option value="f">Style A</option><option value="m">Style B</option></select></div>
-          <div className="fld"><label htmlFor="ef-acc">App access</label><select id="ef-acc" className="inp" value=${access} onChange=${ev => setAccess(ev.target.value)}>${ROLE_NAMES.map(r => html`<option key=${r} value=${r}>${r}</option>`)}</select></div></div>`}
+          <div className="fld"><label htmlFor="ef-acc">App access</label><select id="ef-acc" className="inp" value=${access} onChange=${ev => { const r = ev.target.value; if (f.shiftStart === defaultStart(access)) set({ shiftStart: defaultStart(r) }); setAccess(r); }}>${ROLE_NAMES.map(r => html`<option key=${r} value=${r}>${r}</option>`)}</select></div></div>`}
         ${err && html`<div className="lg-err" role="alert">${err}</div>`}
         <div style=${{ display: 'flex', gap: 12, marginTop: 28 }}><button className="btn pri" type="submit">${e ? 'Save changes' : 'Add employee'}</button><button type="button" className="btn ghost" onClick=${() => done(e ? e.n : null)}>Cancel</button></div>
         ${!e && html`<p className="bar-l">Their work email will be ${emailFor(f.name || 'first last')}.</p>`}
