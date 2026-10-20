@@ -35,7 +35,7 @@ export function AttendancePage({ att, leaves, open, user }) {
   /* period for week and month views */
   const wk = weekStart(anchor), weekDays = Array.from({ length: 7 }, (_, i) => addDays(wk, i)).filter((_, i) => i < 5);
   const mDays = monthDays(mo.y, mo.m).filter(d => d <= TODISO && new Date(pd(d)).getUTCDay() % 6 !== 0);
-  const period = tab === 'week' ? weekDays.filter(d => d <= TODISO) : tab === 'month' ? mDays : [TODISO];
+  const period = tab === 'week' ? weekDays.filter(d => d <= TODISO) : tab === 'overall' ? mDays : [TODISO];
 
   const exportCSV = () => {
     const head = ['Employee', 'Employee ID', 'Department', 'Date', 'Status', 'First check-in', 'Last check-out', 'Worked (hours)', 'Minutes late', 'Location', 'Sessions', 'Edited by admin'];
@@ -86,31 +86,38 @@ export function AttendancePage({ att, leaves, open, user }) {
     </div>`;
   }
 
-  /* ---- Month: one summary row each ---- */
-  if (tab === 'month') {
+  /* ---- Overall: the whole month, every person, every day ---- */
+  if (tab === 'overall') {
+    const cols = monthDays(mo.y, mo.m);
     const rows = filt.map(e => {
-      const c = mDays.map(d => info(e, d)), p = c.filter(x => x.sessions.length), tot = p.reduce((t, x) => t + x.worked, 0);
-      return { e, days: p.length, tot, avg: p.length ? tot / p.length : 0, late: p.filter(x => x.lateFlag).length, short: p.filter(x => x.short).length, home: p.filter(x => x.sessions.some(s => s.loc === 'home')).length, none: c.filter(x => x.state === 'absent').length };
+      const cells = cols.map(d => d <= TODISO ? info(e, d) : null), p = cells.filter(c => c && c.sessions.length), tot = p.reduce((t, c) => t + c.worked, 0);
+      return { e, cells, days: p.length, tot, late: p.filter(c => c.lateFlag).length, short: p.filter(c => c.short).length, home: p.filter(c => c.sessions.some(s => s.loc === 'home')).length };
     }).sort((a, b) => a.e.name.localeCompare(b.e.name));
-    body = html`<div className="card at-m" style=${{ padding: '6px 14px', overflowX: 'auto' }}>
-      <div className="at-mr at-h"><span>Person</span><span>Days</span><span>Total hours</span><span>Average</span><span>Late</span><span>Short</span><span>Home days</span><span>No record</span></div>
-      ${rows.map(r => html`<button key=${r.e.n} className="at-mr row" onClick=${() => open(r.e.n, 'hours')}>
-        <span className="at-p"><${Av} e=${r.e} s=${32}/><span className="row-t"><b>${r.e.name}</b><span>${r.e.dept}</span></span></span>
-        <span>${r.days}</span><span className="at-n">${r.days ? hh(r.tot) : '–'}</span><span>${r.days ? hh(r.avg) : '–'}</span>
-        <span className=${r.late ? 'at-late' : ''}>${r.late}</span><span className=${r.short ? 'at-late' : ''}>${r.short}</span><span>${r.home}</span><span className=${r.none ? 'at-late' : ''}>${r.none}</span></button>`)}
-    </div>`;
+    const perDay = cols.map((d, k) => rows.filter(r => r.cells[k] && r.cells[k].sessions.length).length);
+    const cls = c => !c ? 'fut' : c.sessions.length ? (c.lateFlag ? 'late' : c.short ? 'short' : 'ok') : c.state === 'leave' ? 'leave' : c.state === 'off' ? 'off' : c.state === 'absent' ? 'none' : 'fut';
+    const style = { '--n': cols.length };
+    body = html`<div>
+      <div className="ov-lg">${[['ok', 'On time'], ['late', 'Late'], ['short', 'Short day'], ['leave', 'On leave'], ['none', 'No record'], ['off', 'Holiday or weekend']].map(([k, l]) => html`<span key=${k}><i className=${'ovc ' + k}></i>${l}</span>`)}<span><i className="ovc ok home"></i>Worked from home</span></div>
+      <div className="card ov-w" style=${{ padding: '6px 14px 10px' }}><div className="ov" style=${style}>
+        <div className="ov-r ov-h"><span>Person</span>${cols.map(d => html`<span key=${d} className=${'ov-d' + (d === TODISO ? ' today' : '')}>${Number(d.slice(8))}<small>${['S', 'M', 'T', 'W', 'T', 'F', 'S'][new Date(pd(d)).getUTCDay()]}</small></span>`)}<span className="ov-s">Days</span><span className="ov-s">Hours</span><span className="ov-s">Late</span><span className="ov-s">Home</span></div>
+        ${rows.map(r => html`<div key=${r.e.n} className="ov-r">
+          <button className="ov-p" onClick=${() => open(r.e.n, 'hours')}><${Av} e=${r.e} s=${26}/><b>${r.e.name}</b></button>
+          ${r.cells.map((c, k) => html`<button key=${k} className=${'ovc ' + cls(c) + (c && c.sessions.some(s => s.loc === 'home') ? ' home' : '')} title=${r.e.name + ' · ' + fmtDay(pd(cols[k])) + (c && c.sessions.length ? ' · ' + hh(c.worked) + (c.lateFlag ? ' · late ' + c.late + ' min' : '') : c && c.state === 'leave' ? ' · on leave' : c && c.state === 'absent' ? ' · no record' : '')} onClick=${() => open(r.e.n, 'hours')} aria-label=${r.e.name + ' ' + fmtDM(cols[k])}></button>`)}
+          <span className="ov-s">${r.days}</span><span className="ov-s">${r.days ? Math.round(r.tot / 36e5) + 'h' : '–'}</span><span className=${'ov-s' + (r.late ? ' at-late' : '')}>${r.late}</span><span className="ov-s">${r.home}</span></div>`)}
+        <div className="ov-r ov-f"><span>In each day</span>${perDay.map((n, k) => html`<span key=${k} className="ov-n">${cols[k] <= TODISO && new Date(pd(cols[k])).getUTCDay() % 6 !== 0 && !HOL[cols[k]] ? n : ''}</span>`)}<span></span><span></span><span></span><span></span></div>
+      </div></div></div>`;
   }
 
   const nav = tab === 'week'
     ? html`<div className="sec-h" style=${{ marginTop: 28 }}><h2>${fmtDM(weekDays[0])} – ${fmtDM(weekDays[4])}</h2><div className="car-n"><button className="ib" onClick=${() => setAnchor(addDays(wk, -7))} aria-label="Previous week"><${Icon} n="chevL" s=${16}/></button><button className="ib" onClick=${() => setAnchor(addDays(wk, 7))} disabled=${addDays(wk, 7) > TODISO} aria-label="Next week"><${Icon} n="chevR" s=${16}/></button></div></div>`
-    : tab === 'month'
+    : tab === 'overall'
     ? html`<div className="sec-h" style=${{ marginTop: 28 }}><h2>${MONL[mo.m]} ${mo.y}</h2><div className="car-n"><button className="ib" onClick=${() => { const t = new Date(Date.UTC(mo.y, mo.m - 1, 1)); setMo({ y: t.getUTCFullYear(), m: t.getUTCMonth() }); }} aria-label="Previous month"><${Icon} n="chevL" s=${16}/></button><button className="ib" onClick=${() => { const t = new Date(Date.UTC(mo.y, mo.m + 1, 1)); setMo({ y: t.getUTCFullYear(), m: t.getUTCMonth() }); }} disabled=${mo.y === T0.getUTCFullYear() && mo.m === T0.getUTCMonth()} aria-label="Next month"><${Icon} n="chevR" s=${16}/></button></div></div>`
     : html`<div style=${{ height: 6 }}></div>`;
 
   return html`<div>
     <div className="pg-h"><div><h1>Attendance</h1><p>${closed ? 'The studio is closed today' + (HOL[TODISO] ? ' for ' + HOL[TODISO] : '') + '. Showing the latest records.' : 'Who is in, when they arrived and how long they have worked.'}</p></div>
       <div style=${{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-        <div className="seg s3" style=${{ width: 260, margin: 0 }} role="group" aria-label="Period">${[['today', 'Today'], ['week', 'Week'], ['month', 'Month']].map(([k, l]) => html`<button key=${k} className=${tab === k ? 'on' : ''} onClick=${() => setTab(k)}>${l}</button>`)}</div>
+        <div className="seg s3" style=${{ width: 300, margin: 0 }} role="group" aria-label="Period">${[['today', 'Today'], ['week', 'Week'], ['overall', 'Overall']].map(([k, l]) => html`<button key=${k} className=${tab === k ? 'on' : ''} onClick=${() => setTab(k)}>${l}</button>`)}</div>
         <button className="btn sec2" onClick=${exportCSV}><${Icon} n="download" s=${16}/> Download</button></div></div>
     <div className="tiles">
       <${Tile} icon="check" tone="green" label="Checked in now" value=${inNow.length} sub=${'of ' + (people.length - todays.filter(x => ['leave', 'off'].includes(x.i.state)).length) + ' expected · ' + homeN + ' at home'}/>

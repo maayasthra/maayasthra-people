@@ -2,7 +2,9 @@ import React from 'react';
 import htm from 'htm';
 import { STAT_C } from './data.js';
 
-export const html = htm.bind(React.createElement);
+const h = htm.bind(React.createElement);
+// A template with several top-level nodes becomes a fragment, so React does not ask for keys on static siblings.
+export const html = (...args) => { const r = h(...args); return Array.isArray(r) ? React.createElement(React.Fragment, null, ...r) : r; };
 export const first = e => e.name.split(' ')[0];
 export const Switch = ({ on, set, label }) => html`<button type="button" className=${'sw' + (on ? ' on' : '')} role="switch" aria-checked=${on} aria-label=${label} onClick=${() => set(!on)}><i></i></button>`;
 

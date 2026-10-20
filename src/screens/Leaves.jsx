@@ -6,7 +6,7 @@ import { TOD, DAY, TODISO, BY, POLICY, isoOf, pd, fmtDay, plural, range, workDay
 const LS_C = { pending:'#FF9F0A', approved:'#30D158', declined:'#FF453A' };
 
 export function MyLeaves({ leaves, setLeaves, user }) {
-  const me = user, mgr = BY[me.mgr] || { name: 'People & Ops' };
+  const me = user, mgr = { name: 'People & Ops' };
   const mine = leaves.filter(l => l.emp === me.n);
   const start = isoOf(TOD + (POLICY.notice + 5) * DAY);
   const [f, setF] = useState({ type: 'Annual leave', from: start, to: start, reason: '', half: false });
@@ -23,7 +23,7 @@ export function MyLeaves({ leaves, setLeaves, user }) {
   else if (wd && wd.days === 0) err = 'Those dates fall on weekends or holidays only.';
   else if (wd && f.type !== 'Sick leave' && noticeDays(f.from) < POLICY.notice) err = 'Planned leave needs ' + plural(POLICY.notice, 'working day') + ' notice. Sick leave is exempt.';
   else if (wd && days > avail) err = 'You have ' + plural(Math.max(avail, 0), 'day') + ' of ' + f.type.toLowerCase() + ' available.';
-  else if (POLICY.note && !f.reason.trim()) err = 'Add a short note for ' + mgr.name.split(' ')[0] + '.';
+  else if (POLICY.note && !f.reason.trim()) err = 'Add a short note for the approver.';
   const valid = ok && wd && !err;
   const clash = wd ? [...TEAM_LEAVES, ...leaves.filter(l => l.state === 'approved')].filter(t => t.emp !== me.n && BY[t.emp] && BY[t.emp].dept === me.dept && f.from <= t.to && f.to >= t.from) : [];
   const submit = ev => {
@@ -45,7 +45,7 @@ export function MyLeaves({ leaves, setLeaves, user }) {
           <div className="fld"><label htmlFor="lv-to">To</label><input id="lv-to" className="inp" type="date" min=${f.from || TODISO} value=${f.to} onChange=${ev => up({ to: ev.target.value })}/></div>
         </div>
         ${POLICY.half && html`<label className="cbx" htmlFor="lv-half"><input id="lv-half" type="checkbox" checked=${f.half} disabled=${f.from !== f.to} onChange=${ev => up({ half: ev.target.checked })}/> Half day <span>${f.from !== f.to ? '(single-day requests only)' : ''}</span></label>`}
-        <div className="fld"><label htmlFor="lv-why">Note for ${mgr.name.split(' ')[0]} ${POLICY.note ? '' : '(optional)'}</label><textarea id="lv-why" className="inp" value=${f.reason} onChange=${ev => up({ reason: ev.target.value })} placeholder="Add a short reason or handover note"></textarea></div>
+        <div className="fld"><label htmlFor="lv-why">Note for the approver ${POLICY.note ? '' : '(optional)'}</label><textarea id="lv-why" className="inp" value=${f.reason} onChange=${ev => up({ reason: ev.target.value })} placeholder="Add a short reason or handover note"></textarea></div>
         ${sent ? html`<div className="sum"><div className="sent"><${Icon} n="check" s=${18}/><div><strong>Request sent to ${mgr.name}</strong><span className="ok">You will see the decision in this list.</span></div></div></div>`
         : html`<div className="sum">${err ? html`<strong className="err">${err}</strong>`
           : wd ? html`<strong>${f.half && days === 0.5 ? 'Half a working day' : plural(wd.days, 'working day')}</strong>${fmtDay(pd(f.from))}${f.to !== f.from ? ' to ' + fmtDay(pd(f.to)) : ''}`

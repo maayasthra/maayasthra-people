@@ -36,7 +36,7 @@ function buildSample(e, iso, now) {
   const sm = hmMins(e.shiftStart), em = hmMins(e.shiftEnd);
   const a = r(3); const off = a < 0.7 ? -10 + r(4) * 20 : a < 0.88 ? 10 + r(4) * 10 : a < 0.96 ? 21 + r(4) * 30 : 51 + r(4) * 40;
   const start = sm + Math.round(off);
-  const endm = r(5) < 0.08 ? em - 60 - Math.round(r(6) * 30) : em + Math.round(-20 + r(6) * 60);
+  const endm = r(5) < 0.07 ? em - 60 - Math.round(r(6) * 30) : em + Math.max(0, Math.round(off)) + Math.round(-5 + r(6) * 45);
   const loc = r(7) < 0.22 ? 'home' : 'office', base = dayStart(iso), T = m => base + m * 60000;
   let sessions;
   if (start < LUNCH_START - 30 && endm > LUNCH_END + 30 && r(8) < 0.85) {
@@ -91,7 +91,7 @@ export function dayInfo(att, e, iso, now, away) {
   const live = !ss[ss.length - 1].out, worked = workedMs(ss, now) + lunchCredit(ss, iso, now);
   const late = Math.round(minsOf(ss[0].in, iso) - sm);
   return { state: live ? 'in' : 'out', sessions: ss, worked, target, late, lateFlag: late > GRACE, first: ss[0].in, last: ss[ss.length - 1].out || null,
-    loc: ss[ss.length - 1].loc || 'office', live, short: !live && worked < target - 10 * 60000, over: worked > target + 30 * 60000, edited: rec.edited, behind: 0 };
+    loc: ss[ss.length - 1].loc || 'office', live, short: !live && worked < target - 20 * 60000, over: worked > target + 30 * 60000, edited: rec.edited, behind: 0 };
 }
 
 /* ---------- formatting ---------- */
