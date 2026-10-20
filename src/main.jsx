@@ -32,9 +32,9 @@ const SEED_ANN = [
   { id: 3, kind: 'general', title: 'Keep your profile current', body: 'Add your phone number and an emergency contact from your profile. It takes a minute.', date: isoOf(TOD - 5 * DAY), by: 'Meera Iyer' }
 ];
 
-/* Two clear buttons switch between the apps */
+/* Two clear buttons switch between the apps. The active one is filled with its own colour. */
 function AppSwitch({ app, setApp }) {
-  return html`<div className="apps2" role="tablist" aria-label="Apps">${[['people', 'People', 'people'], ['task', 'Task', 'board']].map(([k, l, ic]) => html`<button key=${k} role="tab" aria-selected=${app === k} className=${app === k ? 'on' : ''} onClick=${() => setApp(k)}><${Icon} n=${ic} s=${20}/>${l}</button>`)}</div>`;
+  return html`<div className="apps2" role="tablist" aria-label="Apps">${[['people', 'People', 'people', '#0A84FF'], ['task', 'Task', 'board', '#BF5AF2']].map(([k, l, ic, c]) => html`<button key=${k} role="tab" aria-selected=${app === k} className=${app === k ? 'on' : ''} style=${{ '--c': c }} onClick=${() => setApp(k)}><${Icon} n=${ic} s=${20}/><span>${l}</span></button>`)}</div>`;
 }
 const Brand = () => html`<div className="brand"><span className="mark"></span><span className="brand-t"><b>Maayasthra</b><span>Workspace</span></span></div>`;
 
@@ -95,7 +95,7 @@ function App() {
   const openForm = id => { setNav(p => ({ view: 'form', id, from: p.view === 'profile' ? p.from : p.view })); top(); };
   const back = () => { setNav({ view: nav.from || 'people' }); top(); };
   const formDone = id => { if (id) { setNav(p => ({ view: 'profile', id, from: p.from || 'people' })); } else go('people'); top(); };
-  const signOut = () => { setAuth(null); setNav({ view: 'home' }); top(); };
+  const signOut = () => { setAuth(null); setAppState('people'); setTaskSel(null); setNav({ view: 'home' }); top(); };
   const active = nav.view === 'profile' || nav.view === 'form' ? (nav.from || 'people') : nav.view;
   const pending = role === 'admin' ? leaves.filter(l => !l.past && l.emp !== user.n && l.state === 'pending').length : 0;
 

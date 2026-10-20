@@ -30,12 +30,12 @@ export function Login({ onLogin }) {
   return html`<div className="lg-wrap">
     <section className="lg-art">
       <div className="brand" style=${{ padding: 0 }}><span className="mark"></span><span className="brand-t"><b>Maayasthra</b><span>People</span></span></div>
-      <div className="lg-copy"><h1>Everyone at Maayasthra, in one place.</h1><p>Find a colleague, see who is away, and manage your time off from one quiet workspace.</p></div>
+      <div className="lg-copy"><h1>Everyone at Maayasthra, in one place.</h1></div>
       <div><div className="lg-mos" aria-hidden="true">${art.map(n => html`<div key=${n}><${Photo} e=${BY[n]}/></div>`)}</div><div className="lg-url" style=${{ marginTop: 28 }}>people.maayasthra.com</div></div>
     </section>
     <section className="lg-form"><div className="lg-box">
       ${view === 'signin' ? html`<${React.Fragment}>
-        <h2>Sign in</h2><p>Use your Maayasthra work email.</p>
+        <h2>Sign in</h2>
         <div className="seg" role="group" aria-label="Sign in as"><button type="button" className=${mode === 'employee' ? 'on' : ''} onClick=${() => { setMode('employee'); setErr(''); }}>Employee</button><button type="button" className=${mode === 'admin' ? 'on' : ''} onClick=${() => { setMode('admin'); setErr(''); }}>Admin</button></div>
         <form onSubmit=${submit} noValidate>
           <div className="fld"><label htmlFor="login-email">Work email</label><input id="login-email" className="inp" type="email" autoComplete="username" placeholder="name@maayasthra.com" value=${email} onChange=${ev => setEmail(ev.target.value)}/></div>
@@ -47,7 +47,7 @@ export function Login({ onLogin }) {
         <div className="lg-demo"><h3>Try a demo account</h3>
           <button className="dm" onClick=${() => demo(2, 'admin')} disabled=${busy}><${Av} e=${BY[2]} s=${38}/><span className="row-t"><b>Meera Iyer</b><span>Admin · approves leave</span></span><span className="go"><${Icon} n="arrow" s=${16}/></span></button>
           <button className="dm" onClick=${() => demo(9, 'employee')} disabled=${busy}><${Av} e=${BY[9]} s=${38}/><span className="row-t"><b>Dev Malhotra</b><span>Employee · applies for leave</span></span><span className="go"><${Icon} n="arrow" s=${16}/></span></button>
-          <div className="lg-note">Prototype only. The demo password is ${DEMO_PW}.</div></div>
+          <div className="lg-note">Demo password: ${DEMO_PW}</div></div>
       <//>` : html`<${React.Fragment}>
         <button className="back" onClick=${() => { setView('signin'); setErr(''); }}><${Icon} n="back" s=${16}/> Back to sign in</button>
         <h2>Reset your password</h2><p>Enter your work email and we will send a reset link.</p>

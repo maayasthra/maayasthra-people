@@ -1,4 +1,4 @@
-import { html, Icon, Av } from '../ui.jsx';
+import { html, Icon, Av, HI } from '../ui.jsx';
 import { downloadLeaveReport } from '../report.js';
 import { BY, pd, fmtDay, plural, range, workDays, awayList } from '../data.js';
 import { typeIcon } from './Home.jsx';
@@ -30,15 +30,15 @@ export function Requests({ user, leaves: all, setLeaves, open }) {
   };
 
   return html`<div>
-    <div className="pg-h"><div><h1>Requests</h1><p>${waiting.length ? plural(waiting.length, 'leave request') + ' waiting for a decision.' : 'You are all caught up.'}</p></div>
-      <button className="btn sec2" onClick=${() => downloadLeaveReport(all)}><${Icon} n="download" s=${16}/> Download report</button></div>
+    <div className="pg-h"><div><h1><${HI} n="requests" tone="orange"/>Requests</h1><p>${waiting.length ? waiting.length + ' waiting' : 'All clear'}</p></div>
+      <button className="btn sec2 sq" title="Download report" aria-label="Download report" onClick=${() => downloadLeaveReport(all)}><${Icon} n="download" s=${16}/></button></div>
     <section className="rq1">
-      <div className="sec-h"><h2>Needs a decision</h2><span>${waiting.length}</span></div>
-      ${waiting.length === 0 ? html`<div className="pn-e card" style=${{ padding: '40px 20px' }}><span className="pn-ei"><${Icon} n="check" s=${22}/></span><b>Nothing is waiting</b><span>New leave requests will appear here.</span></div>`
+      <div className="sec-h"><h2>Pending</h2><span>${waiting.length}</span></div>
+      ${waiting.length === 0 ? html`<div className="pn-e card" style=${{ padding: '40px 20px' }}><span className="pn-ei"><${Icon} n="check" s=${22}/></span><b>All clear</b></div>`
         : html`<div className="card" style=${{ padding: '4px 22px' }}>${waiting.map(l => html`<${Row} key=${l.id} l=${l}/>`)}</div>`}
     </section>
     ${decided.length > 0 && html`<section className="rq1" style=${{ marginTop: 48 }}>
-      <div className="sec-h"><h2>Recently decided</h2><span>${decided.length}</span></div>
+      <div className="sec-h"><h2>Decided</h2><span>${decided.length}</span></div>
       <div className="card" style=${{ padding: '4px 22px' }}>${decided.map(l => html`<${Row} key=${l.id} l=${l}/>`)}</div></section>`}
   </div>`;
 }

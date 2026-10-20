@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { html, Icon, Av, Photo } from '../ui.jsx';
+import { html, Icon, Av, Photo, HI, Sel } from '../ui.jsx';
 import {
   EMP, BY, DEPTS, STATUSES, TODISO, ROLE_NAMES, ROLEMAP, defaultStart, fmtDM, pd, searchPeople, activeEmps, addEmployee, updateEmployee, emailFor
 } from '../data.js';
@@ -21,20 +21,17 @@ export function People({ pf, setPf, open, openForm, role, ver }) {
   const clear = () => setPf({ ...pf, q: '', dept: 'All', city: 'All' });
   const act = activeEmps();
   return html`<div>
-    <div className="pg-h"><div><h1>People</h1><p>${act.length} people across ${new Set(act.map(e => e.dept)).size} departments and ${new Set(act.map(e => e.city)).size} cities.</p></div>
-      ${role === 'admin' && html`<button className="btn pri" onClick=${() => openForm(null)}><${Icon} n="plus" s=${16}/> Add employee</button>`}</div>
+    <div className="pg-h"><div><h1><${HI} n="people"/>People</h1><p>${act.length}</p></div>
+      ${role === 'admin' && html`<button className="btn pri" onClick=${() => openForm(null)}><${Icon} n="plus" s=${16}/> Add</button>`}</div>
     <div className="tools">
-      <div className="search"><${Icon} n="search"/><input id="people-search" value=${pf.q} placeholder="Search by name, role, city or ID" onChange=${ev => setPf({ ...pf, q: ev.target.value })} aria-label="Search people"/></div>
-      <select id="dept-filter" className="sel" value=${pf.dept} onChange=${ev => setPf({ ...pf, dept: ev.target.value })} aria-label="Department">
-        <option value="All">All departments</option>${DEPTS.map(d => html`<option key=${d} value=${d}>${d}</option>`)}</select>
-      <select id="city-filter" className="sel" value=${pf.city} onChange=${ev => setPf({ ...pf, city: ev.target.value })} aria-label="City">
-        <option value="All">All cities</option>${cities.map(c => html`<option key=${c} value=${c}>${c}</option>`)}</select>
-      <select id="sort-by" className="sel" value=${pf.sort} onChange=${ev => setPf({ ...pf, sort: ev.target.value })} aria-label="Sort people">
-        <option value="name">Name A–Z</option><option value="new">Newest first</option><option value="old">Longest serving</option></select>
+      <div className="search"><${Icon} n="search"/><input id="people-search" value=${pf.q} placeholder="Search" onChange=${ev => setPf({ ...pf, q: ev.target.value })} aria-label="Search people"/></div>
+      <${Sel} icon="building" id="dept-filter" value=${pf.dept} label="Department" onChange=${ev => setPf({ ...pf, dept: ev.target.value })}><option value="All">All</option>${DEPTS.map(d => html`<option key=${d} value=${d}>${d}</option>`)}<//>
+      <${Sel} icon="pin" id="city-filter" value=${pf.city} label="City" onChange=${ev => setPf({ ...pf, city: ev.target.value })}><option value="All">All</option>${cities.map(c => html`<option key=${c} value=${c}>${c}</option>`)}<//>
+      <${Sel} icon="filter" id="sort-by" value=${pf.sort} label="Sort" onChange=${ev => setPf({ ...pf, sort: ev.target.value })}><option value="name">A–Z</option><option value="new">Newest</option><option value="old">Longest serving</option><//>
+      ${role === 'admin' && html`<button className=${'ibx' + (pf.former ? ' on' : '')} title="Include former employees" aria-label="Include former employees" aria-pressed=${!!pf.former} onClick=${() => setPf({ ...pf, former: !pf.former })}><${Icon} n="user" s=${18}/></button>`}
+      ${list.length !== act.length && html`<span className="tools-n">${list.length} of ${act.length}</span>`}
     </div>
-    ${role === 'admin' && html`<label className="cbx" htmlFor="former"><input id="former" type="checkbox" checked=${!!pf.former} onChange=${ev => setPf({ ...pf, former: ev.target.checked })}/> Include former employees</label>`}
-    <div className="count">${list.length === act.length ? 'Showing everyone' : 'Showing ' + list.length + ' of ' + act.length}</div>
-    ${list.length === 0 ? html`<div className="none"><b>No one matches those filters</b>Try a different name or department.<br/><button className="btn ghost" onClick=${clear}>Clear filters</button></div>` :
+    ${list.length === 0 ? html`<div className="none"><b>No match</b><button className="btn ghost" onClick=${clear}>Clear</button></div>` :
     html`<div className="dir">${list.map(e => html`<button key=${e.n} className="di" onClick=${() => open(e.n)}>
       <${Av} e=${e} s=${52}/>
       <span className="row-t"><b>${e.name}${e.status === 'Exited' ? ' (former)' : ''}</b><span>${e.role}</span><span className="di-m">${e.dept} · ${e.city}</span></span></button>`)}</div>`}
@@ -83,7 +80,7 @@ export function EmployeeForm({ id, role, user, done, bump }) {
   return html`<div>
     <button className="back" onClick=${() => done(e ? e.n : null)}><${Icon} n="back" s=${16}/> ${e ? 'Back to profile' : 'Back to people'}</button>
     <div className="pg-h"><div><h1>${e ? (isAdmin && e.n !== user.n ? 'Edit ' + e.name : 'Edit your profile') : 'Add employee'}</h1>
-      <p>${isAdmin ? 'Changes show everywhere in the app right away.' : 'You can update your photo and contact details. Ask People and Ops to change anything else.'}</p></div></div>
+      </div></div>
     <form className="ef" onSubmit=${submit} noValidate>
       <div className="ef-photo"><div style=${{ width: 160 }}><${Photo} e=${preview}/></div>
         <label className="btn ghost sm" htmlFor="ef-photo-in" style=${{ marginTop: 14, cursor: 'pointer' }}>Upload photo</label>

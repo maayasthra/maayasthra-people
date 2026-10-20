@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { html, Icon } from '../ui.jsx';
+import { html, Icon, HI } from '../ui.jsx';
 import { DueChip, PrioFlag } from './parts.jsx';
 import { TODISO, TOD, DAY, isoOf } from '../data.js';
 import { mkTask, isOpen, completeCard, reopenCard } from '../tasks.js';
@@ -19,12 +19,12 @@ export function MyTasks({ tasks, setTasks, user, tq, openTask }) {
     <button className="mt-t" onClick=${() => openTask(t.id)}><b>${t.title}</b><span>Card</span></button>
     <span className="mt-m"><${DueChip} due=${t.due} done=${t.done}/><${PrioFlag} p=${t.prio}/></span></div>`;
   return html`<div>
-    <div className="pg-h"><div><h1>My Tasks</h1><p>${open.length ? open.length + ' open' + (groups[0][1].length ? ', ' + groups[0][1].length + ' overdue' : '') + ' across all boards.' : 'Nothing open. Enjoy the quiet.'}</p></div>
-      <button className="btn pri" onClick=${() => openTask('new', { col: user.n })}><${Icon} n="plus" s=${16}/> New card</button></div>
-    <div className="mt-add"><input id="mt-add" className="inp" value=${title} placeholder="Add a card for today, then press Enter" onChange=${ev => setTitle(ev.target.value)} onKeyDown=${ev => { if (ev.key === 'Enter') add(); }} aria-label="Quick add a card"/></div>
+    <div className="pg-h"><div><h1><${HI} n="mytasks" tone="blue"/>My Tasks</h1><p>${open.length ? open.length + ' open' + (groups[0][1].length ? ' · ' + groups[0][1].length + ' overdue' : '') : 'All clear'}</p></div>
+      <button className="btn pri" onClick=${() => openTask('new', { col: user.n })}><${Icon} n="plus" s=${16}/> New</button></div>
+    <div className="mt-add"><input id="mt-add" className="inp" value=${title} placeholder="Add a card" onChange=${ev => setTitle(ev.target.value)} onKeyDown=${ev => { if (ev.key === 'Enter') add(); }} aria-label="Quick add a card"/></div>
     ${groups.filter(g => g[1].length).map(([label, ts, c]) => html`<section className="mt-g" key=${label}><div className="sec-h"><h2 className=${c}>${label}</h2><span>${ts.length}</span></div><div className="card" style=${{ padding: '2px 18px' }}>${ts.map(t => html`<${Row} key=${t.id} t=${t}/>`)}</div></section>`)}
-    ${open.length === 0 && html`<div className="none"><b>You are all caught up</b>Cards assigned to you will appear here.</div>`}
-    ${done.length > 0 && html`<section className="mt-g"><button className="link" onClick=${() => setShowDone(s => !s)}>${showDone ? 'Hide' : 'Show'} ${done.length} completed</button>
+    ${open.length === 0 && html`<div className="none"><b>All clear</b></div>`}
+    ${done.length > 0 && html`<section className="mt-g"><button className="link" onClick=${() => setShowDone(s => !s)}>${showDone ? 'Hide' : 'Show'} completed · ${done.length}</button>
       ${showDone && html`<div className="card" style=${{ padding: '2px 18px', marginTop: 12 }}>${done.map(t => html`<${Row} key=${t.id} t=${t}/>`)}</div>`}</section>`}
   </div>`;
 }

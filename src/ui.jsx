@@ -61,6 +61,11 @@ const IC = {
   dots:['M6 12h.01','M12 12h.01','M18 12h.01'],
   sidebar:['M4 5h16v14H4z','M9 5v14'],
   filter:['M4 6h16','M7 12h10','M10 18h4'],
+  eye:['M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z','M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'],
+  eyeoff:['M3 3l18 18','M10.6 5.7A9 9 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a16 16 0 0 1-3.2 3.9','M6.2 7.4A16 16 0 0 0 2.5 12S6 18.5 12 18.5a9 9 0 0 0 3.4-.7','M9.9 9.9a3 3 0 0 0 4.2 4.2'],
+  tag:['M3.5 12.5V4.5h8l9 9-8 8z','M8 9h.01'],
+  building:['M5 21V4h9v17','M14 9h5v12','M8 8h2','M8 12h2','M8 16h2'],
+  jump:['M5 12h14','M13 6l6 6-6 6'],
   home2:['M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z']
 };
 export const Icon = ({ n, s = 18 }) => html`<svg width=${s} height=${s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">${IC[n].map((d,i) => html`<path key=${i} d=${d}/>`)}</svg>`;
@@ -111,3 +116,9 @@ export function Tile({ icon, label, value, sub, tone = 'blue', onClick, hot }) {
     <span className="tile-v"><b>${value}</b><span className="tile-l">${label}</span><small>${sub}</small></span>`;
   return onClick ? html`<button className=${'tile' + (hot ? ' hot' : '')} onClick=${onClick}>${inner}</button>` : html`<div className=${'tile' + (hot ? ' hot' : '')}>${inner}</div>`;
 }
+
+/* A page title with a small tinted icon */
+const HI_C = { blue: '#0A84FF', purple: '#BF5AF2', green: '#30D158', orange: '#FF9F0A', pink: '#FF375F', red: '#FF453A' };
+export const HI = ({ n, tone = 'blue' }) => html`<span className="h-i" style=${{ '--c': HI_C[tone] }}><${Icon} n=${n} s=${20}/></span>`;
+/* A select with a leading icon, for compact filter rows */
+export const Sel = ({ icon, id, value, onChange, label, children }) => html`<label className="sel-i" htmlFor=${id}><${Icon} n=${icon} s=${16}/><select id=${id} value=${value} onChange=${onChange} aria-label=${label} title=${label}>${children}</select></label>`;

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { html, Icon, Tile } from '../ui.jsx';
+import { html, Icon, Tile, HI } from '../ui.jsx';
 import { typeIcon, typeTone } from './Home.jsx';
 import { TOD, DAY, TODISO, BY, POLICY, isoOf, pd, fmtDay, plural, range, workDays, balances, noticeDays, TEAM_LEAVES } from '../data.js';
 
@@ -33,7 +33,7 @@ export function MyLeaves({ leaves, setLeaves, user }) {
   };
   const hist = [...mine].sort((a, b) => b.from.localeCompare(a.from));
   return html`<div>
-    <div className="pg-h"><div><h1>My Leaves</h1><p>Your balances for ${new Date(TOD).getUTCFullYear()} and every request you have sent.</p></div></div>
+    <div className="pg-h"><div><h1><${HI} n="leaves" tone="green"/>My Leaves</h1><p>${new Date(TOD).getUTCFullYear()}</p></div></div>
     <div className="tiles t3">${bal.map(b => html`<${Tile} key=${b.t} icon=${typeIcon(b.t)} tone=${typeTone(b.t)} label=${b.t} value=${b.left} sub=${'of ' + b.total + ' days left' + (b.pend > 0 ? ' · ' + b.pend + ' pending' : '')}/>`)}</div>
     <div className="grid2b" style=${{ marginTop: 48 }}>
       <form className="card fm" onSubmit=${submit}>
@@ -44,18 +44,18 @@ export function MyLeaves({ leaves, setLeaves, user }) {
           <div className="fld"><label htmlFor="lv-from">From</label><input id="lv-from" className="inp" type="date" min=${TODISO} value=${f.from} onChange=${ev => up({ from: ev.target.value })}/></div>
           <div className="fld"><label htmlFor="lv-to">To</label><input id="lv-to" className="inp" type="date" min=${f.from || TODISO} value=${f.to} onChange=${ev => up({ to: ev.target.value })}/></div>
         </div>
-        ${POLICY.half && html`<label className="cbx" htmlFor="lv-half"><input id="lv-half" type="checkbox" checked=${f.half} disabled=${f.from !== f.to} onChange=${ev => up({ half: ev.target.checked })}/> Half day <span>${f.from !== f.to ? '(single-day requests only)' : ''}</span></label>`}
-        <div className="fld"><label htmlFor="lv-why">Note for the approver ${POLICY.note ? '' : '(optional)'}</label><textarea id="lv-why" className="inp" value=${f.reason} onChange=${ev => up({ reason: ev.target.value })} placeholder="Add a short reason or handover note"></textarea></div>
-        ${sent ? html`<div className="sum"><div className="sent"><${Icon} n="check" s=${18}/><div><strong>Request sent to ${mgr.name}</strong><span className="ok">You will see the decision in this list.</span></div></div></div>`
+        ${POLICY.half && html`<label className="cbx" htmlFor="lv-half"><input id="lv-half" type="checkbox" checked=${f.half} disabled=${f.from !== f.to} onChange=${ev => up({ half: ev.target.checked })}/> Half day <span>${f.from !== f.to ? '(one day)' : ''}</span></label>`}
+        <div className="fld"><label htmlFor="lv-why">Note for the approver ${POLICY.note ? '' : '(optional)'}</label><textarea id="lv-why" className="inp" value=${f.reason} onChange=${ev => up({ reason: ev.target.value })} placeholder="Note"></textarea></div>
+        ${sent ? html`<div className="sum"><div className="sent"><${Icon} n="check" s=${18}/><div><strong>Sent</strong><span className="ok">Waiting for approval</span></div></div></div>`
         : html`<div className="sum">${err ? html`<strong className="err">${err}</strong>`
           : wd ? html`<strong>${f.half && days === 0.5 ? 'Half a working day' : plural(wd.days, 'working day')}</strong>${fmtDay(pd(f.from))}${f.to !== f.from ? ' to ' + fmtDay(pd(f.to)) : ''}`
-          : html`<strong>Choose your dates</strong>Working days are counted for you.`}
+          : html`<strong>Pick your dates</strong>`}
           ${wd && !err && (wd.wk > 0 || wd.hol.length > 0) && html`<p>Not counted: ${[wd.wk ? plural(wd.wk, 'weekend day') : '', ...wd.hol].filter(Boolean).join(', ')}.</p>`}
           ${wd && !err && clash.length > 0 && html`<p className="warn">${[...new Set(clash.map(t => BY[t.emp].name))].join(' and ')} in your team ${clash.length === 1 ? 'is' : 'are'} also out during this time.</p>`}</div>`}
-        <button className="btn pri" type="submit" disabled=${!valid}>Send for approval</button>
+        <button className="btn pri" type="submit" disabled=${!valid}><${Icon} n="check" s=${16}/> Send</button>
       </form>
       <section><div className="sec-h"><h2>History</h2><span>${plural(hist.length, 'request')}</span></div>
-        <div>${hist.length === 0 ? html`<div className="empty" style=${{ textAlign: 'left', padding: '12px 0' }}>You have not sent any requests yet.</div>` : hist.map(l => html`<div className="hx" key=${l.id}>
+        <div>${hist.length === 0 ? html`<div className="empty" style=${{ textAlign: 'left', padding: '12px 0' }}>No requests</div>` : hist.map(l => html`<div className="hx" key=${l.id}>
           <span className="row-t"><b>${l.type}${l.half ? ' · half day' : ''}</b><span>${range(l.from, l.to)} · ${plural(l.days, 'day')}${l.reason ? ' · ' + l.reason : ''}</span></span>
           <span className="pill" style=${{ '--c': LS_C[l.state] }}><i></i>${l.state[0].toUpperCase() + l.state.slice(1)}</span>
           ${(l.state === 'pending' || (l.state === 'approved' && l.from > TODISO)) && html`<button className="link" onClick=${() => setLeaves(ls => ls.filter(x => x.id !== l.id))}>${l.state === 'pending' ? 'Withdraw' : 'Cancel'}</button>`}</div>`)}</div></section>

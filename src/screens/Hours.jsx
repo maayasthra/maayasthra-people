@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { html, Icon, Tile } from '../ui.jsx';
+import { html, Icon, Tile, HI } from '../ui.jsx';
 import { HOL, MONL, TODISO, TOD, fmtDay, pd, fmtTime, plural, awayList } from '../data.js';
 import { dayInfo, saveDay, toHM, toTs, monthDays, useNow, hm, clock, dayKey } from '../attendance.js';
 
@@ -51,10 +51,10 @@ export function HoursPanel({ emp, att, setAtt, leaves, canEdit, editor }) {
   const atNow = mo.y === T0.getUTCFullYear() && mo.m === T0.getUTCMonth();
   return html`<div>
     <div className="tiles">
-      <${Tile} icon="check" tone="blue" label="Days present" value=${present.length} sub=${'of ' + rows.filter(r => !['off', 'leave', 'na'].includes(r.i.state)).length + ' working days'}/>
-      <${Tile} icon="clock" tone="green" label="Total hours" value=${hm(total).replace(' ', '')} sub=${'daily target ' + fmtTime(emp.shiftStart) + ' – ' + fmtTime(emp.shiftEnd)}/>
-      <${Tile} icon="timer" tone="purple" label="Average per day" value=${present.length ? hm(total / present.length).replace(' ', '') : '–'} sub="lunch hour included"/>
-      <${Tile} icon="bell" tone="orange" label="Late arrivals" value=${late} sub="after the 20 min grace"/>
+      <${Tile} icon="check" tone="blue" label="Days present" value=${present.length} sub=${'of ' + rows.filter(r => !['off', 'leave', 'na'].includes(r.i.state)).length}/>
+      <${Tile} icon="clock" tone="green" label="Total hours" value=${hm(total).replace(' ', '')} sub=${fmtTime(emp.shiftStart) + ' – ' + fmtTime(emp.shiftEnd)}/>
+      <${Tile} icon="timer" tone="purple" label="Average per day" value=${present.length ? hm(total / present.length).replace(' ', '') : '–'} sub="per day"/>
+      <${Tile} icon="bell" tone="orange" label="Late arrivals" value=${late} sub="20 min grace"/>
     </div>
     <div className="sec-h" style=${{ marginTop: 36 }}><h2>${MONL[mo.m]} ${mo.y}</h2>
       <div className="car-n"><button className="ib" onClick=${() => step(-1)} aria-label="Previous month"><${Icon} n="chevL" s=${16}/></button>
@@ -73,14 +73,14 @@ export function HoursPanel({ emp, att, setAtt, leaves, canEdit, editor }) {
           ${edit === d && html`<${DayEditor} iso=${d} rec=${{ sessions: i.sessions }} onCancel=${() => setEdit(null)} onSave=${ss => { setAtt(a => saveDay(a, emp.n, d, ss, editor.name)); setEdit(null); }}/>`}
         </div>`; })}
     </div>
-    <p className="bar-l">Sample hours until the database is connected.</p>
+    
   </div>`;
 }
 
 /* ---------- My Hours page ---------- */
 export function MyHours({ user, att, setAtt, leaves }) {
   return html`<div>
-    <div className="pg-h"><div><h1>My Hours</h1><p>Your check-ins by day. Shift ${fmtTime(user.shiftStart)} – ${fmtTime(user.shiftEnd)}, lunch 1:00 – 2:00 PM.</p></div></div>
+    <div className="pg-h"><div><h1><${HI} n="hours" tone="blue"/>My Hours</h1><p>${fmtTime(user.shiftStart)} – ${fmtTime(user.shiftEnd)}</p></div></div>
     <div style=${{ marginTop: 28 }}><${HoursPanel} emp=${user} att=${att} setAtt=${setAtt} leaves=${leaves} canEdit=${false} editor=${user}/></div>
   </div>`;
 }

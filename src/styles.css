@@ -1277,3 +1277,59 @@ button.ovc:hover{filter:brightness(1.18)}
 .no-side .main{padding-left:40px}
 .no-side .hdr{padding-left:40px}
 @media (max-width:860px){.nav-t{display:none}.kc2{flex-basis:84%}.kc2.shut{flex-basis:52px}.addcol{flex-basis:70%}.kbh-r{justify-content:flex-start}}
+
+/* =====================================================================
+   UI overhaul: less text, more icons, consistent controls
+   ===================================================================== */
+/* app switch: aligned with the nav rows, active app filled with its own colour */
+.apps2{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0;margin:0 0 20px;background:transparent;border-radius:0}
+.apps2 button{flex-direction:row;height:46px;gap:9px;border-radius:12px;font-size:14.5px;font-weight:600;color:var(--muted);background:rgba(255,255,255,.05);box-shadow:none}
+.apps2 button svg{color:var(--c)}
+.apps2 button:hover{background:rgba(255,255,255,.09);color:var(--text)}
+.apps2 button.on{background:var(--c);color:#fff;box-shadow:0 6px 18px color-mix(in srgb,var(--c) 38%,transparent)}
+.apps2 button.on svg{color:#fff}
+.side .brand{padding:0 4px 18px}
+.side .nav{padding:0}
+.hdr-b .apps2{display:flex;gap:6px;margin:0;grid-template-columns:none}
+.hdr-b .apps2 button{height:42px;padding:0 16px;border-radius:999px}
+
+/* page titles */
+.h-i{display:inline-grid;place-items:center;width:38px;height:38px;border-radius:11px;margin-right:12px;vertical-align:-8px;background:color-mix(in srgb,var(--c) 20%,transparent);color:var(--c)}
+.pg-h h1{display:flex;align-items:center}
+.pg-h h1 .h-i{flex:none}
+.pg-h p{margin-top:8px;font-size:14px}
+.pg-h>div>p{padding-left:50px}
+
+/* compact controls */
+.sel-i{position:relative;display:inline-flex;align-items:center;height:42px;border-radius:999px;background:var(--fill);color:var(--muted)}
+.sel-i svg{position:absolute;left:13px;pointer-events:none}
+.sel-i select{height:100%;border:0;background:transparent;color:var(--text);font-size:14px;padding:0 30px 0 38px;border-radius:999px;appearance:none;-webkit-appearance:none;cursor:pointer;max-width:200px}
+.sel-i select:focus{outline:none}
+.sel-i:focus-within{box-shadow:0 0 0 3px rgba(10,132,255,.55)}
+.sel-i::after{content:"";position:absolute;right:14px;width:6px;height:6px;border-right:1.6px solid var(--muted);border-bottom:1.6px solid var(--muted);transform:translateY(-2px) rotate(45deg);pointer-events:none}
+.sel-i option{background:#2C2C2E;color:var(--text)}
+.ibx{position:relative;display:inline-grid;place-items:center;width:42px;height:42px;border-radius:50%;background:var(--fill);color:var(--text);transition:background .15s}
+.ibx:hover{background:var(--fill-hi)}
+.ibx.on{background:var(--accent);color:#fff}
+.ibx-n{position:absolute;top:-3px;right:-3px;min-width:18px;height:18px;border-radius:9px;background:var(--red);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 4px}
+.btn.sq{width:42px;padding:0;height:42px}
+.chip.ic{display:inline-flex;align-items:center;gap:7px}
+.seg button{display:inline-flex;align-items:center;justify-content:center;gap:7px}
+.tools{gap:8px;align-items:center}
+.tools .search input{height:42px;border-radius:999px;padding-left:42px}
+.tools .search svg{left:15px;top:12px}
+.tools-n{font-size:13px;color:var(--muted);margin-left:4px}
+.kbh-r{gap:8px}
+.kbh-r .btn{height:42px}
+.cbx{margin-top:12px}
+.count{display:none}
+
+/* tidier cards and spacing */
+.tile-v small:empty{display:none}
+.pn-h>div>span{display:none}
+.pn-h h2{font-size:18px}
+.sec-h h2{font-size:20px}
+.bar-l{font-size:12.5px}
+.empty{font-size:13.5px}
+.lg-note{margin-top:14px}
+.none b{font-size:16px}

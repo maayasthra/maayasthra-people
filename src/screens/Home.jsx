@@ -37,7 +37,7 @@ function ApprovalsCarousel({ queue, setLeaves, open }) {
     <button className="ib" onClick=${() => go(-1)} disabled=${n < 2 || i === 0} aria-label="Previous request"><${Icon} n="chevL" s=${16}/></button>
     <button className="ib" onClick=${() => go(1)} disabled=${n < 2 || i >= n - 1} aria-label="Next request"><${Icon} n="chevR" s=${16}/></button></div>`;
   return html`<${Panel} title="Leave approvals" sub=${n ? n + ' waiting' : 'All clear'} right=${arrows}>
-    ${n === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="check" s=${22}/></span><b>You are all caught up</b><span>New leave requests will show up here.</span></div>` :
+    ${n === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="check" s=${22}/></span><b>All clear</b></div>` :
       html`<div className="car" ref=${track} onScroll=${onScroll}>${pending.map(l => { const e = BY[l.emp]; return html`<div className="slide" key=${l.id}>
         <div className="ap-h"><button onClick=${() => open(e.n)}><${Av} e=${e} s=${44}/></button>
           <span><b>${e.name}</b><span>${e.role}</span></span></div>
@@ -54,8 +54,8 @@ function ApprovalsCarousel({ queue, setLeaves, open }) {
 function Reviews({ people, open }) {
   const rows = people.filter(e => e.status === 'Probation').map(e => { const d = addMonths(e.join, 3); return { e, d, days: Math.round((pd(d) - TOD) / DAY) }; })
     .filter(x => x.days <= 45).sort((a, b) => a.days - b.days);
-  return html`<${Panel} title="Probation reviews" sub="Next 45 days">
-    ${rows.length === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="clock" s=${22}/></span><b>No reviews coming up</b><span>People on probation will appear here.</span></div>` :
+  return html`<${Panel} title="Probation" sub="">
+    ${rows.length === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="clock" s=${22}/></span><b>None due</b></div>` :
       rows.map(x => html`<button key=${x.e.n} className="row" onClick=${() => open(x.e.n)}><${Av} e=${x.e} s=${38}/>
         <span className="row-t"><b>${x.e.name}</b><span>${x.e.role}</span></span>
         <span className="row-d">${fmtDM(x.d)}<em>${x.days < 0 ? 'Overdue' : rel(x.days)}</em></span></button>`)}
@@ -64,8 +64,8 @@ function Reviews({ people, open }) {
 
 function Birthdays({ open }) {
   const rows = activeEmps().map(e => ({ e, ...nextOcc(e.dob) })).filter(x => x.days <= 30).sort((a, b) => a.days - b.days || a.e.n - b.e.n).slice(0, 7);
-  return html`<${Panel} title="Upcoming birthdays" sub="Next 30 days">
-    ${rows.length === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="star" s=${22}/></span><b>No birthdays soon</b><span>Birthdays in the next 30 days show up here.</span></div>` :
+  return html`<${Panel} title="Birthdays" sub="">
+    ${rows.length === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="star" s=${22}/></span><b>None soon</b></div>` :
       rows.map(x => html`<button key=${x.e.n} className="row" onClick=${() => open(x.e.n)}><${Av} e=${x.e} s=${38}/>
         <span className="row-t"><b>${x.e.name}</b><span>Turns ${x.year - Number(x.e.dob.slice(0, 4))} · ${x.e.dept}</span></span>
         <span className="row-d">${fmtDay(x.t)}<em>${x.days === 0 ? 'Today' : rel(x.days)}</em></span></button>`)}
@@ -116,8 +116,8 @@ function NotYet({ att, leaves, open }) {
   const rows = activeEmps().map(e => ({ e, i: dayInfo(att, e, TODISO, now, away) })).filter(x => x.i.state === 'absent' || x.i.state === 'notyet')
     .sort((a, b) => (b.i.behind - a.i.behind) || a.e.name.localeCompare(b.e.name)).slice(0, 8);
   const closed = HOL[TODISO] || [0, 6].includes(new Date(TOD).getUTCDay());
-  return html`<${Panel} title="Not checked in yet" sub=${rows.length ? rows.length + (rows.length === 1 ? ' person' : ' people') : 'Today'}>
-    ${rows.length === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="check" s=${22}/></span><b>${closed ? 'Studio closed today' : 'Everyone is in'}</b><span>${closed ? 'No check-ins are expected.' : 'No one is waiting to check in.'}</span></div>` :
+  return html`<${Panel} title="Not in yet" sub=${rows.length ? rows.length + (rows.length === 1 ? ' person' : ' people') : 'Today'}>
+    ${rows.length === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="check" s=${22}/></span><b>${closed ? 'Closed today' : 'Everyone is in'}</b></div>` :
       rows.map(x => html`<button key=${x.e.n} className="row" onClick=${() => open(x.e.n, 'hours')}><${Av} e=${x.e} s=${38}/>
         <span className="row-t"><b>${x.e.name}</b><span>${x.e.dept}</span></span>
         <span className="row-d">${x.i.state === 'absent' ? html`<span className="at-late">${x.i.behind * 60000 < x.i.target ? 'Late ' + x.i.behind + ' min' : 'Absent'}</span>` : 'Starts ' + fmtTime(x.e.shiftStart)}<em>${x.i.state === 'absent' ? 'Shift ' + fmtTime(x.e.shiftStart) : 'Not yet'}</em></span></button>`)}
@@ -127,8 +127,8 @@ function NotYet({ att, leaves, open }) {
 function AwayWeek({ leaves, open }) {
   const end = isoOf(TOD + 6 * DAY);
   const rows = awayList(leaves).filter(l => BY[l.emp] && BY[l.emp].status !== 'Exited' && l.from <= end && l.to >= TODISO).sort((a, b) => a.from.localeCompare(b.from));
-  return html`<${Panel} title="Away this week" sub="Next 7 days">
-    ${rows.length === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="calendar" s=${22}/></span><b>Everyone is in</b><span>No one is away in the next 7 days.</span></div>` :
+  return html`<${Panel} title="Away">
+    ${rows.length === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="calendar" s=${22}/></span><b>Everyone is in</b></div>` :
       rows.map((l, i) => html`<button key=${i} className="row" onClick=${() => open(l.emp)}><${Av} e=${BY[l.emp]} s=${38}/>
         <span className="row-t"><b>${BY[l.emp].name}</b><span>${l.type} · ${range(l.from, l.to)}</span></span>
         <span className="row-d"><em>${BY[l.emp].dept}</em></span></button>`)}
@@ -185,12 +185,12 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
       <div className="date-l">${dateL}</div>
       <h1 className="h-greet">${greet}, ${first(user)}.</h1></div>
       <${Actions} leaves=${leaves} go=${go} openForm=${openForm} compose=${compose}/></div>
-      <p className="lede">${pending ? html`<span><b>${plural(pending, 'leave request')}</b> ${pending === 1 ? 'is' : 'are'} waiting for you.</span>` : 'Nothing needs your attention right now.'}</p>
+      <p className="lede">${pending ? html`<span><b>${pending}</b> to review</span>` : 'All clear'}</p>
       <div className="tiles">
-        <${Tile} icon="people" tone="blue" label="Headcount" value=${people.length} sub=${'across ' + plural(depts, 'department')} onClick=${() => go('people')}/>
-        <${Tile} icon="leaves" tone="purple" label="On leave today" value=${onLeave} sub=${HOL[TODISO] ? 'Holiday: ' + HOL[TODISO] : onLeave ? 'people are away' : 'everyone is in'} onClick=${() => go('calendar')}/>
-        <${Tile} icon="requests" tone="orange" hot=${pending > 0} label="Waiting for you" value=${pending} sub=${pending === 1 ? 'leave request to review' : 'leave requests to review'} onClick=${() => go('requests')}/>
-        <${Tile} icon="check" tone="green" label="Checked in now" value=${inNow} sub=${expected ? 'of ' + expected + ' expected today' : 'studio closed today'} onClick=${() => go('attendance')}/>
+        <${Tile} icon="people" tone="blue" label="Headcount" value=${people.length} sub=${depts + ' departments'} onClick=${() => go('people')}/>
+        <${Tile} icon="leaves" tone="purple" label="On leave today" value=${onLeave} sub=${HOL[TODISO] ? 'Holiday: ' + HOL[TODISO] : onLeave ? 'away' : 'all in'} onClick=${() => go('calendar')}/>
+        <${Tile} icon="requests" tone="orange" hot=${pending > 0} label="Waiting for you" value=${pending} sub="to review" onClick=${() => go('requests')}/>
+        <${Tile} icon="check" tone="green" label="Checked in now" value=${inNow} sub=${expected ? 'of ' + expected : 'studio closed today'} onClick=${() => go('attendance')}/>
       </div>
       <section className="eq3 sec">
         <${ApprovalsCarousel} queue=${queue} setLeaves=${setLeaves} open=${open}/>
@@ -198,7 +198,7 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
         <${Birthdays} open=${open}/>
       </section>
       <section className="eq3 sec" ref=${annRef}>
-        <${Panel} title="Announcements" sub="Visible to everyone" right=${!composing && html`<button className="btn sec2 sm" onClick=${() => setComposing(true)}><${Icon} n="plus" s=${15}/> New</button>`}>
+        <${Panel} title="Announcements" sub="" right=${!composing && html`<button className="btn sec2 sm" onClick=${() => setComposing(true)}><${Icon} n="plus" s=${15}/> New</button>`}>
           ${composing ? html`<${Composer} user=${user} setAnn=${setAnn} close=${() => setComposing(false)}/>` : html`<${AnnList} ann=${ann} setAnn=${setAnn} canPost=${true}/>`}
         <//>
         <${AwayWeek} leaves=${leaves} open=${open}/>
@@ -215,7 +215,7 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
   return html`<div>
     <div className="date-l">${dateL}</div>
     <h1 className="h-greet">${greet}, ${first(user)}.</h1>
-    <p className="lede"><span>You have <b>${bal[0].left} days</b> of annual leave left${hols[0] ? '. Next holiday is ' + HOL[hols[0]] + ' on ' + fmtDay(pd(hols[0])) : ''}.</span></p>
+    <p className="lede"><span><b>${bal[0].left} days</b> annual leave left${hols[0] ? ' · Next: ' + HOL[hols[0]] + ', ' + fmtDay(pd(hols[0])) : ''}</span></p>
     <div className="tiles">
       ${bal.map(b => html`<${Tile} key=${b.t} icon=${typeIcon(b.t)} tone=${typeTone(b.t)} label=${b.t} value=${b.left} sub=${b.pend ? 'days left · ' + b.pend + ' pending' : 'of ' + b.total + ' days left'} onClick=${() => go('leaves')}/>`)}
       <${Tile} icon="clock" tone="green" label="Worked today" value=${hm(worked)} sub=${live ? 'timer is running' : sessions.length ? 'checked out' : 'not checked in yet'}/>
@@ -227,15 +227,15 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
     </section>
     <section className="eq3 sec">
       <${Panel} title="Your tasks" sub=${myOpen.length ? myOpen.length + ' open' : 'All clear'} right=${html`<button className="btn sec2 sm" onClick=${() => goTask(null)}>Open Task</button>`}>
-        ${myOpen.length === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="check" s=${22}/></span><b>Nothing assigned</b><span>Tasks assigned to you will show up here.</span></div>` :
+        ${myOpen.length === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="check" s=${22}/></span><b>All clear</b></div>` :
           myOpen.slice(0, 6).map(t => html`<button key=${t.id} className="row" onClick=${() => goTask(t.id)}><span className="row-t"><b>${t.title}</b><span>Card</span></span><span className="row-d"><${DueChip} due=${t.due} done=${t.done}/></span></button>`)}
       <//>
-      <${Panel} title="Your leave requests" sub=${t.getUTCFullYear()} right=${html`<button className="btn sec2 sm" onClick=${() => go('leaves')}><${Icon} n="plus" s=${15}/> Apply</button>`}>
+      <${Panel} title="Leave requests" sub=${t.getUTCFullYear()} right=${html`<button className="btn sec2 sm" onClick=${() => go('leaves')}><${Icon} n="plus" s=${15}/> Apply</button>`}>
         ${recent.length === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="leaves" s=${22}/></span><b>No requests yet</b><span>Apply for leave and track it here.</span></div>` :
           recent.map(l => html`<div className="hx" key=${l.id}><span className="row-t"><b>${l.type}${l.half ? ' · half day' : ''}</b><span>${range(l.from, l.to)} · ${plural(l.days, 'day')}</span></span>
             <span className="pill" style=${{ '--c': LS_C[l.state] }}><i></i>${l.state[0].toUpperCase() + l.state.slice(1)}</span></div>`)}
       <//>
-      <${Panel} title="Upcoming holidays" sub="Studio closed">
+      <${Panel} title="Holidays">
         ${hols.slice(0, 5).map(k => html`<div className="hl" key=${k}>${HOL[k]}<span>${fmtDay(pd(k))} · ${rel(Math.round((pd(k) - TOD) / DAY)).toLowerCase()}</span></div>`)}
       <//>
     </section>
