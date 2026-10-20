@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { html, Icon, Av } from './ui.jsx';
-import { LEAVES0, HIST0, ROLEMAP, BY, TODISO, TOD, DAY, isoOf } from './data.js';
+import { LEAVES0, HIST0, TODISO, TOD, DAY, isoOf } from './data.js';
 import { Login } from './screens/Login.jsx';
 import { Home } from './screens/Home.jsx';
 import { People, EmployeeForm } from './screens/People.jsx';
@@ -14,23 +14,45 @@ import { Settings } from './screens/Settings.jsx';
 import './styles.css';
 
 const ALL = { home: 'Home', people: 'People', org: 'Org chart', calendar: 'Calendar', leaves: 'My Leaves', requests: 'Requests', settings: 'Settings' };
-const ICON = { home: 'home', people: 'people', org: 'org', calendar: 'calendar', leaves: 'leaves', requests: 'requests', settings: 'settings' };
 const SHORT = { org: 'Org', leaves: 'Leaves' };
 
 const SEED_ANN = [
-  { id: 1, title: 'Keep your profile current', body: 'Add your phone number and an emergency contact from your profile page. It takes a minute.', date: TODISO, by: 'Meera Iyer' },
-  { id: 2, title: 'Planning time off for Diwali?', body: 'Please send leave requests for the Diwali week early so the team can plan coverage.', date: isoOf(TOD - 2 * DAY), by: 'Meera Iyer' }
+  { id: 1, kind: 'holiday', title: 'Studio closed for Dussehra', body: 'The studio is closed on 20 October. Normal hours resume the next working day.', date: TODISO, by: 'Meera Iyer' },
+  { id: 2, kind: 'reminder', title: 'Planning time off for Diwali?', body: 'Please send leave requests for the Diwali week early so the team can plan coverage.', date: isoOf(TOD - 2 * DAY), by: 'Meera Iyer' },
+  { id: 3, kind: 'general', title: 'Keep your profile current', body: 'Add your phone number and an emergency contact from your profile. It takes a minute.', date: isoOf(TOD - 5 * DAY), by: 'Meera Iyer' }
 ];
 
 function readTheme() { try { return localStorage.getItem('mp-theme') || 'dark'; } catch (x) { return 'dark'; } }
+
+function TopRight({ user, role, theme, setTheme, open, openForm, signOut }) {
+  const [menu, setMenu] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!menu) return;
+    const f = ev => { if (ref.current && !ref.current.contains(ev.target)) setMenu(false); };
+    const k = ev => { if (ev.key === 'Escape') setMenu(false); };
+    document.addEventListener('mousedown', f); document.addEventListener('keydown', k);
+    return () => { document.removeEventListener('mousedown', f); document.removeEventListener('keydown', k); };
+  }, [menu]);
+  const dark = theme === 'dark';
+  return html`<div className="tr" ref=${ref}>
+    <button className="ib" onClick=${() => setTheme(dark ? 'light' : 'dark')} aria-label=${dark ? 'Switch to light mode' : 'Switch to dark mode'} title=${dark ? 'Light mode' : 'Dark mode'}><${Icon} n=${dark ? 'sun' : 'moon'} s=${17}/></button>
+    <button className="tr-me" onClick=${() => setMenu(m => !m)} aria-haspopup="menu" aria-expanded=${menu} aria-label="Account menu">
+      <${Av} e=${user} s=${32}/><span className="tr-n"><b>${user.name}</b><span>${role === 'admin' ? 'Admin' : 'Employee'}</span></span></button>
+    ${menu && html`<div className="menu" role="menu">
+      <div className="menu-h"><b>${user.name}</b><span>${user.email}</span></div>
+      <button role="menuitem" onClick=${() => { setMenu(false); open(user.n); }}><${Icon} n="user" s=${16}/> View profile</button>
+      <button role="menuitem" onClick=${() => { setMenu(false); openForm(user.n); }}><${Icon} n="edit" s=${16}/> Edit profile</button>
+      <button role="menuitem" className="menu-o" onClick=${() => { setMenu(false); signOut(); }}><${Icon} n="logout" s=${16}/> Sign out</button></div>`}
+  </div>`;
+}
 
 function App() {
   const [nav, setNav] = useState({ view: 'home' });
   const [auth, setAuth] = useState(null);
   const [leaves, setLeaves] = useState(() => [...LEAVES0.map(l => ({ ...l, state: 'pending' })), ...HIST0]);
   const [ann, setAnn] = useState(SEED_ANN);
-  const [presence, setPresence] = useState({});
-  const [pf, setPf] = useState({ q: '', dept: 'All', status: 'All', city: 'All', sort: 'name', view: 'grid' });
+  const [pf, setPf] = useState({ q: '', dept: 'All', city: 'All', sort: 'name', former: false });
   const [ver, setVer] = useState(0);
   const [theme, setTheme] = useState(readTheme);
   const bump = () => setVer(v => v + 1);
@@ -41,8 +63,7 @@ function App() {
 
   if (!auth) return html`<${Login} onLogin=${(user, role) => { setNav({ view: 'home' }); setAuth({ user, role }); window.scrollTo({ top: 0 }); }}/>`;
   const user = auth.user, role = auth.role;
-  const isMgr = role !== 'admin' && ROLEMAP[user.n] === 'Manager';
-  const keys = role === 'admin' ? ['home', 'people', 'org', 'calendar', 'leaves', 'requests', 'settings'] : isMgr ? ['home', 'people', 'org', 'calendar', 'leaves', 'requests'] : ['home', 'people', 'org', 'calendar', 'leaves'];
+  const keys = role === 'admin' ? ['home', 'people', 'org', 'calendar', 'leaves', 'requests', 'settings'] : ['home', 'people', 'org', 'calendar', 'leaves'];
   const top = () => window.scrollTo({ top: 0 });
   const go = v => { setNav({ view: v }); top(); };
   const open = id => { setNav(p => ({ view: 'profile', id, from: p.view === 'profile' ? p.from : p.view === 'form' ? 'people' : p.view })); top(); };
@@ -51,39 +72,32 @@ function App() {
   const formDone = id => { if (id) { setNav(p => ({ view: 'profile', id, from: p.from || 'people' })); } else go('people'); top(); };
   const signOut = () => { setAuth(null); setNav({ view: 'home' }); top(); };
   const active = nav.view === 'profile' || nav.view === 'form' ? (nav.from || 'people') : nav.view;
-  const all = leaves.filter(l => !l.past && l.emp !== user.n);
-  const mgrPending = isMgr ? all.filter(l => l.state === 'pending' && BY[l.emp] && BY[l.emp].mgr === user.n).length : 0;
-  const pending = role === 'admin' ? all.filter(l => l.state === 'pending').length : 0;
-  const badge = role === 'admin' ? pending : mgrPending;
+  const pending = role === 'admin' ? leaves.filter(l => !l.past && l.emp !== user.n && l.state === 'pending').length : 0;
 
-  const screen = nav.view === 'home' ? html`<${Home} role=${role} user=${user} isMgr=${isMgr} leaves=${leaves} setLeaves=${setLeaves} ann=${ann} setAnn=${setAnn} presence=${presence} setPresence=${setPresence} go=${go} openForm=${openForm} open=${open}/>`
+  const home = html`<${Home} role=${role} user=${user} leaves=${leaves} setLeaves=${setLeaves} ann=${ann} setAnn=${setAnn} go=${go} openForm=${openForm} open=${open}/>`;
+  const screen = nav.view === 'home' ? home
     : nav.view === 'people' ? html`<${People} pf=${pf} setPf=${setPf} open=${open} openForm=${openForm} role=${role} ver=${ver}/>`
     : nav.view === 'org' ? html`<${OrgChart} open=${open} user=${user} key=${ver}/>`
     : nav.view === 'profile' ? html`<${Profile} key=${nav.id + '-' + ver} id=${nav.id} from=${nav.from} back=${back} open=${open} openForm=${openForm} user=${user} role=${role} leaves=${leaves} ver=${ver}/>`
     : nav.view === 'form' ? html`<${EmployeeForm} key=${'f' + nav.id} id=${nav.id} role=${role} user=${user} done=${formDone} bump=${bump}/>`
     : nav.view === 'calendar' ? html`<${CalendarView} leaves=${leaves} open=${open} key=${ver}/>`
     : nav.view === 'leaves' ? html`<${MyLeaves} leaves=${leaves} setLeaves=${setLeaves} user=${user} key=${ver}/>`
-    : nav.view === 'requests' && keys.includes('requests') ? html`<${Requests} role=${role} user=${user} leaves=${leaves} setLeaves=${setLeaves} open=${open}/>`
+    : nav.view === 'requests' && role === 'admin' ? html`<${Requests} role=${role} user=${user} leaves=${leaves} setLeaves=${setLeaves} open=${open}/>`
     : nav.view === 'settings' && role === 'admin' ? html`<${Settings} onChange=${bump}/>`
-    : html`<${Home} role=${role} user=${user} isMgr=${isMgr} leaves=${leaves} setLeaves=${setLeaves} ann=${ann} setAnn=${setAnn} presence=${presence} setPresence=${setPresence} go=${go} openForm=${openForm} open=${open}/>`;
+    : home;
 
   const brand = html`<div className="brand"><span className="mark"></span><span className="brand-t"><b>Maayasthra</b><span>People</span></span></div>`;
-  const themeSeg = html`<div className="seg" role="group" aria-label="Theme"><button className=${theme === 'dark' ? 'on' : ''} onClick=${() => setTheme('dark')}>Dark</button><button className=${theme === 'light' ? 'on' : ''} onClick=${() => setTheme('light')}>Light</button></div>`;
   return html`<div className="app">
     <aside className="side">${brand}
       <nav className="nav" aria-label="Main">${keys.map(k => html`<button key=${k} className=${'nav-b' + (active === k ? ' on' : '')} onClick=${() => go(k)} aria-current=${active === k ? 'page' : undefined}>
-        <${Icon} n=${ICON[k]}/>${ALL[k]}${k === 'requests' && badge > 0 && html`<span className="cnt">${badge}</span>`}</button>`)}</nav>
-      <div className="side-foot">
-        ${themeSeg}
-        <button className="me" onClick=${() => open(user.n)} aria-label="Open your profile"><${Av} e=${user} s=${36}/><span><b>${user.name}</b><span>${role === 'admin' ? 'HR and Admin' : isMgr ? 'Manager' : 'Employee'}</span></span></button>
-        <button className="btn ghost sm" style=${{ margin: '0 12px' }} onClick=${signOut}>Sign out</button></div>
+        <${Icon} n=${k}/>${ALL[k]}${k === 'requests' && pending > 0 && html`<span className="cnt">${pending}</span>`}</button>`)}</nav>
     </aside>
     <div className="col">
-      <div className="topbar">${brand}<div style=${{ display: 'flex', gap: 8, alignItems: 'center' }}>${themeSeg}<button className="btn ghost sm" onClick=${signOut}>Sign out</button></div></div>
+      <header className="hdr"><div className="hdr-b">${brand}</div><${TopRight} user=${user} role=${role} theme=${theme} setTheme=${setTheme} open=${open} openForm=${openForm} signOut=${signOut}/></header>
       <main className="main" key=${nav.view + (nav.id || '')}>${screen}</main>
     </div>
     <nav className="bnav" style=${{ gridTemplateColumns: 'repeat(' + keys.length + ', 1fr)' }} aria-label="Main">${keys.map(k => html`<button key=${k} className=${active === k ? 'on' : ''} onClick=${() => go(k)}>
-      <${Icon} n=${ICON[k]} s=${21}/>${SHORT[k] || ALL[k]}${k === 'requests' && badge > 0 && html`<span className="cnt">${badge}</span>`}</button>`)}</nav>
+      <${Icon} n=${k} s=${21}/>${SHORT[k] || ALL[k]}${k === 'requests' && pending > 0 && html`<span className="cnt">${pending}</span>`}</button>`)}</nav>
   </div>`;
 }
 

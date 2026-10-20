@@ -37,6 +37,10 @@ const IC = {
   sun:['M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z','M12 3v2','M12 19v2','M3 12h2','M19 12h2','M5.6 5.6l1.4 1.4','M17 17l1.4 1.4','M5.6 18.4 7 17','M17 7l1.4-1.4'],
   moon:['M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z'],
   bell:['M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z','M10 20a2 2 0 0 0 4 0'],
+  megaphone:['M3 11v3a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z','M15 9a4 4 0 0 1 0 6','M18 6.5a8 8 0 0 1 0 11'],
+  star:['M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9 6.8 19.7l1-5.9L3.5 9.7l5.9-.8z'],
+  user:['M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z','M4.5 20a7.5 7.5 0 0 1 15 0'],
+  logout:['M10 4H5v16h5','M15 8l4 4-4 4','M19 12H9'],
   home2:['M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z']
 };
 export const Icon = ({ n, s = 18 }) => html`<svg width=${s} height=${s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">${IC[n].map((d,i) => html`<path key=${i} d=${d}/>`)}</svg>`;
@@ -60,7 +64,7 @@ export function Portrait({ e }) {
     : style === 'curly' ? html`<g fill=${hc}><circle cx="40" cy="41" r="8"/><circle cx="52" cy="37" r="9"/><circle cx="62" cy="42" r="8"/></g>`
     : html`<path d="M32 56C31 33 69 33 68 56C62 44 54 41 50 41C46 41 38 44 32 56Z" fill=${hc}/>`;
   return html`<svg viewBox="0 0 100 125" preserveAspectRatio="xMidYMid slice" role="img" aria-label=${'Portrait of ' + e.name}>
-    <defs><linearGradient id=${'bg' + b} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color=${BGS[b][0]}/><stop offset="1" stop-color=${BGS[b][1]}/></linearGradient></defs>
+    <defs><linearGradient id=${'bg' + b} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor=${BGS[b][0]}/><stop offset="1" stopColor=${BGS[b][1]}/></linearGradient></defs>
     <rect width="100" height="125" fill=${'url(#bg' + b + ')'}/>
     <circle cx="50" cy="48" r="52" fill="#fff" opacity=".04"/>
     ${back}

@@ -15,7 +15,7 @@ export function Login({ onLogin }) {
     if (!p) return 'Enter your password.';
     if (p !== DEMO_PW) return 'That password does not match. Try again.';
     if (e.status === 'Exited') return 'This account is no longer active.';
-    if (md === 'admin' && !isAdminRole(e)) return 'This account does not have HR or admin access.';
+    if (md === 'admin' && !isAdminRole(e)) return 'This account does not have admin access.';
     return e;
   };
   const run = (em, p, md) => {
@@ -36,17 +36,16 @@ export function Login({ onLogin }) {
     <section className="lg-form"><div className="lg-box">
       ${view === 'signin' ? html`<${React.Fragment}>
         <h2>Sign in</h2><p>Use your Maayasthra work email.</p>
-        <div className="seg" role="group" aria-label="Sign in as"><button type="button" className=${mode === 'employee' ? 'on' : ''} onClick=${() => { setMode('employee'); setErr(''); }}>Employee</button><button type="button" className=${mode === 'admin' ? 'on' : ''} onClick=${() => { setMode('admin'); setErr(''); }}>HR and Admin</button></div>
+        <div className="seg" role="group" aria-label="Sign in as"><button type="button" className=${mode === 'employee' ? 'on' : ''} onClick=${() => { setMode('employee'); setErr(''); }}>Employee</button><button type="button" className=${mode === 'admin' ? 'on' : ''} onClick=${() => { setMode('admin'); setErr(''); }}>Admin</button></div>
         <form onSubmit=${submit} noValidate>
           <div className="fld"><label htmlFor="login-email">Work email</label><input id="login-email" className="inp" type="email" autoComplete="username" placeholder="name@maayasthra.com" value=${email} onChange=${ev => setEmail(ev.target.value)}/></div>
           <div className="fld"><label htmlFor="login-pw">Password</label><div className="pw"><input id="login-pw" className="inp" type=${show ? 'text' : 'password'} autoComplete="current-password" value=${pw} onChange=${ev => setPw(ev.target.value)}/><button type="button" className="pw-b" onClick=${() => setShow(!show)}>${show ? 'Hide' : 'Show'}</button></div></div>
           <div className="lg-row"><button type="button" className="link" onClick=${() => { setView('forgot'); setErr(''); setSent(false); }}>Forgot password?</button></div>
           ${err && html`<div className="lg-err" role="alert">${err}</div>`}
-          <button className="btn pri" type="submit" disabled=${busy}>${busy ? 'Signing in' : mode === 'admin' ? 'Sign in as HR or Admin' : 'Sign in'}</button>
+          <button className="btn pri" type="submit" disabled=${busy}>${busy ? 'Signing in' : mode === 'admin' ? 'Sign in as Admin' : 'Sign in'}</button>
         </form>
         <div className="lg-demo"><h3>Try a demo account</h3>
-          <button className="dm" onClick=${() => demo(2, 'admin')} disabled=${busy}><${Av} e=${BY[2]} s=${38}/><span className="row-t"><b>Meera Iyer</b><span>HR and Admin · approves leave</span></span><span className="go"><${Icon} n="arrow" s=${16}/></span></button>
-          <button className="dm" onClick=${() => demo(3, 'employee')} disabled=${busy}><${Av} e=${BY[3]} s=${38}/><span className="row-t"><b>Rohan Kapoor</b><span>Manager · approves for his team</span></span><span className="go"><${Icon} n="arrow" s=${16}/></span></button>
+          <button className="dm" onClick=${() => demo(2, 'admin')} disabled=${busy}><${Av} e=${BY[2]} s=${38}/><span className="row-t"><b>Meera Iyer</b><span>Admin · approves leave</span></span><span className="go"><${Icon} n="arrow" s=${16}/></span></button>
           <button className="dm" onClick=${() => demo(9, 'employee')} disabled=${busy}><${Av} e=${BY[9]} s=${38}/><span className="row-t"><b>Dev Malhotra</b><span>Employee · applies for leave</span></span><span className="go"><${Icon} n="arrow" s=${16}/></span></button>
           <div className="lg-note">Prototype only. The demo password is ${DEMO_PW}.</div></div>
       <//>` : html`<${React.Fragment}>

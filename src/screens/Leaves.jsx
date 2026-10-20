@@ -34,8 +34,7 @@ export function MyLeaves({ leaves, setLeaves, user }) {
   return html`<div>
     <div className="pg-h"><div><h1>My Leaves</h1><p>Your balances for ${new Date(TOD).getUTCFullYear()} and every request you have sent.</p></div></div>
     <div className="bals">${bal.map(b => html`<div className="bl" key=${b.t}>
-      <span className="eyebrow">${b.t}</span><b>${b.left}</b><small>of ${b.total} days left${b.pend > 0 ? html` · <em>${b.pend} pending</em>` : ''}</small>
-      <div className="bar"><u style=${{ width: Math.max(0, b.left / b.total * 100) + '%' }}></u></div></div>`)}</div>
+      <span className="eyebrow">${b.t}</span><b>${b.left}</b><small>of ${b.total} days left${b.pend > 0 ? html` · <em>${b.pend} pending</em>` : ''}</small></div>`)}</div>
     <div className="grid2b" style=${{ marginTop: 48 }}>
       <form className="card fm" onSubmit=${submit}>
         <h2>Apply for leave</h2>

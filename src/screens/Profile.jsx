@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { html, Icon, Av, Photo, Status } from '../ui.jsx';
+import { html, Icon, Av, Photo } from '../ui.jsx';
 import { BY, fmt, fmtDM, rel, ago, plural, tenure, tenureText, nextOcc, journey, balances, activeEmps, ROLEMAP } from '../data.js';
 
 export function Profile({ id, from, back, open, openForm, user, role, leaves, ver }) {
@@ -22,7 +22,7 @@ export function Profile({ id, from, back, open, openForm, user, role, leaves, ve
           <h1>${e.name}</h1>
           ${canEdit && html`<button className="btn ghost sm" onClick=${() => openForm(e.n)}><${Icon} n="edit" s=${15}/> ${self && role !== 'admin' ? 'Edit your profile' : 'Edit'}</button>`}</div>
         <div className="prof-r">${e.role}</div>
-        <div className="prof-t"><${Status} s=${e.status}/><span className="tag">${e.dept}</span><span className="tag">${e.empId}</span>${role === 'admin' && html`<span className="tag">Access: ${ROLEMAP[e.n]}</span>`}</div>
+        ${e.status === 'Exited' && html`<div className="prof-t"><span className="tag">Former employee</span></div>`}
         ${e.bio && html`<p className="lede" style=${{ maxWidth: '60ch' }}>${e.bio}</p>`}
         <div className="facts">
           <${Fact} l="Employee ID">${e.empId}<//>

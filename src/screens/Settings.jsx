@@ -3,9 +3,9 @@ import { html, Icon, Av, Switch } from '../ui.jsx';
 import { EMP, HOL, TODISO, WD, POLICY, ROLE_NAMES, ROLEMAP, fmt, pd, plural, searchPeople } from '../data.js';
 
 const PERMS = [
-  ['See the people directory and org chart', [1, 1, 1, 1]], ['Apply for leave and see own balances', [1, 1, 1, 1]], ['Edit own photo and contact details', [1, 1, 1, 1]],
-  ['Approve leave for own team', [0, 1, 1, 1]], ['Approve leave for everyone', [0, 0, 1, 1]], ['See everyone\'s leave balances and export reports', [0, 0, 1, 1]],
-  ['Add and edit employee records', [0, 0, 1, 1]], ['Post announcements', [0, 0, 1, 1]], ['Manage leave policy, holidays and roles', [0, 0, 1, 1]]
+  ['See the people directory and org chart', [1, 1]], ['Apply for leave and see own balances', [1, 1]], ['Edit own photo and contact details', [1, 1]],
+  ['Approve and decline leave requests', [0, 1]], ['See everyone\'s leave balances and export reports', [0, 1]],
+  ['Add and edit employee records', [0, 1]], ['Post announcements', [0, 1]], ['Manage leave policy, holidays and roles', [0, 1]]
 ];
 
 function Access({ onChange }) {
@@ -13,7 +13,7 @@ function Access({ onChange }) {
   const counts = r => EMP.filter(e => e.status !== 'Exited' && ROLEMAP[e.n] === r).length;
   const list = searchPeople(q).sort((a, b) => ROLE_NAMES.indexOf(ROLEMAP[b.n]) - ROLE_NAMES.indexOf(ROLEMAP[a.n]) || a.name.localeCompare(b.name)).slice(0, q.trim() ? 20 : 8);
   return html`<div className="st-w" style=${{ maxWidth: 900 }}>
-    <h2 className="st-h">What each role can do</h2><p className="st-p">Everyone starts as an Employee. Managers approve for their own team. HR and Admin work across the whole studio.</p>
+    <h2 className="st-h">What each role can do</h2><p className="st-p">Everyone starts as an Employee. Admins manage people, leave and settings for the whole studio.</p>
     <div className="mx"><table><thead><tr><th></th>${ROLE_NAMES.map(r => html`<th key=${r}>${r}<small>${plural(counts(r), 'person').replace('persons', 'people')}</small></th>`)}</tr></thead>
       <tbody>${PERMS.map(([l, v]) => html`<tr key=${l}><td>${l}</td>${v.map((x, i) => html`<td key=${i}>${x ? html`<${Icon} n="check" s=${17}/>` : '–'}</td>`)}</tr>`)}</tbody></table></div>
     <div className="st-s"><h2 className="st-h">Who has which role</h2><p className="st-p">Search for anyone to change their role. It takes effect the next time they sign in.</p>

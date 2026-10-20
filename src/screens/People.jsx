@@ -8,9 +8,9 @@ import {
 export function People({ pf, setPf, open, openForm, role, ver }) {
   const cities = useMemo(() => [...new Set(EMP.map(e => e.city))].sort(), [ver]);
   const list = useMemo(() => {
-    let l = searchPeople(pf.q, pf.status === 'Exited');
+    let l = searchPeople(pf.q, pf.former);
+    if (!pf.former) l = l.filter(e => e.status !== 'Exited');
     if (pf.dept !== 'All') l = l.filter(e => e.dept === pf.dept);
-    if (pf.status !== 'All') l = l.filter(e => e.status === pf.status);
     if (pf.city !== 'All') l = l.filter(e => e.city === pf.city);
     const s = [...l];
     if (pf.sort === 'name') s.sort((a, b) => a.name.localeCompare(b.name));
@@ -18,36 +18,26 @@ export function People({ pf, setPf, open, openForm, role, ver }) {
     else s.sort((a, b) => pd(a.join) - pd(b.join));
     return s;
   }, [pf, ver]);
-  const cnt = d => searchPeople(pf.q, pf.status === 'Exited').filter(e => (pf.status === 'All' || e.status === pf.status) && (pf.city === 'All' || e.city === pf.city) && (d === 'All' || e.dept === d)).length;
-  const clear = () => setPf({ ...pf, q: '', dept: 'All', status: 'All', city: 'All' });
-  const total = activeEmps().length;
+  const clear = () => setPf({ ...pf, q: '', dept: 'All', city: 'All' });
+  const act = activeEmps();
   return html`<div>
-    <div className="pg-h"><div><h1>People</h1><p>${total} people across ${new Set(activeEmps().map(e => e.dept)).size} departments, working from ${new Set(activeEmps().map(e => e.city)).size} cities.</p></div>
+    <div className="pg-h"><div><h1>People</h1><p>${act.length} people across ${new Set(act.map(e => e.dept)).size} departments and ${new Set(act.map(e => e.city)).size} cities.</p></div>
       ${role === 'admin' && html`<button className="btn pri" onClick=${() => openForm(null)}><${Icon} n="plus" s=${16}/> Add employee</button>`}</div>
     <div className="tools">
       <div className="search"><${Icon} n="search"/><input id="people-search" value=${pf.q} placeholder="Search by name, role, city or ID" onChange=${ev => setPf({ ...pf, q: ev.target.value })} aria-label="Search people"/></div>
-      <select id="status-filter" className="sel" value=${pf.status} onChange=${ev => setPf({ ...pf, status: ev.target.value })} aria-label="Employment status">
-        <option value="All">All statuses</option>${STATUSES.filter(s => s !== 'Exited' || role === 'admin').map(s => html`<option key=${s} value=${s}>${s}</option>`)}</select>
+      <select id="dept-filter" className="sel" value=${pf.dept} onChange=${ev => setPf({ ...pf, dept: ev.target.value })} aria-label="Department">
+        <option value="All">All departments</option>${DEPTS.map(d => html`<option key=${d} value=${d}>${d}</option>`)}</select>
       <select id="city-filter" className="sel" value=${pf.city} onChange=${ev => setPf({ ...pf, city: ev.target.value })} aria-label="City">
         <option value="All">All cities</option>${cities.map(c => html`<option key=${c} value=${c}>${c}</option>`)}</select>
       <select id="sort-by" className="sel" value=${pf.sort} onChange=${ev => setPf({ ...pf, sort: ev.target.value })} aria-label="Sort people">
         <option value="name">Name A–Z</option><option value="new">Newest first</option><option value="old">Longest serving</option></select>
-      <div className="seg" style=${{ width: 140, margin: 0, height: 44 }} role="group" aria-label="Layout">
-        <button className=${pf.view === 'grid' ? 'on' : ''} onClick=${() => setPf({ ...pf, view: 'grid' })}>Grid</button>
-        <button className=${pf.view === 'list' ? 'on' : ''} onClick=${() => setPf({ ...pf, view: 'list' })}>List</button></div>
     </div>
-    <div className="chips" role="tablist" aria-label="Departments">
-      ${['All', ...DEPTS].map(d => html`<button key=${d} className=${'chip' + (pf.dept === d ? ' on' : '')} onClick=${() => setPf({ ...pf, dept: d })}>${d}<small>${cnt(d)}</small></button>`)}
-    </div>
-    <div className="count">${list.length === total && pf.status === 'All' ? 'Showing everyone' : 'Showing ' + list.length + (pf.status === 'All' ? ' of ' + total : '')}</div>
+    ${role === 'admin' && html`<label className="ck" htmlFor="former"><input id="former" type="checkbox" checked=${!!pf.former} onChange=${ev => setPf({ ...pf, former: ev.target.checked })}/> Include former employees</label>`}
+    <div className="count">${list.length === act.length ? 'Showing everyone' : 'Showing ' + list.length + ' of ' + act.length}</div>
     ${list.length === 0 ? html`<div className="none"><b>No one matches those filters</b>Try a different name or department.<br/><button className="btn ghost" onClick=${clear}>Clear filters</button></div>` :
-    pf.view === 'list' ? html`<div className="card" style=${{ padding: '6px 10px' }}>${list.map(e => html`<button key=${e.n} className="row pl" onClick=${() => open(e.n)}>
-        <${Av} e=${e} s=${38}/><span className="row-t"><b>${e.name}</b><span>${e.role}</span></span>
-        <span className="pl-c">${e.dept}</span><span className="pl-c">${e.city}</span><${Status} s=${e.status}/></button>`)}</div>` :
-    html`<div className="pgrid">${list.map(e => html`<button key=${e.n} className="pc" onClick=${() => open(e.n)}>
-      <div className="ph"><${Portrait} e=${e}/><${Status} s=${e.status} ov=${true}/></div>
-      <div className="pc-b"><b>${e.name}</b><span>${e.role}</span>
-        <div className="pc-f"><span>${e.dept}</span><em>Joined ${fmtDM(e.join)} ${e.join.slice(2, 4) === TODISO.slice(2, 4) ? '' : "'" + e.join.slice(2, 4)}</em></div></div></button>`)}</div>`}
+    html`<div className="dir">${list.map(e => html`<button key=${e.n} className="di" onClick=${() => open(e.n)}>
+      <${Av} e=${e} s=${52}/>
+      <span className="row-t"><b>${e.name}${e.status === 'Exited' ? ' (former)' : ''}</b><span>${e.role}</span><span className="di-m">${e.dept} · ${e.city}</span></span></button>`)}</div>`}
   </div>`;
 }
 

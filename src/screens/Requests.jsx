@@ -4,7 +4,7 @@ import { TODISO, DAY, BY, pd, fmtDay, plural, range, workDays, balances, awayLis
 
 export function Requests({ role, user, leaves: all, setLeaves, open }) {
   const [show, setShow] = useState('pending'); const [selKey, setSelKey] = useState(null);
-  const leaves = all.filter(l => !l.past && l.emp !== user.n && (role === 'admin' || (BY[l.emp] && BY[l.emp].mgr === user.n)));
+  const leaves = all.filter(l => !l.past && l.emp !== user.n);
   const pendingN = leaves.filter(l => l.state === 'pending').length;
   const visible = leaves.filter(l => show === 'pending' ? l.state === 'pending' : l.state !== 'pending');
   const s = leaves.find(l => l.id === selKey) || visible[0];
@@ -38,9 +38,9 @@ export function Requests({ role, user, leaves: all, setLeaves, open }) {
     </aside>`;
   }
   return html`<div>
-    <div className="pg-h"><div><h1>Requests</h1><p>${pendingN ? plural(pendingN, 'leave request') + ' waiting for a decision.' : 'You are all caught up.'}${role !== 'admin' ? ' Showing your team.' : ''}</p></div>
+    <div className="pg-h"><div><h1>Requests</h1><p>${pendingN ? plural(pendingN, 'leave request') + ' waiting for a decision.' : 'You are all caught up.'}</p></div>
       <div style=${{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-        ${role === 'admin' && html`<button className="btn ghost sm" onClick=${exportRequests}><${Icon} n="download" s=${15}/> Requests CSV</button><button className="btn ghost sm" onClick=${exportBalances}><${Icon} n="download" s=${15}/> Balances CSV</button>`}
+        ${html`<button className="btn ghost sm" onClick=${exportRequests}><${Icon} n="download" s=${15}/> Requests CSV</button><button className="btn ghost sm" onClick=${exportBalances}><${Icon} n="download" s=${15}/> Balances CSV</button>`}
         <div className="seg" style=${{ width: 220, margin: 0 }} role="group" aria-label="Show"><button className=${show === 'pending' ? 'on' : ''} onClick=${() => setShow('pending')}>Pending</button><button className=${show === 'decided' ? 'on' : ''} onClick=${() => setShow('decided')}>Decided</button></div></div></div>
     <div className="rq">
       <div>${visible.length === 0 ? html`<div className="none" style=${{ padding: '48px 0', textAlign: 'left' }}><b>${show === 'pending' ? 'Nothing is waiting' : 'No decisions yet'}</b>${show === 'pending' ? 'New leave requests will appear here.' : 'Approved and declined requests will be listed here.'}</div>` :

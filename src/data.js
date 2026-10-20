@@ -184,10 +184,10 @@ const HIST0 = [
   { id:111, emp:9, type:'Annual leave', from:'2026-06-08', to:'2026-06-11', days:4, reason:'Family trip.', state:'approved', past:true },
   { id:112, emp:9, type:'Casual leave', from:'2026-02-13', to:'2026-02-13', days:1, reason:'Passport appointment.', state:'approved', past:true }
 ];
-const ROLE_NAMES = ['Employee','Manager','HR','Admin'];
+const ROLE_NAMES = ['Employee','Admin'];
 const ROLEMAP = {};
-EMP.forEach(e => { ROLEMAP[e.n] = e.n <= 2 ? 'Admin' : e.n === 26 ? 'HR' : EMP.some(x => x.mgr === e.n) ? 'Manager' : 'Employee'; });
-const isAdminRole = e => ROLEMAP[e.n] === 'Admin' || ROLEMAP[e.n] === 'HR';
+EMP.forEach(e => { ROLEMAP[e.n] = e.n <= 2 || e.n === 26 ? 'Admin' : 'Employee'; });
+const isAdminRole = e => ROLEMAP[e.n] === 'Admin';
 const activeEmps = () => EMP.filter(e => e.status !== 'Exited');
 const refreshDepts = () => { DEPTS.splice(0, DEPTS.length, ...[...new Set(EMP.map(e => e.dept))].sort()); };
 const addEmployee = d => {
