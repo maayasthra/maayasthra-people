@@ -41,6 +41,12 @@ const IC = {
   star:['M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9 6.8 19.7l1-5.9L3.5 9.7l5.9-.8z'],
   user:['M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z','M4.5 20a7.5 7.5 0 0 1 15 0'],
   logout:['M10 4H5v16h5','M15 8l4 4-4 4','M19 12H9'],
+  cup:['M5 9h11v5a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4z','M16 10h1.5a2 2 0 0 1 0 4H16','M8 4v2','M12 4v2'],
+  heart:['M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z'],
+  swap:['M5 8h13','M14 4l4 4-4 4','M19 16H6','M10 12l-4 4 4 4'],
+  clock:['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z','M12 7v5l3 2'],
+  chevL:['M15 5l-7 7 7 7'],
+  chevR:['M9 5l7 7-7 7'],
   home2:['M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z']
 };
 export const Icon = ({ n, s = 18 }) => html`<svg width=${s} height=${s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">${IC[n].map((d,i) => html`<path key=${i} d=${d}/>`)}</svg>`;
@@ -84,3 +90,10 @@ export const Photo = ({ e }) => html`<div className="ph"><${Portrait} e=${e}/></
 export const Av = ({ e, s = 40 }) => html`<span className="av" style=${{ width: s, height: s }}><${Portrait} e=${e}/></span>`;
 export const Status = ({ s, ov }) => html`<span className=${'pill' + (ov ? ' ov' : '')} style=${{ '--c': STAT_C[s] }}><i></i>${s}</span>`;
 
+
+const TONES = { blue: '#9DB4F5', purple: '#B79BF2', orange: '#FE6D00', amber: '#E8B93F', green: '#46D39A' };
+export function Tile({ icon, label, value, sub, tone = 'blue', onClick, hot }) {
+  const inner = html`<span className="tile-i" style=${{ '--c': TONES[tone] }}><${Icon} n=${icon} s=${20}/></span>
+    <span className="tile-v"><b>${value}</b><span className="tile-l">${label}</span><small>${sub}</small></span>`;
+  return onClick ? html`<button className=${'tile' + (hot ? ' hot' : '')} onClick=${onClick}>${inner}</button>` : html`<div className=${'tile' + (hot ? ' hot' : '')}>${inner}</div>`;
+}

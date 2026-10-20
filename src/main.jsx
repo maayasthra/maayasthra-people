@@ -11,6 +11,7 @@ import { CalendarView } from './screens/Calendar.jsx';
 import { MyLeaves } from './screens/Leaves.jsx';
 import { Requests } from './screens/Requests.jsx';
 import { Settings } from './screens/Settings.jsx';
+import { QuickSearch } from './QuickSearch.jsx';
 import './styles.css';
 
 const ALL = { home: 'Home', people: 'People', org: 'Org chart', calendar: 'Calendar', leaves: 'My Leaves', requests: 'Requests', settings: 'Settings' };
@@ -55,6 +56,7 @@ function App() {
   const [pf, setPf] = useState({ q: '', dept: 'All', city: 'All', sort: 'name', former: false });
   const [ver, setVer] = useState(0);
   const [theme, setTheme] = useState(readTheme);
+  const [sOpen, setSOpen] = useState(false);
   const bump = () => setVer(v => v + 1);
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -82,7 +84,7 @@ function App() {
     : nav.view === 'form' ? html`<${EmployeeForm} key=${'f' + nav.id} id=${nav.id} role=${role} user=${user} done=${formDone} bump=${bump}/>`
     : nav.view === 'calendar' ? html`<${CalendarView} leaves=${leaves} open=${open} key=${ver}/>`
     : nav.view === 'leaves' ? html`<${MyLeaves} leaves=${leaves} setLeaves=${setLeaves} user=${user} key=${ver}/>`
-    : nav.view === 'requests' && role === 'admin' ? html`<${Requests} role=${role} user=${user} leaves=${leaves} setLeaves=${setLeaves} open=${open}/>`
+    : nav.view === 'requests' && role === 'admin' ? html`<${Requests} user=${user} leaves=${leaves} setLeaves=${setLeaves} open=${open}/>`
     : nav.view === 'settings' && role === 'admin' ? html`<${Settings} onChange=${bump}/>`
     : home;
 
@@ -93,7 +95,10 @@ function App() {
         <${Icon} n=${k}/>${ALL[k]}${k === 'requests' && pending > 0 && html`<span className="cnt">${pending}</span>`}</button>`)}</nav>
     </aside>
     <div className="col">
-      <header className="hdr"><div className="hdr-b">${brand}</div><${TopRight} user=${user} role=${role} theme=${theme} setTheme=${setTheme} open=${open} openForm=${openForm} signOut=${signOut}/></header>
+      <header className="hdr"><div className="hdr-b">${brand}</div>
+        <div className=${'hs' + (sOpen ? ' open' : '')}><${QuickSearch} open=${id => { setSOpen(false); open(id); }}/></div>
+        <button className="ib hs-b" onClick=${() => { setSOpen(o => !o); setTimeout(() => { const el = document.getElementById('quick-search'); if (el) el.focus(); }, 30); }} aria-label="Search people"><${Icon} n="search" s=${17}/></button>
+        <${TopRight} user=${user} role=${role} theme=${theme} setTheme=${setTheme} open=${open} openForm=${openForm} signOut=${signOut}/></header>
       <main className="main" key=${nav.view + (nav.id || '')}>${screen}</main>
     </div>
     <nav className="bnav" style=${{ gridTemplateColumns: 'repeat(' + keys.length + ', 1fr)' }} aria-label="Main">${keys.map(k => html`<button key=${k} className=${active === k ? 'on' : ''} onClick=${() => go(k)}>

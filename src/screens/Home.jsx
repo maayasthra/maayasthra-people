@@ -1,91 +1,75 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
-import { html, Icon, Av, first } from '../ui.jsx';
+import { useState, useEffect, useRef } from 'react';
+import { html, Icon, Av, Tile, first } from '../ui.jsx';
+import { downloadLeaveReport } from '../report.js';
 import {
   TOD, DAY, WDL, MONL, pd, fmtDM, fmtDay, rel, plural, range, addMonths, isoOf, TODISO, HOL, BY,
-  balances, awayList, isAway, activeEmps, searchPeople
+  balances, awayList, isAway, activeEmps
 } from '../data.js';
 
-const LS_C = { pending:'#E8B93F', approved:'#46D39A', declined:'#E5736B' };
+const LS_C = { pending: '#E8B93F', approved: '#46D39A', declined: '#E5736B' };
+const TYPE_ICON = { 'Annual leave': 'sun', 'Casual leave': 'cup', 'Sick leave': 'heart', 'Comp-off': 'swap' };
+export const typeIcon = t => TYPE_ICON[t] || 'leaves';
+export const typeTone = t => t === 'Sick leave' ? 'orange' : t === 'Casual leave' ? 'amber' : t === 'Comp-off' ? 'purple' : 'blue';
 
-/* ---------- Quick search ---------- */
-export function QuickSearch({ open }) {
-  const [q, setQ] = useState(''); const [hi, setHi] = useState(0); const [on, setOn] = useState(false);
-  const ref = useRef(null);
-  const res = useMemo(() => q.trim() ? searchPeople(q).slice(0, 6) : [], [q]);
-  useEffect(() => {
-    const f = ev => { if (ev.key === '/' && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) { ev.preventDefault(); ref.current && ref.current.focus(); } };
-    window.addEventListener('keydown', f); return () => window.removeEventListener('keydown', f);
-  }, []);
-  const pick = e => { setQ(''); setOn(false); open(e.n); };
-  const key = ev => {
-    if (ev.key === 'ArrowDown') { ev.preventDefault(); setHi(h => Math.min(h + 1, res.length - 1)); }
-    else if (ev.key === 'ArrowUp') { ev.preventDefault(); setHi(h => Math.max(h - 1, 0)); }
-    else if (ev.key === 'Enter' && res[hi]) pick(res[hi]);
-    else if (ev.key === 'Escape') { setOn(false); ev.target.blur(); }
-  };
-  return html`<div className="qs">
-    <${Icon} n="search"/>
-    <input ref=${ref} id="quick-search" className="qs-in" value=${q} placeholder="Find anyone by name or role"
-      onChange=${ev => { setQ(ev.target.value); setHi(0); }} onFocus=${() => setOn(true)} onBlur=${() => setOn(false)} onKeyDown=${key} autoComplete="off" aria-label="Quick employee search"/>
-    <kbd>/</kbd>
-    ${on && q.trim() && html`<div className="qs-dd">
-      ${res.length === 0 ? html`<div className="qs-e">No one matches "${q}".</div>` :
-        res.map((e, i) => html`<button key=${e.n} className=${'qs-r' + (i === hi ? ' hi' : '')} onMouseDown=${ev => { ev.preventDefault(); pick(e); }} onMouseEnter=${() => setHi(i)}>
-          <${Av} e=${e} s=${36}/><span><b>${e.name}</b><span>${e.role} · ${e.dept}</span></span></button>`)}
-    </div>`}
-  </div>`;
+/* A fixed-height card so panels in a row line up */
+function Panel({ title, sub, right, children }) {
+  return html`<section className="pn">
+    <header className="pn-h"><div><h2>${title}</h2>${sub && html`<span>${sub}</span>`}</div>${right}</header>
+    <div className="pn-b">${children}</div></section>`;
 }
 
-/* ---------- Shared cards ---------- */
-function AwayWeek({ leaves, open }) {
-  const end = isoOf(TOD + 6 * DAY);
-  const rows = awayList(leaves).filter(l => BY[l.emp] && BY[l.emp].status !== 'Exited' && l.from <= end && l.to >= TODISO).sort((a, b) => a.from.localeCompare(b.from));
-  return html`<div className="card" style=${{ padding: '8px 12px' }}>
-    ${rows.length === 0 ? html`<div className="empty">No one is away in the next 7 days.</div>` :
-      rows.map((l, i) => html`<button key=${i} className="row" onClick=${() => open(l.emp)}><${Av} e=${BY[l.emp]} s=${38}/>
-        <span className="row-t"><b>${BY[l.emp].name}</b><span>${l.type} · ${range(l.from, l.to)}</span></span>
-        <span className="row-d"><em>${BY[l.emp].dept}</em></span></button>`)}
-  </div>`;
-}
-
-function TimeOff({ mine, go }) {
-  const rows = balances(mine);
-  const recent = [...mine].filter(l => !l.past).sort((a, b) => b.from.localeCompare(a.from)).slice(0, 2);
-  return html`<div className="card" style=${{ padding: '8px 20px 20px' }}>
-    <div className="bal">${rows.map(r => html`<div key=${r.t}>${r.t}<span><b>${r.left}</b> days left${r.pend ? ' · ' + r.pend + ' pending' : ''}</span></div>`)}</div>
-    ${recent.map(l => html`<div className="hx" key=${l.id} style=${{ paddingBottom: 0, borderBottom: 0 }}><span className="row-t"><b>${l.type}</b><span>${range(l.from, l.to)} · ${plural(l.days, 'day')}</span></span>
-      <span className="pill" style=${{ '--c': LS_C[l.state] }}><i></i>${l.state[0].toUpperCase() + l.state.slice(1)}</span></div>`)}
-    <button className="btn pri" style=${{ marginTop: 18 }} onClick=${() => go('leaves')}>Apply for leave</button></div>`;
-}
-
-export function Approvals({ queue, setLeaves, open }) {
-  const set = (id, state) => setLeaves(ls => ls.map(l => l.id === id ? { ...l, state } : l));
-  const left = queue.filter(l => l.state === 'pending').length;
-  return html`<div className="card" style=${{ padding: '4px 20px' }}>
-    ${queue.map(l => { const e = BY[l.emp]; return html`<div className="ap" key=${l.id}>
-      <div className="ap-h"><button onClick=${() => open(e.n)}><${Av} e=${e} s=${36}/></button>
-        <span><b>${e.name}</b><span>${l.type} · sent ${l.sent.toLowerCase()}</span></span></div>
-      <div className="ap-m"><span className="tag">${range(l.from, l.to)}</span><span className="tag">${plural(l.days, 'day')}</span></div>
-      ${l.reason && html`<div className="ap-q">${l.reason}</div>`}
-      <div className="ap-a">
-        ${l.state === 'pending' ? html`<button className="btn pri sm" onClick=${() => set(l.id, 'approved')}>Approve</button>
-          <button className="btn ghost sm" onClick=${() => set(l.id, 'declined')}>Decline</button>`
-        : html`<span className="ap-done"><${Icon} n=${l.state === 'approved' ? 'check' : 'x'} s=${15}/> <b>${l.state === 'approved' ? 'Approved' : 'Declined'}</b>
-          <button className="link" onClick=${() => set(l.id, 'pending')}>Undo</button></span>`}
-      </div></div>`; })}
-    ${left === 0 && html`<div className="empty">You are all caught up.</div>`}
-  </div>`;
+/* ---------- Leave approvals: one request at a time, slide with the arrows ---------- */
+function ApprovalsCarousel({ queue, setLeaves, open }) {
+  const pending = queue.filter(l => l.state === 'pending');
+  const [i, setI] = useState(0); const [undo, setUndo] = useState(null);
+  const track = useRef(null);
+  const n = pending.length;
+  useEffect(() => { if (i > n - 1) { const k = Math.max(0, n - 1); setI(k); if (track.current) track.current.scrollTo({ left: k * track.current.clientWidth }); } }, [n]);
+  useEffect(() => { if (!undo) return; const t = setTimeout(() => setUndo(null), 8000); return () => clearTimeout(t); }, [undo]);
+  const go = d => { const t = track.current; if (t) t.scrollBy({ left: d * t.clientWidth, behavior: 'smooth' }); };
+  const onScroll = () => { const t = track.current; if (t) setI(Math.round(t.scrollLeft / t.clientWidth)); };
+  const decide = (l, state) => { setLeaves(ls => ls.map(x => x.id === l.id ? { ...x, state } : x)); setUndo({ id: l.id, state, name: BY[l.emp].name.split(' ')[0] }); };
+  const arrows = html`<div className="car-n"><span>${n ? Math.min(i + 1, n) + ' of ' + n : ''}</span>
+    <button className="ib" onClick=${() => go(-1)} disabled=${n < 2 || i === 0} aria-label="Previous request"><${Icon} n="chevL" s=${16}/></button>
+    <button className="ib" onClick=${() => go(1)} disabled=${n < 2 || i >= n - 1} aria-label="Next request"><${Icon} n="chevR" s=${16}/></button></div>`;
+  return html`<${Panel} title="Leave approvals" sub=${n ? n + ' waiting' : 'All clear'} right=${arrows}>
+    ${n === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="check" s=${22}/></span><b>You are all caught up</b><span>New leave requests will show up here.</span></div>` :
+      html`<div className="car" ref=${track} onScroll=${onScroll}>${pending.map(l => { const e = BY[l.emp]; return html`<div className="slide" key=${l.id}>
+        <div className="ap-h"><button onClick=${() => open(e.n)}><${Av} e=${e} s=${44}/></button>
+          <span><b>${e.name}</b><span>${e.role}</span></span></div>
+        <div className="slide-t"><span className="slide-i"><${Icon} n=${typeIcon(l.type)} s=${16}/></span>${l.type}<em>${plural(l.days, 'day')}</em></div>
+        <div className="slide-d">${range(l.from, l.to)}</div>
+        <p className="slide-q">${l.reason || 'No note added.'}</p>
+        <div className="ap-a" style=${{ margin: 0 }}><button className="btn pri sm" onClick=${() => decide(l, 'approved')}>Approve</button><button className="btn ghost sm" onClick=${() => decide(l, 'declined')}>Decline</button></div>
+      </div>`; })}</div>`}
+    ${undo && html`<div className="toast" role="status"><span>${undo.state === 'approved' ? 'Approved' : 'Declined'} ${undo.name}'s request.</span>
+      <button className="link" onClick=${() => { setLeaves(ls => ls.map(x => x.id === undo.id ? { ...x, state: 'pending' } : x)); setUndo(null); }}>Undo</button></div>`}
+  <//>`;
 }
 
 function Reviews({ people, open }) {
   const rows = people.filter(e => e.status === 'Probation').map(e => { const d = addMonths(e.join, 3); return { e, d, days: Math.round((pd(d) - TOD) / DAY) }; })
     .filter(x => x.days <= 45).sort((a, b) => a.days - b.days);
-  return html`<div className="card" style=${{ padding: '8px 12px' }}>
-    ${rows.length === 0 ? html`<div className="empty">No probation reviews are coming up.</div>` :
+  return html`<${Panel} title="Probation reviews" sub="Next 45 days">
+    ${rows.length === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="clock" s=${22}/></span><b>No reviews coming up</b><span>People on probation will appear here.</span></div>` :
       rows.map(x => html`<button key=${x.e.n} className="row" onClick=${() => open(x.e.n)}><${Av} e=${x.e} s=${38}/>
         <span className="row-t"><b>${x.e.name}</b><span>${x.e.role}</span></span>
-        <span className="row-d">${fmtDM(x.d)}<em>${x.days < 0 ? 'Overdue by ' + plural(-x.days, 'day') : rel(x.days)}</em></span></button>`)}
-  </div>`;
+        <span className="row-d">${fmtDM(x.d)}<em>${x.days < 0 ? 'Overdue' : rel(x.days)}</em></span></button>`)}
+  <//>`;
+}
+
+function QuickActions({ leaves, go, openForm, compose }) {
+  const items = [
+    ['plus', 'Add employee', 'Create a new profile', 'blue', () => openForm(null)],
+    ['megaphone', 'Announcement', 'Post to everyone', 'amber', compose],
+    ['download', 'Leave report', 'Download one CSV', 'green', () => downloadLeaveReport(leaves)],
+    ['settings', 'Leave policy', 'Allowances and rules', 'purple', () => go('settings')]
+  ];
+  return html`<${Panel} title="Quick actions" sub="Common tasks">
+    <div className="qa2">${items.map(([ic, l, d, tone, fn]) => html`<button key=${l} className="qa-t" onClick=${fn}>
+      <span className="tile-i" style=${{ '--c': { blue: '#9DB4F5', amber: '#E8B93F', green: '#46D39A', purple: '#B79BF2' }[tone] }}><${Icon} n=${ic} s=${20}/></span>
+      <b>${l}</b><span>${d}</span></button>`)}</div>
+  <//>`;
 }
 
 const KINDS = {
@@ -95,28 +79,39 @@ const KINDS = {
   celebrate: { label: 'Celebration', icon: 'star', c: '#46D39A' }
 };
 
-function Announcements({ ann, setAnn, canPost, user }) {
-  const [on, setOn] = useState(false); const [t, setT] = useState(''); const [b, setB] = useState(''); const [k, setK] = useState('general');
+function AnnList({ ann, setAnn, canPost }) {
+  return html`<div className="anl">
+    ${ann.length === 0 ? html`<div className="empty" style=${{ textAlign: 'left' }}>No announcements right now.</div>` :
+      ann.map(a => { const kd = KINDS[a.kind] || KINDS.general; return html`<article className="an" key=${a.id}>
+        <span className="an-i" style=${{ '--c': kd.c }}><${Icon} n=${kd.icon} s=${22}/></span>
+        <div className="an-b">
+          <div className="an-h"><b>${a.title}</b>${canPost && html`<button className="link" onClick=${() => setAnn(x => x.filter(y => y.id !== a.id))} aria-label=${'Remove ' + a.title}>Remove</button>`}</div>
+          ${a.body && html`<p>${a.body}</p>`}<small>${kd.label} · ${a.by} · ${fmtDM(a.date)}</small></div></article>`; })}
+  </div>`;
+}
+
+function Composer({ user, setAnn, close }) {
+  const [t, setT] = useState(''); const [b, setB] = useState(''); const [k, setK] = useState('general');
   const post = ev => {
     ev.preventDefault(); if (!t.trim()) return;
-    setAnn(a => [{ id: Date.now(), kind: k, title: t.trim(), body: b.trim(), date: TODISO, by: user.name }, ...a]);
-    setT(''); setB(''); setK('general'); setOn(false);
+    setAnn(a => [{ id: Date.now(), kind: k, title: t.trim(), body: b.trim(), date: TODISO, by: user.name }, ...a]); close();
   };
-  return html`<div>
-    ${canPost && (on ? html`<form className="card fm" style=${{ marginBottom: 16 }} onSubmit=${post}>
-        <div className="fld"><span className="lb">Type</span><div className="chips" style=${{ marginTop: 0, flexWrap: 'wrap' }}>${Object.entries(KINDS).map(([key, v]) => html`<button type="button" key=${key} className=${'chip' + (k === key ? ' on' : '')} onClick=${() => setK(key)}>${v.label}</button>`)}</div></div>
-        <div className="fld"><label htmlFor="ann-t">Headline</label><input id="ann-t" className="inp" value=${t} onChange=${ev => setT(ev.target.value)} placeholder="What do people need to know?"/></div>
-        <div className="fld"><label htmlFor="ann-b">Details (optional)</label><textarea id="ann-b" className="inp" value=${b} onChange=${ev => setB(ev.target.value)}></textarea></div>
-        <div style=${{ display: 'flex', gap: 10 }}><button className="btn pri" type="submit" disabled=${!t.trim()}>Post to everyone</button><button className="btn ghost" type="button" onClick=${() => setOn(false)}>Cancel</button></div></form>`
-      : html`<button className="btn sec2 sm" style=${{ marginBottom: 16 }} onClick=${() => setOn(true)}><${Icon} n="plus" s=${15}/> New announcement</button>`)}
-    <div className="anl">
-      ${ann.length === 0 ? html`<div className="empty" style=${{ textAlign: 'left' }}>No announcements right now.</div>` :
-        ann.map(a => { const kd = KINDS[a.kind] || KINDS.general; return html`<article className="an" key=${a.id}>
-          <span className="an-i" style=${{ '--c': kd.c }}><${Icon} n=${kd.icon} s=${22}/></span>
-          <div className="an-b">
-            <div className="an-h"><b>${a.title}</b>${canPost && html`<button className="link" onClick=${() => setAnn(x => x.filter(y => y.id !== a.id))} aria-label=${'Remove ' + a.title}>Remove</button>`}</div>
-            ${a.body && html`<p>${a.body}</p>`}<small>${kd.label} · ${a.by} · ${fmtDM(a.date)}</small></div></article>`; })}
-    </div></div>`;
+  return html`<form onSubmit=${post}>
+    <div className="fld"><span className="lb">Type</span><div className="chips" style=${{ marginTop: 0, flexWrap: 'wrap' }}>${Object.entries(KINDS).map(([key, v]) => html`<button type="button" key=${key} className=${'chip' + (k === key ? ' on' : '')} onClick=${() => setK(key)}>${v.label}</button>`)}</div></div>
+    <div className="fld"><label htmlFor="ann-t">Headline</label><input id="ann-t" className="inp" value=${t} onChange=${ev => setT(ev.target.value)} placeholder="What do people need to know?"/></div>
+    <div className="fld"><label htmlFor="ann-b">Details (optional)</label><textarea id="ann-b" className="inp" value=${b} onChange=${ev => setB(ev.target.value)}></textarea></div>
+    <div style=${{ display: 'flex', gap: 10, marginTop: 18 }}><button className="btn pri sm" type="submit" disabled=${!t.trim()}>Post to everyone</button><button className="btn ghost sm" type="button" onClick=${close}>Cancel</button></div></form>`;
+}
+
+function AwayWeek({ leaves, open }) {
+  const end = isoOf(TOD + 6 * DAY);
+  const rows = awayList(leaves).filter(l => BY[l.emp] && BY[l.emp].status !== 'Exited' && l.from <= end && l.to >= TODISO).sort((a, b) => a.from.localeCompare(b.from));
+  return html`<${Panel} title="Away this week" sub="Next 7 days">
+    ${rows.length === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="calendar" s=${22}/></span><b>Everyone is in</b><span>No one is away in the next 7 days.</span></div>` :
+      rows.map((l, i) => html`<button key=${i} className="row" onClick=${() => open(l.emp)}><${Av} e=${BY[l.emp]} s=${38}/>
+        <span className="row-t"><b>${BY[l.emp].name}</b><span>${l.type} · ${range(l.from, l.to)}</span></span>
+        <span className="row-d"><em>${BY[l.emp].dept}</em></span></button>`)}
+  <//>`;
 }
 
 function TeamCard({ user, open }) {
@@ -136,46 +131,55 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, go, openForm,
   const pending = queue.filter(l => l.state === 'pending').length;
   const people = activeEmps();
   const away = awayList(leaves);
-  const annual = balances(mine)[0];
   const dateL = WDL[t.getUTCDay()] + ', ' + t.getUTCDate() + ' ' + MONL[t.getUTCMonth()] + ' ' + t.getUTCFullYear();
-  const nextHol = Object.keys(HOL).sort().find(k => k >= TODISO);
-
-  const head = (lede) => html`<div>
-    <div className="date-l">${dateL}</div>
-    <h1 className="h-greet">${greet}, ${first(user)}.</h1>
-    <p className="lede">${lede}</p>
-    <${QuickSearch} open=${open}/>
-  </div>`;
+  const [composing, setComposing] = useState(false);
+  const annRef = useRef(null);
+  const compose = () => { setComposing(true); setTimeout(() => annRef.current && annRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50); };
 
   if (role === 'admin') {
     const onLeave = people.filter(e => isAway(e.n, TODISO, away)).length;
-    const onProb = people.filter(e => e.status === 'Probation').length;
-    const stats = [['Headcount', people.length, plural(new Set(people.map(e => e.dept)).size, 'department')], ['On leave today', onLeave, HOL[TODISO] ? HOL[TODISO] + ' holiday' : 'of ' + people.length], ['Waiting for you', pending, pending === 1 ? 'leave request' : 'leave requests'], ['On probation', onProb, 'reviews below']];
-    return html`<div>${head(pending ? html`<span><b>${plural(pending, 'leave request')}</b> ${pending === 1 ? 'is' : 'are'} waiting for you.</span>` : 'Nothing needs your attention right now.')}
-      <div className="bals">${stats.map(([l, n, s]) => html`<div className="bl" key=${l}><span className="eyebrow">${l}</span><b>${n}</b><small>${s}</small></div>`)}</div>
-      <section className="sec grid2b">
-        <div><div className="sec-h"><h2>Leave approvals</h2><span>${pending ? pending + ' pending' : 'All clear'}</span></div><${Approvals} queue=${queue} setLeaves=${setLeaves} open=${open}/></div>
-        <div>
-          <div className="sec-h"><h2>Probation reviews</h2><span>Next 45 days</span></div><${Reviews} people=${people} open=${open}/>
-          <div className="sec-h" style=${{ marginTop: 40 }}><h2>Quick actions</h2></div>
-          <div className="qa"><button className="btn sec2" onClick=${() => openForm(null)}><${Icon} n="plus" s=${16}/> Add employee</button>
-            <button className="btn ghost" onClick=${() => go('requests')}><${Icon} n="download" s=${16}/> Leave report</button>
-            <button className="btn ghost" onClick=${() => go('settings')}>Leave policy</button></div>
-        </div>
+    const probation = people.filter(e => e.status === 'Probation');
+    const due = probation.filter(e => Math.round((pd(addMonths(e.join, 3)) - TOD) / DAY) <= 45).length;
+    const depts = new Set(people.map(e => e.dept)).size;
+    return html`<div>
+      <div className="date-l">${dateL}</div>
+      <h1 className="h-greet">${greet}, ${first(user)}.</h1>
+      <p className="lede">${pending ? html`<span><b>${plural(pending, 'leave request')}</b> ${pending === 1 ? 'is' : 'are'} waiting for you.</span>` : 'Nothing needs your attention right now.'}</p>
+      <div className="tiles">
+        <${Tile} icon="people" tone="blue" label="Headcount" value=${people.length} sub=${'across ' + plural(depts, 'department')} onClick=${() => go('people')}/>
+        <${Tile} icon="leaves" tone="purple" label="On leave today" value=${onLeave} sub=${HOL[TODISO] ? 'Holiday: ' + HOL[TODISO] : onLeave ? 'people are away' : 'everyone is in'} onClick=${() => go('calendar')}/>
+        <${Tile} icon="requests" tone="orange" hot=${pending > 0} label="Waiting for you" value=${pending} sub=${pending === 1 ? 'leave request to review' : 'leave requests to review'} onClick=${() => go('requests')}/>
+        <${Tile} icon="clock" tone="amber" label="On probation" value=${probation.length} sub=${due ? plural(due, 'review') + ' due soon' : 'no reviews due soon'}/>
+      </div>
+      <section className="eq3 sec">
+        <${ApprovalsCarousel} queue=${queue} setLeaves=${setLeaves} open=${open}/>
+        <${Reviews} people=${people} open=${open}/>
+        <${QuickActions} leaves=${leaves} go=${go} openForm=${openForm} compose=${compose}/>
       </section>
-      <section className="sec grid2b">
-        <div><div className="sec-h"><h2>Announcements</h2><span>Visible to everyone</span></div><${Announcements} ann=${ann} setAnn=${setAnn} canPost=${true} user=${user}/></div>
-        <div><div className="sec-h"><h2>Away this week</h2><span>Next 7 days</span></div><${AwayWeek} leaves=${leaves} open=${open}/></div>
+      <section className="eq2 sec" ref=${annRef}>
+        <${Panel} title="Announcements" sub="Visible to everyone" right=${!composing && html`<button className="btn sec2 sm" onClick=${() => setComposing(true)}><${Icon} n="plus" s=${15}/> New</button>`}>
+          ${composing ? html`<${Composer} user=${user} setAnn=${setAnn} close=${() => setComposing(false)}/>` : html`<${AnnList} ann=${ann} setAnn=${setAnn} canPost=${true}/>`}
+        <//>
+        <${AwayWeek} leaves=${leaves} open=${open}/>
       </section>
     </div>`;
   }
 
-  const lede = html`<span>You have <b>${annual.left} days</b> of annual leave left${nextHol ? '. Next holiday is ' + HOL[nextHol] + ' on ' + fmtDay(pd(nextHol)) : ''}.</span>`;
-  return html`<div>${head(lede)}
+  const bal = balances(mine);
+  const nextHol = Object.keys(HOL).sort().find(k => k >= TODISO);
+  const recent = [...mine].filter(l => !l.past).sort((a, b) => b.from.localeCompare(a.from)).slice(0, 2);
+  return html`<div>
+    <div className="date-l">${dateL}</div>
+    <h1 className="h-greet">${greet}, ${first(user)}.</h1>
+    <p className="lede"><span>You have <b>${bal[0].left} days</b> of annual leave left${nextHol ? '. Next holiday is ' + HOL[nextHol] + ' on ' + fmtDay(pd(nextHol)) : ''}.</span></p>
     <section className="sec grid2b">
-      <div><div className="sec-h"><h2>Announcements</h2></div><${Announcements} ann=${ann} setAnn=${setAnn} canPost=${false} user=${user}/></div>
+      <div><div className="sec-h"><h2>Announcements</h2></div><div className="card" style=${{ padding: '8px 20px' }}><${AnnList} ann=${ann} setAnn=${setAnn} canPost=${false}/></div></div>
       <div>
-        <div className="sec-h"><h2>Your time off</h2><span>${t.getUTCFullYear()}</span></div><${TimeOff} mine=${mine} go=${go}/>
+        <div className="sec-h"><h2>Your time off</h2><span>${t.getUTCFullYear()}</span></div>
+        <div className="tiles two">${bal.map(b => html`<${Tile} key=${b.t} icon=${typeIcon(b.t)} tone=${typeTone(b.t)} label=${b.t} value=${b.left} sub=${b.pend ? 'days left · ' + b.pend + ' pending' : 'days left'}/>`)}</div>
+        ${recent.map(l => html`<div className="hx" key=${l.id} style=${{ paddingBottom: 0, borderBottom: 0, marginTop: 14 }}><span className="row-t"><b>${l.type}</b><span>${range(l.from, l.to)} · ${plural(l.days, 'day')}</span></span>
+          <span className="pill" style=${{ '--c': LS_C[l.state] }}><i></i>${l.state[0].toUpperCase() + l.state.slice(1)}</span></div>`)}
+        <button className="btn pri" style=${{ marginTop: 18 }} onClick=${() => go('leaves')}>Apply for leave</button>
         <div className="sec-h" style=${{ marginTop: 40 }}><h2>Your team</h2></div><${TeamCard} user=${user} open=${open}/>
       </div>
     </section>

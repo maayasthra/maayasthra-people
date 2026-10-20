@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { html, Icon } from '../ui.jsx';
+import { html, Icon, Tile } from '../ui.jsx';
+import { typeIcon, typeTone } from './Home.jsx';
 import { TOD, DAY, TODISO, BY, POLICY, isoOf, pd, fmtDay, plural, range, workDays, balances, noticeDays, TEAM_LEAVES } from '../data.js';
 
 const LS_C = { pending:'#E8B93F', approved:'#46D39A', declined:'#E5736B' };
@@ -33,8 +34,7 @@ export function MyLeaves({ leaves, setLeaves, user }) {
   const hist = [...mine].sort((a, b) => b.from.localeCompare(a.from));
   return html`<div>
     <div className="pg-h"><div><h1>My Leaves</h1><p>Your balances for ${new Date(TOD).getUTCFullYear()} and every request you have sent.</p></div></div>
-    <div className="bals">${bal.map(b => html`<div className="bl" key=${b.t}>
-      <span className="eyebrow">${b.t}</span><b>${b.left}</b><small>of ${b.total} days left${b.pend > 0 ? html` · <em>${b.pend} pending</em>` : ''}</small></div>`)}</div>
+    <div className="tiles">${bal.map(b => html`<${Tile} key=${b.t} icon=${typeIcon(b.t)} tone=${typeTone(b.t)} label=${b.t} value=${b.left} sub=${'of ' + b.total + ' days left' + (b.pend > 0 ? ' · ' + b.pend + ' pending' : '')}/>`)}</div>
     <div className="grid2b" style=${{ marginTop: 48 }}>
       <form className="card fm" onSubmit=${submit}>
         <h2>Apply for leave</h2>
