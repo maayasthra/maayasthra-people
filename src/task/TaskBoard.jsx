@@ -72,7 +72,8 @@ export function TaskBoard({ tasks, setTasks, boards, setBoards, user, role, tf, 
     setText(''); setAdding(null);
   };
 
-  const Col = ({ col, head, e }) => html`<section data-col=${col} className=${'kc2' + (col === POOL ? ' pool' : '') + (over && over.col === col ? ' over' : '')} onDragOver=${ev => onOver(ev, col)} onDrop=${ev => onDrop(ev, col)} onDragLeave=${ev => { if (!ev.currentTarget.contains(ev.relatedTarget)) setOver(o => o && o.col === col ? null : o); }}>
+  // A plain function, not a component, so typing or dragging never remounts the columns.
+  const renderCol = (col, head, e) => html`<section key=${col} data-col=${col} className=${'kc2' + (col === POOL ? ' pool' : '') + (over && over.col === col ? ' over' : '')} onDragOver=${ev => onOver(ev, col)} onDrop=${ev => onDrop(ev, col)} onDragLeave=${ev => { if (!ev.currentTarget.contains(ev.relatedTarget)) setOver(o => o && o.col === col ? null : o); }}>
     <header className="kc2-h">${head}<span className="kc-n">${cards(col).length}</span><span style=${{ flex: 1 }}></span>
       <button className="ib" onClick=${() => { setAdding(adding === col ? null : col); setText(''); }} aria-label=${'Add a card to ' + (e ? e.name : 'Priority Tasks')}><${Icon} n="plus" s=${15}/></button></header>
     <div className="kc2-b">
@@ -108,8 +109,8 @@ export function TaskBoard({ tasks, setTasks, boards, setBoards, user, role, tf, 
       <button className=${'chip' + (tf.hideEmpty ? ' on' : '')} onClick=${() => setTf({ ...tf, hideEmpty: !tf.hideEmpty })} aria-pressed=${!!tf.hideEmpty}>Hide empty columns</button>
     </div>
     <div className="kb2" ref=${scroller}>
-      ${board.pool && html`<${Col} col=${POOL} head=${html`<span className="pool-i"><${Icon} n="flag" s=${16}/></span><span className="row-t"><b>Priority Tasks</b><span>Load here, then hand out</span></span>`}/>`}
-      ${shown.map(e => html`<${Col} key=${e.n} col=${e.n} e=${e} head=${html`<${Av} e=${e} s=${34}/><span className="row-t"><b>${e.n === user.n ? e.name + ' (you)' : e.name}</b><span>${e.role}</span></span>`}/>`)}
+      ${board.pool && renderCol(POOL, html`<span className="pool-i"><${Icon} n="flag" s=${16}/></span><span className="row-t"><b>Priority Tasks</b><span>Load here, then hand out</span></span>`)}
+      ${shown.map(e => renderCol(e.n, html`<${Av} e=${e} s=${34}/><span className="row-t"><b>${e.n === user.n ? e.name + ' (you)' : e.name}</b><span>${e.role}</span></span>`, e))}
     </div>
     ${menu && html`<${CardMenu} m=${menu} board=${board} user=${user} setTasks=${setTasks} close=${() => setMenu(null)}/>`}
     ${bform && html`<${BoardForm} setBoards=${setBoards} setTf=${setTf} close=${() => setBform(false)}/>`}
