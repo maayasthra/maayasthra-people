@@ -16,6 +16,9 @@ Needs Node 20+. The build output is plain static files, so any host can serve it
 - Also in: org chart, add and edit employees, photo and contact self-service, half-day leave, notice and note rules, leave CSV export, light and dark themes.
 - Data is sample data held in memory. Nothing persists yet, and sign-in is a demo check (password `maayasthra`).
 
+## Maayasthra Task
+The logo (top left) switches between Maayasthra People and Maayasthra Task. Task has a Kanban Board (To do, In progress, In review, Done), My Tasks, and an admin Team view. Code is in `src/task/` and `src/tasks.js`. Tasks and projects are sample data saved in the browser (localStorage) until the database exists.
+
 ## Next steps
 1. Choose the backend once the existing hosting is confirmed (Supabase/Postgres, or a Node API on the current host).
 2. Replace the in-memory store in `src/data.js` with a data layer that reads and writes the database.

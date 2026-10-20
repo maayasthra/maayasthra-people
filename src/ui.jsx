@@ -52,6 +52,12 @@ const IC = {
   timer:['M12 21a8 8 0 1 0 0-16 8 8 0 0 0 0 16z','M12 9v4l2 2','M9 3h6'],
   attendance:['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z','M12 7v5l3 2'],
   hours:['M12 21a8 8 0 1 0 0-16 8 8 0 0 0 0 16z','M12 9v4l2 2','M9 3h6'],
+  board:['M4 5h5v14H4z','M10 5h5v9h-5z','M16 5h4v6h-4z'],
+  mytasks:['M5 7l2 2 3-3','M5 15l2 2 3-3','M13 8h6','M13 16h6'],
+  team:['M5 20V11','M12 20V4','M19 20v-6'],
+  flag:['M6 21V4','M6 5h11l-2 4 2 4H6'],
+  comment:['M5 5h14v10H10l-4 4v-4H5z'],
+  trash:['M5 7h14','M9 7V4h6v3','M7 7l1 13h8l1-13'],
   home2:['M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z']
 };
 export const Icon = ({ n, s = 18 }) => html`<svg width=${s} height=${s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">${IC[n].map((d,i) => html`<path key=${i} d=${d}/>`)}</svg>`;

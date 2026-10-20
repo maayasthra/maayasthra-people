@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { html, Icon, Av, Tile, first } from '../ui.jsx';
 import { downloadLeaveReport } from '../report.js';
+import { DueChip } from '../task/parts.jsx';
+import { COL, isOpen } from '../tasks.js';
 import { SessionList, useDay, dayNote } from '../Attendance.jsx';
 import { hm, lunchInfo, checkIn, checkOut, dayInfo, useNow, clock } from '../attendance.js';
 import {
@@ -156,7 +158,7 @@ function YourDay({ user, att, setAtt }) {
 }
 
 /* ---------- Home ---------- */
-export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, go, openForm, open }) {
+export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, tasks, goTask, go, openForm, open }) {
   const h = new Date().getHours(), t = new Date(TOD);
   const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
   const mine = leaves.filter(l => l.emp === user.n);
@@ -208,6 +210,7 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
   const bal = balances(mine);
   const { sessions, worked, live } = useDay(user, att);
   const hols = Object.keys(HOL).sort().filter(k => k >= TODISO);
+  const myOpen = (tasks || []).filter(t => t.assignee === user.n && isOpen(t)).sort((a, b) => (a.due || '9').localeCompare(b.due || '9'));
   const recent = [...mine].filter(l => !l.past).sort((a, b) => b.from.localeCompare(a.from)).slice(0, 4);
   return html`<div>
     <div className="date-l">${dateL}</div>
@@ -222,7 +225,11 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
       <${Panel} title="Announcements" sub="From People and Ops"><${AnnList} ann=${ann} setAnn=${setAnn} canPost=${false}/><//>
       <${TeamPanel} user=${user} open=${open}/>
     </section>
-    <section className="eq2 sec">
+    <section className="eq3 sec">
+      <${Panel} title="Your tasks" sub=${myOpen.length ? myOpen.length + ' open' : 'All clear'} right=${html`<button className="btn sec2 sm" onClick=${() => goTask(null)}>Open Task</button>`}>
+        ${myOpen.length === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="check" s=${22}/></span><b>Nothing assigned</b><span>Tasks assigned to you will show up here.</span></div>` :
+          myOpen.slice(0, 6).map(t => html`<button key=${t.id} className="row" onClick=${() => goTask(t.id)}><span className="row-t"><b>${t.title}</b><span>${COL[t.status][1]}</span></span><span className="row-d"><${DueChip} due=${t.due} status=${t.status}/></span></button>`)}
+      <//>
       <${Panel} title="Your leave requests" sub=${t.getUTCFullYear()} right=${html`<button className="btn sec2 sm" onClick=${() => go('leaves')}><${Icon} n="plus" s=${15}/> Apply</button>`}>
         ${recent.length === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="leaves" s=${22}/></span><b>No requests yet</b><span>Apply for leave and track it here.</span></div>` :
           recent.map(l => html`<div className="hx" key=${l.id}><span className="row-t"><b>${l.type}${l.half ? ' · half day' : ''}</b><span>${range(l.from, l.to)} · ${plural(l.days, 'day')}</span></span>
