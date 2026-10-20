@@ -3,7 +3,7 @@ import { downloadLeaveReport } from '../report.js';
 import { BY, pd, fmtDay, plural, range, workDays, awayList } from '../data.js';
 import { typeIcon } from './Home.jsx';
 
-const LS_C = { pending: '#E8B93F', approved: '#46D39A', declined: '#E5736B' };
+const LS_C = { pending: '#FF9F0A', approved: '#30D158', declined: '#FF453A' };
 
 export function Requests({ user, leaves: all, setLeaves, open }) {
   const leaves = all.filter(l => !l.past && l.emp !== user.n);

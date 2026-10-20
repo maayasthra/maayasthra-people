@@ -10,7 +10,7 @@ export const sessionsOf = (att, n) => (att[n] && att[n].day === dayKey() ? att[n
 export const isIn = sessions => sessions.length > 0 && !sessions[sessions.length - 1].out;
 export const workedMs = (sessions, now) => sessions.reduce((t, s) => t + ((s.out || now) - s.in), 0);
 
-export function checkIn(att, n) { const cur = sessionsOf(att, n); return { ...att, [n]: { day: dayKey(), sessions: [...cur, { in: Date.now(), out: null }] } }; }
+export function checkIn(att, n, loc = 'office') { const cur = sessionsOf(att, n); return { ...att, [n]: { day: dayKey(), sessions: [...cur, { in: Date.now(), out: null, loc }] } }; }
 export function checkOut(att, n) { const cur = sessionsOf(att, n); if (!isIn(cur)) return att; const s = cur.map((x, i) => i === cur.length - 1 ? { ...x, out: Date.now() } : x); return { ...att, [n]: { day: dayKey(), sessions: s } }; }
 
 export const hms = ms => { const t = Math.max(0, Math.floor(ms / 1000)); return [Math.floor(t / 3600), Math.floor(t / 60) % 60, t % 60].map(v => String(v).padStart(2, '0')).join(':'); };
@@ -38,3 +38,7 @@ export function useNow(ms = 1000) {
 
 export function loadAtt() { try { return JSON.parse(localStorage.getItem('mp-att') || '{}') || {}; } catch (x) { return {}; } }
 export function saveAtt(a) { try { localStorage.setItem('mp-att', JSON.stringify(a)); } catch (x) {} }
+
+export const LOCS = { office: 'Office', home: 'Home' };
+export function loadLoc() { try { return localStorage.getItem('mp-loc') === 'home' ? 'home' : 'office'; } catch (x) { return 'office'; } }
+export function saveLoc(l) { try { localStorage.setItem('mp-loc', l); } catch (x) {} }

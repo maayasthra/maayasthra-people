@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { html, Icon } from './ui.jsx';
 import { fmtTime } from './data.js';
-import { sessionsOf, isIn, workedMs, hms, hm, clock, lunchInfo, startDelta, shiftEndsIn, checkIn, checkOut, useNow } from './attendance.js';
+import { sessionsOf, isIn, workedMs, hms, hm, clock, lunchInfo, startDelta, shiftEndsIn, checkIn, checkOut, useNow, LOCS } from './attendance.js';
 
 export function SessionList({ sessions, now }) {
   if (!sessions.length) return html`<div className="ck-empty">No check-ins yet today.</div>`;
   return html`<div className="ck-list">${sessions.map((s, i) => html`<div className="ck-s" key=${i}>
     <span className=${'ck-n' + (s.out ? '' : ' live')}>${i + 1}</span>
-    <span className="ck-r"><b>${clock(s.in)} – ${s.out ? clock(s.out) : 'now'}</b><small>${s.out ? hm(s.out - s.in) : 'running ' + hm(now - s.in)}</small></span></div>`)}</div>`;
+    <span className="ck-r"><b>${clock(s.in)} – ${s.out ? clock(s.out) : 'now'}</b><small>${s.out ? hm(s.out - s.in) : 'running ' + hm(now - s.in)} · ${LOCS[s.loc] || 'Office'}</small></span></div>`)}</div>`;
 }
 
 export function useDay(user, att) {
@@ -16,8 +16,14 @@ export function useDay(user, att) {
   return { now, sessions, live, worked: workedMs(sessions, now) };
 }
 
-/* Top-right check-in / check-out with a running timer */
-export function CheckWidget({ user, att, setAtt }) {
+export function LocPick({ loc, setLoc, small }) {
+  return html`<div className=${'seg locseg' + (small ? ' sm' : '')} role="group" aria-label="Where are you working from">
+    <button className=${loc === 'office' ? 'on' : ''} onClick=${() => setLoc('office')}>Office</button>
+    <button className=${loc === 'home' ? 'on' : ''} onClick=${() => setLoc('home')}>Home</button></div>`;
+}
+
+/* Top-right check-in / check-out with a running timer and an Office or Home choice */
+export function CheckWidget({ user, att, setAtt, loc, setLoc }) {
   const { now, sessions, live, worked } = useDay(user, att);
   const [pop, setPop] = useState(false);
   const ref = useRef(null);
@@ -27,15 +33,18 @@ export function CheckWidget({ user, att, setAtt }) {
     document.addEventListener('mousedown', f); return () => document.removeEventListener('mousedown', f);
   }, [pop]);
   const lunch = lunchInfo(now), left = shiftEndsIn(now, user.shiftEnd);
+  const cur = live ? sessions[sessions.length - 1] : null;
+  const where = cur ? (LOCS[cur.loc] || 'Office') : '';
   const line2 = lunch.state === 'on' || lunch.state === 'soon' ? lunch.text
-    : live ? (left > 0 ? 'Shift ends ' + fmtTime(user.shiftEnd) : 'Shift has ended')
-    : sessions.length ? 'Checked out ' + clock(sessions[sessions.length - 1].out) : 'Shift ' + fmtTime(user.shiftStart) + ' – ' + fmtTime(user.shiftEnd);
+    : live ? where + ' · ' + (left > 0 ? 'ends ' + fmtTime(user.shiftEnd) : 'shift has ended')
+    : sessions.length ? 'Checked out ' + clock(sessions[sessions.length - 1].out) : fmtTime(user.shiftStart) + ' – ' + fmtTime(user.shiftEnd);
   const main = live ? hms(worked) : sessions.length ? hm(worked) + ' worked' : 'Not checked in';
-  const act = () => setAtt(a => live ? checkOut(a, user.n) : checkIn(a, user.n));
+  const act = () => setAtt(a => live ? checkOut(a, user.n) : checkIn(a, user.n, loc));
   return html`<div className="ck" ref=${ref}>
     <button className="ck-t" onClick=${() => setPop(p => !p)} aria-expanded=${pop} aria-label="Today's check-ins">
       <span className=${'ck-dot' + (live ? ' on' : '')}></span>
       <span className="ck-tx"><b className=${live ? 'run' : ''}>${main}</b><span className=${lunch.state === 'on' ? 'lunch on' : lunch.state === 'soon' ? 'lunch' : ''}>${line2}</span></span></button>
+    ${!live && html`<${LocPick} loc=${loc} setLoc=${setLoc} small=${true}/>`}
     <button className=${'btn sm ' + (live ? 'ghost' : 'pri')} onClick=${act}>${live ? 'Check out' : sessions.length ? 'Check in again' : 'Check in'}</button>
     ${pop && html`<div className="menu ck-pop"><div className="menu-h"><b>Today</b><span>Shift ${fmtTime(user.shiftStart)} – ${fmtTime(user.shiftEnd)} · Lunch 1:00 – 2:00 PM</span></div>
       <${SessionList} sessions=${sessions} now=${now}/>

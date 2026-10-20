@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { html, Icon, Av, Tile, first } from '../ui.jsx';
 import { downloadLeaveReport } from '../report.js';
-import { SessionList, useDay, dayNote } from '../Attendance.jsx';
+import { SessionList, useDay, dayNote, LocPick } from '../Attendance.jsx';
 import { hm, lunchInfo, checkIn, checkOut } from '../attendance.js';
 import {
   TOD, DAY, WDL, MONL, pd, fmtDM, fmtDay, rel, plural, range, addMonths, isoOf, TODISO, HOL, BY,
-  balances, awayList, isAway, activeEmps, fmtTime
+  balances, awayList, isAway, activeEmps, fmtTime, nextOcc, EMP
 } from '../data.js';
 
-const LS_C = { pending: '#E8B93F', approved: '#46D39A', declined: '#E5736B' };
+const LS_C = { pending: '#FF9F0A', approved: '#30D158', declined: '#FF453A' };
 const TYPE_ICON = { 'Annual leave': 'sun', 'Casual leave': 'cup', 'Sick leave': 'heart' };
 export const typeIcon = t => TYPE_ICON[t] || 'leaves';
 export const typeTone = t => t === 'Sick leave' ? 'orange' : t === 'Casual leave' ? 'amber' : 'blue';
@@ -60,25 +60,29 @@ function Reviews({ people, open }) {
   <//>`;
 }
 
-function QuickActions({ leaves, go, openForm, compose }) {
-  const items = [
-    ['plus', 'Add employee', 'Create a new profile', 'blue', () => openForm(null)],
-    ['megaphone', 'Announcement', 'Post to everyone', 'amber', compose],
-    ['download', 'Leave report', 'Download one CSV', 'green', () => downloadLeaveReport(leaves)],
-    ['settings', 'Leave policy', 'Allowances and rules', 'purple', () => go('settings')]
-  ];
-  return html`<${Panel} title="Quick actions" sub="Common tasks">
-    <div className="qa2">${items.map(([ic, l, d, tone, fn]) => html`<button key=${l} className="qa-t" onClick=${fn}>
-      <span className="tile-i" style=${{ '--c': { blue: '#9DB4F5', amber: '#E8B93F', green: '#46D39A', purple: '#B79BF2' }[tone] }}><${Icon} n=${ic} s=${20}/></span>
-      <b>${l}</b><span>${d}</span></button>`)}</div>
+function Birthdays({ open }) {
+  const rows = activeEmps().map(e => ({ e, ...nextOcc(e.dob) })).filter(x => x.days <= 30).sort((a, b) => a.days - b.days || a.e.n - b.e.n).slice(0, 7);
+  return html`<${Panel} title="Upcoming birthdays" sub="Next 30 days">
+    ${rows.length === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="star" s=${22}/></span><b>No birthdays soon</b><span>Birthdays in the next 30 days show up here.</span></div>` :
+      rows.map(x => html`<button key=${x.e.n} className="row" onClick=${() => open(x.e.n)}><${Av} e=${x.e} s=${38}/>
+        <span className="row-t"><b>${x.e.name}</b><span>Turns ${x.year - Number(x.e.dob.slice(0, 4))} · ${x.e.dept}</span></span>
+        <span className="row-d">${fmtDay(x.t)}<em>${x.days === 0 ? 'Today' : rel(x.days)}</em></span></button>`)}
   <//>`;
 }
 
+function Actions({ leaves, go, openForm, compose }) {
+  return html`<div className="acts">
+    <button className="btn pri" onClick=${() => openForm(null)}><${Icon} n="plus" s=${16}/> Add employee</button>
+    <button className="btn ghost" onClick=${compose}><${Icon} n="megaphone" s=${16}/> Announce</button>
+    <button className="btn ghost" onClick=${() => downloadLeaveReport(leaves)}><${Icon} n="download" s=${16}/> Report</button>
+    <button className="btn ghost" onClick=${() => go('settings')}><${Icon} n="settings" s=${16}/> Policy</button></div>`;
+}
+
 const KINDS = {
-  general: { label: 'General', icon: 'megaphone', c: '#9DB4F5' },
-  holiday: { label: 'Holiday', icon: 'sun', c: '#E8B93F' },
-  reminder: { label: 'Reminder', icon: 'bell', c: '#FE6D00' },
-  celebrate: { label: 'Celebration', icon: 'star', c: '#46D39A' }
+  general: { label: 'General', icon: 'megaphone', c: '#0A84FF' },
+  holiday: { label: 'Holiday', icon: 'sun', c: '#FF9F0A' },
+  reminder: { label: 'Reminder', icon: 'bell', c: '#FF453A' },
+  celebrate: { label: 'Celebration', icon: 'star', c: '#30D158' }
 };
 
 function AnnList({ ann, setAnn, canPost }) {
@@ -121,25 +125,26 @@ function TeamPanel({ user, open }) {
   const reports = activeEmps().filter(e => e.mgr === user.n);
   const peers = activeEmps().filter(e => user.mgr && e.mgr === user.mgr && e.n !== user.n);
   const rows = [...(mgr ? [[mgr, 'Reports to']] : []), ...reports.slice(0, 5).map(e => [e, 'Reports to you']), ...peers.slice(0, 6).map(e => [e, 'Teammate'])];
-  return html`<${Panel} title="Your team" sub=${rows.length ? plural(rows.length, 'person') : ''}>
+  return html`<${Panel} title="Your team" sub=${rows.length ? rows.length + (rows.length === 1 ? ' person' : ' people') : ''}>
     ${rows.length ? rows.map(([e, l]) => html`<button key=${e.n + l} className="row" onClick=${() => open(e.n)}><${Av} e=${e} s=${38}/><span className="row-t"><b>${e.name}</b><span>${e.role}</span></span><span className="row-d"><em>${l}</em></span></button>`)
       : html`<div className="pn-e"><span className="pn-ei"><${Icon} n="people" s=${22}/></span><b>No team listed yet</b></div>`}
   <//>`;
 }
 
-function YourDay({ user, att, setAtt }) {
+function YourDay({ user, att, setAtt, loc, setLoc }) {
   const { now, sessions, live, worked } = useDay(user, att);
   const lunch = lunchInfo(now);
   return html`<${Panel} title="Your day" sub=${'Shift ' + fmtTime(user.shiftStart) + ' – ' + fmtTime(user.shiftEnd)}>
     <div className=${'dy-l' + (lunch.state === 'on' ? ' on' : '')}><${Icon} n="cup" s=${16}/> ${lunch.state === 'over' ? 'Lunch was 1:00 – 2:00 PM' : lunch.text}</div>
     <${SessionList} sessions=${sessions} now=${now}/>
     <div className="dy-f"><span>${dayNote(sessions, user)}</span>
-      <button className=${'btn sm ' + (live ? 'ghost' : 'pri')} onClick=${() => setAtt(a => live ? checkOut(a, user.n) : checkIn(a, user.n))}>${live ? 'Check out' : sessions.length ? 'Check in again' : 'Check in'}</button></div>
+      ${!live && html`<${LocPick} loc=${loc} setLoc=${setLoc} small=${true}/>`}
+      <button className=${'btn sm ' + (live ? 'ghost' : 'pri')} onClick=${() => setAtt(a => live ? checkOut(a, user.n) : checkIn(a, user.n, loc))}>${live ? 'Check out' : sessions.length ? 'Check in again' : 'Check in'}</button></div>
   <//>`;
 }
 
 /* ---------- Home ---------- */
-export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, go, openForm, open }) {
+export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, loc, setLoc, go, openForm, open }) {
   const h = new Date().getHours(), t = new Date(TOD);
   const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
   const mine = leaves.filter(l => l.emp === user.n);
@@ -158,8 +163,10 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
     const due = probation.filter(e => Math.round((pd(addMonths(e.join, 3)) - TOD) / DAY) <= 45).length;
     const depts = new Set(people.map(e => e.dept)).size;
     return html`<div>
+      <div className="home-h"><div>
       <div className="date-l">${dateL}</div>
-      <h1 className="h-greet">${greet}, ${first(user)}.</h1>
+      <h1 className="h-greet">${greet}, ${first(user)}.</h1></div>
+      <${Actions} leaves=${leaves} go=${go} openForm=${openForm} compose=${compose}/></div>
       <p className="lede">${pending ? html`<span><b>${plural(pending, 'leave request')}</b> ${pending === 1 ? 'is' : 'are'} waiting for you.</span>` : 'Nothing needs your attention right now.'}</p>
       <div className="tiles">
         <${Tile} icon="people" tone="blue" label="Headcount" value=${people.length} sub=${'across ' + plural(depts, 'department')} onClick=${() => go('people')}/>
@@ -170,7 +177,7 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
       <section className="eq3 sec">
         <${ApprovalsCarousel} queue=${queue} setLeaves=${setLeaves} open=${open}/>
         <${Reviews} people=${people} open=${open}/>
-        <${QuickActions} leaves=${leaves} go=${go} openForm=${openForm} compose=${compose}/>
+        <${Birthdays} open=${open}/>
       </section>
       <section className="eq2 sec" ref=${annRef}>
         <${Panel} title="Announcements" sub="Visible to everyone" right=${!composing && html`<button className="btn sec2 sm" onClick=${() => setComposing(true)}><${Icon} n="plus" s=${15}/> New</button>`}>
@@ -194,7 +201,7 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
       <${Tile} icon="clock" tone="green" label="Worked today" value=${hm(worked)} sub=${live ? 'timer is running' : sessions.length ? 'checked out' : 'not checked in yet'}/>
     </div>
     <section className="eq3 sec">
-      <${YourDay} user=${user} att=${att} setAtt=${setAtt}/>
+      <${YourDay} user=${user} att=${att} setAtt=${setAtt} loc=${loc} setLoc=${setLoc}/>
       <${Panel} title="Announcements" sub="From People and Ops"><${AnnList} ann=${ann} setAnn=${setAnn} canPost=${false}/><//>
       <${TeamPanel} user=${user} open=${open}/>
     </section>

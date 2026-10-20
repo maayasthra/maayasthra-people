@@ -3,7 +3,7 @@ import { html, Icon, Tile } from '../ui.jsx';
 import { typeIcon, typeTone } from './Home.jsx';
 import { TOD, DAY, TODISO, BY, POLICY, isoOf, pd, fmtDay, plural, range, workDays, balances, noticeDays, TEAM_LEAVES } from '../data.js';
 
-const LS_C = { pending:'#E8B93F', approved:'#46D39A', declined:'#E5736B' };
+const LS_C = { pending:'#FF9F0A', approved:'#30D158', declined:'#FF453A' };
 
 export function MyLeaves({ leaves, setLeaves, user }) {
   const me = user, mgr = BY[me.mgr] || { name: 'People & Ops' };

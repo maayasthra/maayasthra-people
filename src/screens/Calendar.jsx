@@ -3,7 +3,7 @@ import { html, Icon, first } from '../ui.jsx';
 import { TOD, DAY, WDL, MONL, pd, fmt, fmtDM, fmtDay, rel, plural, isoOf, TODISO, HOL, BY, awayList, activeEmps } from '../data.js';
 
 /* ---------- Calendar ---------- */
-const KIND = { holiday:['Holiday','#FE6D00'], birthday:['Birthday','#E8B93F'], anniv:['Anniversary','#46D39A'], leave:['Time off','#B79BF2'] };
+const KIND = { holiday:['Holiday','#FF9F0A'], birthday:['Birthday','#FF375F'], anniv:['Anniversary','#30D158'], leave:['Time off','#BF5AF2'] };
 const KORDER = ['holiday','birthday','anniv','leave'];
 function itemsFor(k, away) {
   const y = Number(k.slice(0,4)), md = k.slice(5), out = [], wkd = new Date(pd(k)).getUTCDay();

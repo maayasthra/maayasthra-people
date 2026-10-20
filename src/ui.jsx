@@ -55,7 +55,7 @@ export const Icon = ({ n, s = 18 }) => html`<svg width=${s} height=${s} viewBox=
 const SKIN = ['#F2CDAA','#E4B38C','#C98E62','#A9703F','#8B5A36','#6C422A'];
 const HAIR = ['#17110D','#2A1C13','#3D2A1A','#5A3F28','#1C1C20','#7B7B82'];
 const BGS = [['#2E3858','#141A2E'],['#4D2C1B','#1F120B'],['#2D3E3E','#121B1C'],['#3D2E49','#1A1222'],['#43392B','#1C1810'],['#303E2D','#131A12'],['#402C35','#1B1115'],['#2C3242','#12151C']];
-const TOPS = ['#0E3594','#2B3140','#E8E4DC','#FE6D00','#1E5E52','#3C2F4D','#47506A','#7A2E3A'];
+const TOPS = ['#0E3594','#2B3140','#E8E4DC','#FF9F0A','#1E5E52','#3C2F4D','#47506A','#7A2E3A'];
 export function Portrait({ e }) {
   if (e.photo) return html`<img src=${e.photo} alt=${'Photo of ' + e.name} style=${{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}/>`;
   const n = e.n, skin = SKIN[(n*5)%6], hc = HAIR[(n*7 + (n>20?1:0))%6], b = (n*3)%8, top = TOPS[(n*5+2)%8];
@@ -91,7 +91,7 @@ export const Av = ({ e, s = 40 }) => html`<span className="av" style=${{ width: 
 export const Status = ({ s, ov }) => html`<span className=${'pill' + (ov ? ' ov' : '')} style=${{ '--c': STAT_C[s] }}><i></i>${s}</span>`;
 
 
-const TONES = { blue: '#9DB4F5', purple: '#B79BF2', orange: '#FE6D00', amber: '#E8B93F', green: '#46D39A' };
+const TONES = { blue: '#0A84FF', purple: '#BF5AF2', orange: '#FF9F0A', amber: '#FF375F', green: '#30D158', red: '#FF453A' };
 export function Tile({ icon, label, value, sub, tone = 'blue', onClick, hot }) {
   const inner = html`<span className="tile-i" style=${{ '--c': TONES[tone] }}><${Icon} n=${icon} s=${20}/></span>
     <span className="tile-v"><b>${value}</b><span className="tile-l">${label}</span><small>${sub}</small></span>`;

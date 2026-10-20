@@ -98,7 +98,7 @@ EMP.forEach(e => { e.email = emailFor(e.name); });
 const BY = {}; EMP.forEach(e => BY[e.n] = e);
 const DEPTS = [...new Set(EMP.map(e => e.dept))].sort();
 const STATUSES = ['Full-time','Probation','Contract','On leave','Exited'];
-const STAT_C = { 'Full-time':'#46D39A', 'Probation':'#E8B93F', 'Contract':'#9DB4F5', 'On leave':'#B79BF2', 'Exited':'#6B7280' };
+const STAT_C = { 'Full-time':'#30D158', 'Probation':'#FF9F0A', 'Contract':'#0A84FF', 'On leave':'#BF5AF2', 'Exited':'#8E8E93' };
 
 // role changes: [date, title], first entry is the role on joining
 const PATH = {
