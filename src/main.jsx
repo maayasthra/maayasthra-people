@@ -20,7 +20,7 @@ import { TaskBoard } from './task/TaskBoard.jsx';
 import { MyTasks } from './task/MyTasks.jsx';
 import { TeamView } from './task/TeamView.jsx';
 import { TaskDetail } from './task/TaskDetail.jsx';
-import { loadTasks, saveTasks, loadCollapsed, saveCollapsed } from './tasks.js';
+import { loadTasks, saveTasks, loadCollapsed, saveCollapsed, loadCustom, saveCustom, loadView, saveView } from './tasks.js';
 import './styles.css';
 
 const ALL = { board: 'Board', mytasks: 'My Tasks', team: 'Team', home: 'Home', people: 'People', org: 'Org chart', calendar: 'Calendar', attendance: 'Attendance', hours: 'My Hours', leaves: 'My Leaves', requests: 'Requests', settings: 'Settings' };
@@ -72,11 +72,15 @@ function App() {
   const [tasks, setTasks] = useState(loadTasks), [collapsed, setCollapsed] = useState(loadCollapsed);
   const [focus, setFocus] = useState(null);
   const [taskSel, setTaskSel] = useState(null), [tq, setTq] = useState('');
-  const [tf, setTf] = useState({ dept: 'All', hideEmpty: false });
+  const [tf, setTf] = useState(loadView), [custom, setCustom] = useState(loadCustom);
+  const [navHidden, setNavHidden] = useState(() => { try { return localStorage.getItem('mp-nav') === '1'; } catch (x) { return false; } });
   const bump = () => setVer(v => v + 1);
   useEffect(() => { saveAtt(att); }, [att]);
   useEffect(() => { saveTasks(tasks); }, [tasks]);
   useEffect(() => { saveCollapsed(collapsed); }, [collapsed]);
+  useEffect(() => { saveCustom(custom); }, [custom]);
+  useEffect(() => { saveView(tf); }, [tf]);
+  useEffect(() => { try { localStorage.setItem('mp-nav', navHidden ? '1' : '0'); } catch (x) {} }, [navHidden]);
 
   if (!auth) return html`<${Login} onLogin=${(user, role) => { setMe(user.n); setNav({ view: 'home' }); setAuth({ user, role }); window.scrollTo({ top: 0 }); }}/>`;
   const user = auth.user, role = auth.role;
@@ -98,7 +102,7 @@ function App() {
   const home = html`<${Home} role=${role} user=${user} leaves=${leaves} setLeaves=${setLeaves} ann=${ann} setAnn=${setAnn} att=${att} setAtt=${setAtt} tasks=${tasks} goTask=${goTask} go=${go} openForm=${openForm} open=${open}/>`;
   const taskScreen = nav.view === 'mytasks' ? html`<${MyTasks} tasks=${tasks} setTasks=${setTasks} user=${user} tq=${tq} openTask=${openTask}/>`
     : nav.view === 'team' && role === 'admin' ? html`<${TeamView} tasks=${tasks} onPick=${n => { setTf(f => ({ ...f, dept: 'All' })); setFocus(n); go('board'); }}/>`
-    : html`<${TaskBoard} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} tf=${tf} setTf=${setTf} tq=${tq} openTask=${openTask} focus=${focus} collapsed=${collapsed} setCollapsed=${setCollapsed}/>`;
+    : html`<${TaskBoard} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} tf=${tf} setTf=${setTf} tq=${tq} openTask=${openTask} focus=${focus} collapsed=${collapsed} setCollapsed=${setCollapsed} custom=${custom} setCustom=${setCustom}/>`;
   const screen = app === 'task' ? taskScreen : nav.view === 'home' ? home
     : nav.view === 'people' ? html`<${People} pf=${pf} setPf=${setPf} open=${open} openForm=${openForm} role=${role} ver=${ver}/>`
     : nav.view === 'org' ? html`<${OrgChart} open=${open} user=${user} key=${ver}/>`
@@ -113,21 +117,21 @@ function App() {
     : home;
 
   const brand = html`<${Brand}/>`;
-  return html`<div className="app">
+  return html`<div className=${'app' + (navHidden ? ' no-side' : '')}>
     <aside className="side">${brand}
       <${AppSwitch} app=${app} setApp=${setApp}/>
       <nav className="nav" aria-label="Main">${keys.map(k => html`<button key=${k} className=${'nav-b' + (active === k ? ' on' : '')} onClick=${() => go(k)} aria-current=${active === k ? 'page' : undefined}>
         <${Icon} n=${k}/>${ALL[k]}${k === 'requests' && pending > 0 && html`<span className="cnt">${pending}</span>`}</button>`)}</nav>
     </aside>
     <div className="col">
-      <header className="hdr"><div className="hdr-b"><${AppSwitch} app=${app} setApp=${setApp}/></div>
+      <header className="hdr"><button className="ib nav-t" onClick=${() => setNavHidden(h => !h)} aria-label=${navHidden ? 'Show the navigation bar' : 'Hide the navigation bar'} title=${navHidden ? 'Show the navigation bar' : 'Hide the navigation bar'}><${Icon} n="sidebar" s=${18}/></button><div className="hdr-b"><${AppSwitch} app=${app} setApp=${setApp}/></div>
         <div className=${'hs' + (sOpen ? ' open' : '')}>${app === 'task' ? html`<div className="qs"><${Icon} n="search"/><input id="quick-search" className="qs-in" value=${tq} placeholder="Search tasks" onChange=${ev => setTq(ev.target.value)} aria-label="Search tasks"/></div>` : html`<${QuickSearch} open=${id => { setSOpen(false); open(id); }}/>`}</div>
         <button className="ib hs-b" onClick=${() => { setSOpen(o => !o); setTimeout(() => { const el = document.getElementById('quick-search'); if (el) el.focus(); }, 30); }} aria-label="Search"><${Icon} n="search" s=${17}/></button>
         <${CheckWidget} user=${user} att=${att} setAtt=${setAtt}/>
         <${TopRight} user=${user} role=${role} open=${open} openForm=${openForm} signOut=${signOut}/></header>
       <main className="main" key=${app + nav.view + (nav.id || '')}>${screen}</main>
     </div>
-    ${taskSel && html`<${TaskDetail} key=${taskSel.id} id=${taskSel.id} ctx=${taskSel.ctx} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} leaves=${leaves} close=${() => setTaskSel(null)}/>`}
+    ${taskSel && html`<${TaskDetail} key=${taskSel.id} id=${taskSel.id} ctx=${taskSel.ctx} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} leaves=${leaves} custom=${custom} close=${() => setTaskSel(null)}/>`}
     <nav className="bnav" style=${{ gridTemplateColumns: 'repeat(' + keys.length + ', 1fr)' }} aria-label="Main">${keys.map(k => html`<button key=${k} className=${active === k ? 'on' : ''} onClick=${() => go(k)}>
       <${Icon} n=${k} s=${21}/>${SHORT[k] || ALL[k]}${k === 'requests' && pending > 0 && html`<span className="cnt">${pending}</span>`}</button>`)}</nav>
   </div>`;

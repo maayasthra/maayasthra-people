@@ -64,7 +64,9 @@ export const isOpen = t => !t.done;
 export const dueState = (due, done) => done ? 'done' : !due ? 'none' : due < TODISO ? 'over' : due === TODISO ? 'today' : due <= isoOf(TOD + 7 * DAY) ? 'soon' : 'later';
 export const newId = () => 't' + Date.now().toString(36) + Math.floor(Math.random() * 1000);
 export const mkTask = (o, user) => ({ id: newId(), title: '', client: '', cols: [], prio: 'med', due: '', labels: [], by: user.n, done: false, desc: '', subs: [], comments: [], created: Date.now(), ...o });
-export const colName = (c, BY) => c === 'priority' ? 'Priority Tasks' : c === 'retainer' ? 'Retainer Tasks' : c === DONE ? 'Completed Tasks' : (BY[c] ? BY[c].name : '');
+export const colName = (c, BY, custom = []) => c === 'priority' ? 'Priority Tasks' : c === 'retainer' ? 'Retainer Tasks' : c === DONE ? 'Completed Tasks' : typeof c === 'string' ? ((custom.find(x => x.id === c) || {}).name || '') : (BY[c] ? BY[c].name : '');
+// Removing a custom column sends its cards back to Priority Tasks.
+export const dropColumn = (ts, id) => ts.map(t => !t.cols.includes(id) ? t : { ...t, cols: [...new Set(t.cols.map(c => c === id ? 'priority' : c))] });
 
 const without = (cols, c) => cols.filter(x => x !== c);
 // Move a card to another column (optionally before another card). Moving into Completed finishes it; moving out reopens it.
@@ -99,3 +101,7 @@ export const loadTasks = () => { const s = get('mp-tasks3', null); return Array.
 export const saveTasks = t => put('mp-tasks3', t);
 export const loadCollapsed = () => get('mp-collapsed', {});
 export const saveCollapsed = c => put('mp-collapsed', c);
+export const loadCustom = () => get('mp-cols', []);
+export const saveCustom = c => put('mp-cols', c);
+export const loadView = () => ({ dept: 'All', hideEmpty: false, labels: [], lfilter: false, ...get('mp-kbview', {}) });
+export const saveView = v => put('mp-kbview', v);

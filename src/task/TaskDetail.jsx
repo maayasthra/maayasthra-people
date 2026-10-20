@@ -6,7 +6,7 @@ import { PRIO, LABELS, PINNED, DONE, mkTask, colName, completeCard, reopenCard }
 
 const ago = t => { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'Just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' d ago'; };
 
-export function TaskDetail({ id, ctx, tasks, setTasks, user, role, leaves, close }) {
+export function TaskDetail({ id, ctx, tasks, setTasks, user, role, leaves, custom, close }) {
   const isNew = id === 'new';
   const existing = isNew ? null : tasks.find(t => t.id === id);
   const [draft, setDraft] = useState(() => mkTask({ cols: [ctx && ctx.col != null ? ctx.col : user.n] }, user));
@@ -20,7 +20,7 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, leaves, close
   const leaveNames = t.due ? t.cols.filter(c => typeof c === 'number' && BY[c] && isAway(c, t.due, away)).map(c => BY[c].name.split(' ')[0]) : [];
   const done = t.subs.filter(s => s.done).length;
   const addable = people.filter(e => !t.cols.includes(e.n));
-  const addablePins = PINNED.filter(p => !t.cols.includes(p[0]));
+  const addablePins = [...PINNED.map(p => [p[0], p[1]]), ...custom.map(c => [c.id, c.name])].filter(p => !t.cols.includes(p[0]));
 
   const create = () => { if (!t.title.trim()) { setErr('Give the card a title.'); return; } setTasks(ts => [...ts, { ...draft, title: draft.title.trim() }]); close(); };
   const addComment = () => { if (!comment.trim()) return; upd({ comments: [...t.comments, { id: Date.now(), by: user.n, text: comment.trim(), at: Date.now() }] }); setComment(''); };
@@ -33,15 +33,14 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, leaves, close
 
   return html`<${Sheet} title=${isNew ? 'New card' : 'Card'} onClose=${close} footer=${footer}>
     ${!canEdit && html`<div className="note-row" style=${{ marginBottom: 14 }}><${Icon} n="user" s=${16}/> <span>Only people on this card, its creator and admins can edit it. You can still comment.</span></div>`}
-    <input id="td-title" className="td-title" value=${t.title} disabled=${!canEdit} placeholder="Card title" onChange=${ev => upd({ title: ev.target.value })} aria-label="Card title"/>
+    <input id="td-title" autoFocus className="td-title" value=${t.title} disabled=${!canEdit} placeholder="Card title" onChange=${ev => upd({ title: ev.target.value })} aria-label="Card title"/>
     ${err && html`<div className="lg-err" role="alert">${err}</div>`}
-    <div className="td-g">
-      <label>Client<input className="inp" value=${t.client} disabled=${!canEdit} placeholder="Optional" onChange=${ev => upd({ client: ev.target.value })}/></label>
+    <div className="td-g one">
       <label>Due date<input className="inp" type="date" value=${t.due || ''} disabled=${!canEdit} onChange=${ev => upd({ due: ev.target.value })}/></label>
     </div>
     ${leaveNames.length > 0 && html`<div className="note-row warn" style=${{ marginTop: 12 }}><${Icon} n="bell" s=${16}/> <span>${leaveNames.join(' and ')} ${leaveNames.length === 1 ? 'is' : 'are'} on leave on ${fmtDM(t.due)}. Consider another date or person.</span></div>`}
     <div className="td-s"><span className="lb">On this card</span>
-      <div className="as">${t.cols.map(c => html`<span className="as-c" key=${c}>${typeof c === 'number' && BY[c] ? html`<${Av} e=${BY[c]} s=${22}/>` : null}${colName(c, BY)}${canEdit && t.cols.length > 1 && !t.done && html`<button onClick=${() => upd({ cols: t.cols.filter(x => x !== c) })} aria-label=${'Remove from ' + colName(c, BY)}><${Icon} n="x" s=${11}/></button>`}</span>`)}</div>
+      <div className="as">${t.cols.map(c => html`<span className="as-c" key=${c}>${typeof c === 'number' && BY[c] ? html`<${Av} e=${BY[c]} s=${22}/>` : null}${colName(c, BY, custom)}${canEdit && t.cols.length > 1 && !t.done && html`<button onClick=${() => upd({ cols: t.cols.filter(x => x !== c) })} aria-label=${'Remove from ' + colName(c, BY, custom)}><${Icon} n="x" s=${11}/></button>`}</span>`)}</div>
       ${canEdit && !t.done && html`<select className="inp" value="" onChange=${ev => { const v = ev.target.value; if (v) upd({ cols: [...t.cols, /^\d+$/.test(v) ? Number(v) : v] }); }} aria-label="Add to a column"><option value="">Add to a column…</option>${addablePins.map(p => html`<option key=${p[0]} value=${p[0]}>${p[1]}</option>`)}${addable.map(e => html`<option key=${e.n} value=${e.n}>${e.name}</option>`)}</select>`}</div>
     <div className="td-s"><span className="lb">Priority</span><div className="seg s3" role="group" aria-label="Priority" style=${{ width: 280, margin: 0 }}>${Object.entries(PRIO).map(([k, v]) => html`<button key=${k} disabled=${!canEdit} className=${t.prio === k ? 'on' : ''} onClick=${() => upd({ prio: k })}>${v[0]}</button>`)}</div></div>
     <div className="td-s"><span className="lb">Labels</span><div className="chips" style=${{ marginTop: 0, flexWrap: 'wrap' }}>${LABELS.map(l => html`<button key=${l} disabled=${!canEdit} className=${'chip' + (t.labels.includes(l) ? ' on' : '')} onClick=${() => upd({ labels: t.labels.includes(l) ? t.labels.filter(x => x !== l) : [...t.labels, l] })}>${l}</button>`)}</div></div>

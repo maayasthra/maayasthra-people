@@ -16,7 +16,7 @@ export function MyTasks({ tasks, setTasks, user, tq, openTask }) {
   const add = () => { if (!title.trim()) return; setTasks(ts => [...ts, mkTask({ title: title.trim(), cols: [user.n], due: TODISO }, user)]); setTitle(''); };
   const Row = ({ t }) => html`<div className=${'mt-r' + (t.done ? ' done' : '')}>
     <button className=${'ck-c big' + (t.done ? ' on' : '')} onClick=${() => toggle(t)} aria-label=${(t.done ? 'Reopen ' : 'Complete ') + t.title}>${t.done && html`<${Icon} n="check" s=${13}/>`}</button>
-    <button className="mt-t" onClick=${() => openTask(t.id)}><b>${t.title}</b><span>${t.client || 'Card'}</span></button>
+    <button className="mt-t" onClick=${() => openTask(t.id)}><b>${t.title}</b><span>Card</span></button>
     <span className="mt-m"><${DueChip} due=${t.due} done=${t.done}/><${PrioFlag} p=${t.prio}/></span></div>`;
   return html`<div>
     <div className="pg-h"><div><h1>My Tasks</h1><p>${open.length ? open.length + ' open' + (groups[0][1].length ? ', ' + groups[0][1].length + ' overdue' : '') + ' across all boards.' : 'Nothing open. Enjoy the quiet.'}</p></div>

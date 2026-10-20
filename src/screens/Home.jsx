@@ -228,7 +228,7 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
     <section className="eq3 sec">
       <${Panel} title="Your tasks" sub=${myOpen.length ? myOpen.length + ' open' : 'All clear'} right=${html`<button className="btn sec2 sm" onClick=${() => goTask(null)}>Open Task</button>`}>
         ${myOpen.length === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="check" s=${22}/></span><b>Nothing assigned</b><span>Tasks assigned to you will show up here.</span></div>` :
-          myOpen.slice(0, 6).map(t => html`<button key=${t.id} className="row" onClick=${() => goTask(t.id)}><span className="row-t"><b>${t.title}</b><span>${t.client || 'Card'}</span></span><span className="row-d"><${DueChip} due=${t.due} done=${t.done}/></span></button>`)}
+          myOpen.slice(0, 6).map(t => html`<button key=${t.id} className="row" onClick=${() => goTask(t.id)}><span className="row-t"><b>${t.title}</b><span>Card</span></span><span className="row-d"><${DueChip} due=${t.due} done=${t.done}/></span></button>`)}
       <//>
       <${Panel} title="Your leave requests" sub=${t.getUTCFullYear()} right=${html`<button className="btn sec2 sm" onClick=${() => go('leaves')}><${Icon} n="plus" s=${15}/> Apply</button>`}>
         ${recent.length === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="leaves" s=${22}/></span><b>No requests yet</b><span>Apply for leave and track it here.</span></div>` :
