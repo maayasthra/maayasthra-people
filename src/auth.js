@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { EMP, ROLEMAP } from './data.js';
+import { EMP, ROLEMAP, addEmployee } from './data.js';
 
 /* Real sign-in through Supabase Auth. With no keys in .env.local the app stays in demo mode. */
 const url = import.meta.env.VITE_SUPABASE_URL, key = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -28,15 +28,24 @@ export const onAuthChange = cb => supabase.auth.onAuthStateChange((event, sessio
 export const isLinkFlow = () => authEnabled && /type=(recovery|invite)/.test(window.location.hash);
 
 // Match the signed-in account to a person in the directory and read their role.
+// Anyone invited in Supabase can sign in. If they are not in the staff list yet,
+// a basic record is created for them until the real staff list is in the database.
+const titleCase = w => w.charAt(0).toUpperCase() + w.slice(1);
 export async function resolveUser(session) {
   const email = (session.user.email || '').toLowerCase();
-  const user = EMP.find(e => e.email === email);
-  if (!user) return { error: 'This email is not in the studio directory. Ask an admin to add you.' };
-  if (user.status === 'Exited') return { error: 'This account is no longer active.' };
   const { data, error } = await supabase.from('profiles').select('role, active').eq('id', session.user.id).maybeSingle();
   if (error) return { error: 'Could not load your account. Try again.' };
   if (data && data.active === false) return { error: 'This account is turned off. Ask an admin.' };
+  let user = EMP.find(e => e.email === email);
+  if (!user) {
+    if (!data) return { error: 'Your account is not set up yet. Ask an admin.' };
+    const name = email.split('@')[0].split(/[._-]+/).filter(Boolean).map(titleCase).join(' ') || 'New member';
+    user = addEmployee({ name, role: 'Team member', dept: 'Studio', city: 'Chennai', mgr: 0, status: 'Full-time', join: new Date().toISOString().slice(0, 10), dob: '1990-06-15', g: 'f' });
+    user.email = email;
+  }
+  if (user.status === 'Exited') return { error: 'This account is no longer active.' };
   const admin = !!data && data.role === 'Admin';
   ROLEMAP[user.n] = admin ? 'Admin' : 'Employee';
+  if (admin) user.shiftStart = '09:00';
   return { user, role: admin ? 'admin' : 'employee' };
 }
