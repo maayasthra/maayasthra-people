@@ -4,7 +4,7 @@ import { downloadLeaveReport } from '../report.js';
 import { DueChip } from '../task/parts.jsx';
 import { isOpen } from '../tasks.js';
 import { SessionList, useDay, dayNote } from '../Attendance.jsx';
-import { hm, lunchInfo, checkIn, checkOut, dayInfo, useNow, clock } from '../attendance.js';
+import { hm, lunchInfo, shiftEnded, checkIn, checkOut, dayInfo, useNow, clock } from '../attendance.js';
 import {
   TOD, DAY, WDL, MONL, pd, fmtDM, fmtDay, rel, plural, range, addMonths, isoOf, TODISO, HOL, BY,
   balances, awayList, isAway, activeEmps, fmtTime, nextOcc, EMP
@@ -148,12 +148,12 @@ function TeamPanel({ user, open }) {
 
 function YourDay({ user, att, setAtt }) {
   const { now, sessions, live, worked } = useDay(user, att);
-  const lunch = lunchInfo(now);
+  const lunch = lunchInfo(now), ended = shiftEnded(now, user.shiftEnd);
   return html`<${Panel} title="Your day" sub=${'Shift ' + fmtTime(user.shiftStart) + ' – ' + fmtTime(user.shiftEnd)}>
     <div className=${'dy-l' + (lunch.state === 'on' ? ' on' : '')}><${Icon} n="cup" s=${16}/> ${lunch.state === 'over' ? 'Lunch was 1:00 – 2:00 PM' : lunch.text}</div>
     <${SessionList} sessions=${sessions} now=${now}/>
-    <div className="dy-f"><span>${dayNote(sessions, user)}</span>
-      <button className=${'btn sm ' + (live ? 'ghost' : 'pri')} onClick=${() => setAtt(a => live ? checkOut(a, user.n) : checkIn(a, user.n))}>${live ? 'Check out' : sessions.length ? 'Check in again' : 'Check in'}</button></div>
+    <div className="dy-f"><span>${ended && !sessions.length ? 'Your working hours have ended.' : dayNote(sessions, user)}</span>
+      <button className=${'btn sm ' + (live || ended ? 'ghost' : 'pri')} disabled=${ended} onClick=${() => setAtt(a => live ? checkOut(a, user.n) : checkIn(a, user.n))}>${ended ? 'Day ended' : live ? 'Check out' : sessions.length ? 'Check in again' : 'Check in'}</button></div>
   <//>`;
 }
 

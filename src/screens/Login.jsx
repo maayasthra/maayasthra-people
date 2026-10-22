@@ -72,14 +72,14 @@ export function Login({ onLogin }) {
           <button className="dm" onClick=${() => demo(2, 'admin')} disabled=${busy}><${Av} e=${BY[2]} s=${38}/><span className="row-t"><b>Meera Iyer</b><span>Admin · approves leave</span></span><span className="go"><${Icon} n="arrow" s=${16}/></span></button>
           <button className="dm" onClick=${() => demo(9, 'employee')} disabled=${busy}><${Av} e=${BY[9]} s=${38}/><span className="row-t"><b>Dev Malhotra</b><span>Employee · applies for leave</span></span><span className="go"><${Icon} n="arrow" s=${16}/></span></button>
           <div className="lg-note">Demo password: ${DEMO_PW}</div></div>`}
-        ${authEnabled && html`<div className="lg-row" style=${{ justifyContent: 'center', marginTop: 18 }}><span>New here?</span> <button type="button" className="link" onClick=${() => { setView('signup'); setErr(''); setSent(false); setPw(''); setPw2(''); }}>Create your account</button></div>`}
+        ${authEnabled && html`<div className="lg-row" style=${{ justifyContent: 'center', marginTop: 18 }}><span style=${{ color: 'var(--muted)', marginRight: 6 }}>New here?</span><button type="button" className="link" onClick=${() => { setView('signup'); setErr(''); setSent(false); setPw(''); setPw2(''); }}>Create your account</button></div>`}
       <//>` : view === 'signup' ? html`<${React.Fragment}>
         <button className="back" onClick=${() => { setView('signin'); setErr(''); setPw(''); setPw2(''); }}><${Icon} n="back" s=${16}/> Back to sign in</button>
-        <h2>Create your account</h2><p>Use your work email. You will get a link to confirm it.</p>
-        ${sent ? html`<div className="lg-ok" role="status"><${Icon} n="check" s=${16}/> Check your inbox. Click the link we sent to ${email.trim()} to finish.</div>` : html`<form onSubmit=${register} noValidate>
+        <h2>Create your account</h2><p>Use your work email. We will send a link to confirm it.</p>
+        ${sent ? html`<div className="lg-sent" role="status"><span><${Icon} n="check" s=${20}/></span><b>Check your inbox</b><p>We sent a confirmation link to ${email.trim()}. Open it to finish, then sign in.</p></div>` : html`<form onSubmit=${register} noValidate>
           <div className="fld"><label htmlFor="su-email">Work email</label><input id="su-email" className="inp" type="email" autoComplete="username" placeholder="name@maayasthra.com" value=${email} onChange=${ev => setEmail(ev.target.value)}/></div>
-          <div className="fld"><label htmlFor="su-pw">Password</label><div className="pw"><input id="su-pw" className="inp" type=${show ? 'text' : 'password'} autoComplete="new-password" value=${pw} onChange=${ev => setPw(ev.target.value)}/></div></div>
-          <div className="fld"><label htmlFor="su-pw2">Repeat it</label><input id="su-pw2" className="inp" type=${show ? 'text' : 'password'} autoComplete="new-password" value=${pw2} onChange=${ev => setPw2(ev.target.value)}/></div>
+          <div className="fld"><label htmlFor="su-pw">Password</label><div className="pw"><input id="su-pw" className="inp" type=${show ? 'text' : 'password'} autoComplete="new-password" value=${pw} onChange=${ev => setPw(ev.target.value)}/><button type="button" className="pw-b" onClick=${() => setShow(!show)}>${show ? 'Hide' : 'Show'}</button></div><small className="fld-h">At least 8 characters.</small></div>
+          <div className="fld"><label htmlFor="su-pw2">Repeat password</label><input id="su-pw2" className="inp" type=${show ? 'text' : 'password'} autoComplete="new-password" value=${pw2} onChange=${ev => setPw2(ev.target.value)}/></div>
           ${err && html`<div className="lg-err" role="alert">${err}</div>`}
           <button className="btn pri" type="submit" disabled=${busy}>${busy ? 'Creating…' : 'Create account'}</button>
         </form>`}

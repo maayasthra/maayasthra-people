@@ -70,7 +70,7 @@ export const sessionsOf = (att, n) => getDay(att, n, dayKey()).sessions;
 export const isIn = sessions => sessions.length > 0 && !sessions[sessions.length - 1].out;
 export const workedMs = (sessions, now) => sessions.reduce((t, s) => t + ((s.out || now) - s.in), 0);
 export function checkIn(att, n, loc = 'office') { const iso = dayKey(), cur = getDay(att, n, iso); return putDay(att, n, iso, { ...cur, sessions: [...cur.sessions, { in: Date.now(), out: null, loc }] }); }
-export function checkOut(att, n) { const iso = dayKey(), cur = getDay(att, n, iso); if (!isIn(cur.sessions)) return att; return putDay(att, n, iso, { ...cur, sessions: cur.sessions.map((x, i) => i === cur.sessions.length - 1 ? { ...x, out: Date.now() } : x) }); }
+export function checkOut(att, n, at = Date.now()) { const iso = dayKey(), cur = getDay(att, n, iso); if (!isIn(cur.sessions)) return att; return putDay(att, n, iso, { ...cur, sessions: cur.sessions.map((x, i) => i === cur.sessions.length - 1 ? { ...x, out: at } : x) }); }
 
 /* ---------- one person, one day ---------- */
 // The lunch hour counts as worked when someone is checked out only for lunch.
@@ -111,6 +111,10 @@ export function lunchInfo(now) {
 }
 export const startDelta = (sessions, shiftStart, iso = dayKey()) => sessions.length ? Math.round(minsOf(sessions[0].in, iso) - hmMins(shiftStart)) : null;
 export const shiftEndsIn = (now, shiftEnd) => { const d = new Date(now); return hmMins(shiftEnd) - (d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60); };
+
+// Once a person's working hours are over, checking in is closed for the day and an open session stops at the shift end.
+export const shiftEnded = (now, shiftEnd) => shiftEndsIn(now, shiftEnd) <= 0;
+export const shiftEndAt = shiftEnd => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime() + hmMins(shiftEnd) * 60000; };
 
 export function useNow(ms = 1000) {
   const [now, setNow] = useState(Date.now());

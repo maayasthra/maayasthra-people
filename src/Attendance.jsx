@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { html, Icon } from './ui.jsx';
 import { fmtTime } from './data.js';
-import { sessionsOf, isIn, workedMs, hms, hm, clock, lunchInfo, startDelta, shiftEndsIn, checkIn, checkOut, useNow } from './attendance.js';
+import { sessionsOf, isIn, workedMs, hms, hm, clock, lunchInfo, startDelta, shiftEndsIn, shiftEnded, shiftEndAt, checkIn, checkOut, useNow } from './attendance.js';
 
 export function SessionList({ sessions, now }) {
   if (!sessions.length) return html`<div className="ck-empty">No check-ins yet today.</div>`;
@@ -26,17 +26,19 @@ export function CheckWidget({ user, att, setAtt }) {
     const f = ev => { if (ref.current && !ref.current.contains(ev.target)) setPop(false); };
     document.addEventListener('mousedown', f); return () => document.removeEventListener('mousedown', f);
   }, [pop]);
-  const lunch = lunchInfo(now), left = shiftEndsIn(now, user.shiftEnd);
-  const line2 = lunch.state === 'on' || lunch.state === 'soon' ? lunch.text
-    : live ? (left > 0 ? 'Shift ends ' + fmtTime(user.shiftEnd) : 'Shift has ended')
+  const lunch = lunchInfo(now), ended = shiftEnded(now, user.shiftEnd);
+  useEffect(() => { if (ended && live) setAtt(a => checkOut(a, user.n, shiftEndAt(user.shiftEnd))); }, [ended, live]);
+  const line2 = ended ? 'Shift ended ' + fmtTime(user.shiftEnd)
+    : lunch.state === 'on' || lunch.state === 'soon' ? lunch.text
+    : live ? 'Shift ends ' + fmtTime(user.shiftEnd)
     : sessions.length ? 'Checked out ' + clock(sessions[sessions.length - 1].out) : fmtTime(user.shiftStart) + ' – ' + fmtTime(user.shiftEnd);
-  const main = live ? hms(worked) : sessions.length ? hm(worked) + ' worked' : 'Not checked in';
+  const main = live && !ended ? hms(worked) : sessions.length ? hm(worked) + ' worked' : ended ? 'No check-in today' : 'Not checked in';
   const act = () => setAtt(a => live ? checkOut(a, user.n) : checkIn(a, user.n));
   return html`<div className="ck" ref=${ref}>
     <button className="ck-t" onClick=${() => setPop(p => !p)} aria-expanded=${pop} aria-label="Today's check-ins">
-      <span className=${'ck-dot' + (live ? ' on' : '')}></span>
-      <span className="ck-tx"><b className=${live ? 'run' : ''}>${main}</b><span className=${lunch.state === 'on' ? 'lunch on' : lunch.state === 'soon' ? 'lunch' : ''}>${line2}</span></span></button>
-    <button className=${'btn sm ' + (live ? 'ghost' : 'pri')} onClick=${act}>${live ? 'Check out' : sessions.length ? 'Check in again' : 'Check in'}</button>
+      <span className=${'ck-dot' + (live && !ended ? ' on' : '')}></span>
+      <span className="ck-tx"><b className=${live && !ended ? 'run' : ''}>${main}</b><span className=${lunch.state === 'on' ? 'lunch on' : lunch.state === 'soon' ? 'lunch' : ''}>${line2}</span></span></button>
+    <button className=${'btn sm ' + (live || ended ? 'ghost' : 'pri')} onClick=${act} disabled=${ended}>${ended ? 'Day ended' : live ? 'Check out' : sessions.length ? 'Check in again' : 'Check in'}</button>
     ${pop && html`<div className="menu ck-pop"><div className="menu-h"><b>Today</b><span>Shift ${fmtTime(user.shiftStart)} – ${fmtTime(user.shiftEnd)} · Lunch 1:00 – 2:00 PM</span></div>
       <${SessionList} sessions=${sessions} now=${now}/>
       ${sessions.length > 0 && html`<div className="ck-sum"><span>Worked today</span><b>${hm(worked)}</b></div>`}</div>`}
