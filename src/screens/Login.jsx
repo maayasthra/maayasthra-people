@@ -2,6 +2,7 @@ import { useState } from 'react';
 import React from 'react';
 import { html, Icon, Av, Photo } from '../ui.jsx';
 import { EMP, BY, DEMO_PW, isAdminRole } from '../data.js';
+import { authEnabled, signIn, sendReset, setNewPassword, resolveUser, currentSession, signOutAuth } from '../auth.js';
 
 /* ---------- Login ---------- */
 export function Login({ onLogin }) {
@@ -24,8 +25,22 @@ export function Login({ onLogin }) {
     setErr(''); setBusy(true); setTimeout(() => onLogin(r, md === 'admin' ? 'admin' : 'employee'), 650);
   };
   const demo = (n, md) => { const e = BY[n]; setMode(md); setEmail(e.email); setPw(DEMO_PW); run(e.email, DEMO_PW, md); };
-  const submit = ev => { ev.preventDefault(); if (!busy) run(email, pw, mode); };
-  const forgot = ev => { ev.preventDefault(); if (!email.trim()) { setErr('Enter your work email.'); return; } setErr(''); setSent(true); };
+  const submit = ev => {
+    ev.preventDefault(); if (busy) return;
+    if (!authEnabled) { run(email, pw, mode); return; }
+    if (!email.trim()) { setErr('Enter your work email.'); return; }
+    if (!pw) { setErr('Enter your password.'); return; }
+    setErr(''); setBusy(true);
+    signIn(email, pw).then(resolveUser).then(r => {
+      if (r.error) { signOutAuth(); setErr(r.error); setBusy(false); return; }
+      onLogin(r.user, r.role);
+    }).catch(e => { setErr(e.message); setBusy(false); });
+  };
+  const forgot = ev => {
+    ev.preventDefault(); if (!email.trim()) { setErr('Enter your work email.'); return; } setErr('');
+    if (!authEnabled) { setSent(true); return; }
+    setBusy(true); sendReset(email).then(() => { setSent(true); setBusy(false); }).catch(e => { setErr(e.message); setBusy(false); });
+  };
   const art = [3, 10, 6, 17, 14];
   return html`<div className="lg-wrap">
     <section className="lg-art">
@@ -36,28 +51,52 @@ export function Login({ onLogin }) {
     <section className="lg-form"><div className="lg-box">
       ${view === 'signin' ? html`<${React.Fragment}>
         <h2>Sign in</h2>
-        <div className="seg" role="group" aria-label="Sign in as"><button type="button" className=${mode === 'employee' ? 'on' : ''} onClick=${() => { setMode('employee'); setErr(''); }}>Employee</button><button type="button" className=${mode === 'admin' ? 'on' : ''} onClick=${() => { setMode('admin'); setErr(''); }}>Admin</button></div>
+        ${!authEnabled && html`<div className="seg" role="group" aria-label="Sign in as"><button type="button" className=${mode === 'employee' ? 'on' : ''} onClick=${() => { setMode('employee'); setErr(''); }}>Employee</button><button type="button" className=${mode === 'admin' ? 'on' : ''} onClick=${() => { setMode('admin'); setErr(''); }}>Admin</button></div>`}
         <form onSubmit=${submit} noValidate>
           <div className="fld"><label htmlFor="login-email">Work email</label><input id="login-email" className="inp" type="email" autoComplete="username" placeholder="name@maayasthra.com" value=${email} onChange=${ev => setEmail(ev.target.value)}/></div>
           <div className="fld"><label htmlFor="login-pw">Password</label><div className="pw"><input id="login-pw" className="inp" type=${show ? 'text' : 'password'} autoComplete="current-password" value=${pw} onChange=${ev => setPw(ev.target.value)}/><button type="button" className="pw-b" onClick=${() => setShow(!show)}>${show ? 'Hide' : 'Show'}</button></div></div>
           <div className="lg-row"><button type="button" className="link" onClick=${() => { setView('forgot'); setErr(''); setSent(false); }}>Forgot password?</button></div>
           ${err && html`<div className="lg-err" role="alert">${err}</div>`}
-          <button className="btn pri" type="submit" disabled=${busy}>${busy ? 'Signing in' : mode === 'admin' ? 'Sign in as Admin' : 'Sign in'}</button>
+          <button className="btn pri" type="submit" disabled=${busy}>${busy ? 'Signing in…' : !authEnabled && mode === 'admin' ? 'Sign in as Admin' : 'Sign in'}</button>
         </form>
-        <div className="lg-demo"><h3>Try a demo account</h3>
+        ${!authEnabled && html`<div className="lg-demo"><h3>Try a demo account</h3>
           <button className="dm" onClick=${() => demo(2, 'admin')} disabled=${busy}><${Av} e=${BY[2]} s=${38}/><span className="row-t"><b>Meera Iyer</b><span>Admin · approves leave</span></span><span className="go"><${Icon} n="arrow" s=${16}/></span></button>
           <button className="dm" onClick=${() => demo(9, 'employee')} disabled=${busy}><${Av} e=${BY[9]} s=${38}/><span className="row-t"><b>Dev Malhotra</b><span>Employee · applies for leave</span></span><span className="go"><${Icon} n="arrow" s=${16}/></span></button>
-          <div className="lg-note">Demo password: ${DEMO_PW}</div></div>
+          <div className="lg-note">Demo password: ${DEMO_PW}</div></div>`}
       <//>` : html`<${React.Fragment}>
         <button className="back" onClick=${() => { setView('signin'); setErr(''); }}><${Icon} n="back" s=${16}/> Back to sign in</button>
         <h2>Reset your password</h2><p>Enter your work email and we will send a reset link.</p>
         <form onSubmit=${forgot} noValidate>
           <div className="fld"><label htmlFor="reset-email">Work email</label><input id="reset-email" className="inp" type="email" placeholder="name@maayasthra.com" value=${email} onChange=${ev => { setEmail(ev.target.value); setSent(false); }}/></div>
           ${err && html`<div className="lg-err" role="alert">${err}</div>`}
-          <button className="btn pri" type="submit">Send reset link</button>
-          ${sent && html`<div className="lg-ok" role="status"><${Icon} n="check" s=${16}/> If that email is in the directory, a reset link is on its way. This prototype does not send email.</div>`}
+          <button className="btn pri" type="submit" disabled=${busy}>Send reset link</button>
+          ${sent && html`<div className="lg-ok" role="status"><${Icon} n="check" s=${16}/> If that email has an account, a reset link is on its way.</div>`}
         </form><//>`}
     </div></section>
   </div>`;
 }
 
+
+/* ---------- Choose a password (from an invite or reset link) ---------- */
+export function SetPassword({ onDone }) {
+  const [pw, setPw] = useState(''), [pw2, setPw2] = useState(''), [err, setErr] = useState(''), [busy, setBusy] = useState(false), [show, setShow] = useState(false);
+  const submit = ev => {
+    ev.preventDefault();
+    if (pw.length < 8) { setErr('Use at least 8 characters.'); return; }
+    if (pw !== pw2) { setErr('The two passwords do not match.'); return; }
+    setErr(''); setBusy(true);
+    setNewPassword(pw).then(() => currentSession()).then(sess => sess ? resolveUser(sess) : { error: 'Your link expired. Request a new one.' }).then(r => {
+      if (r.error) { setErr(r.error); setBusy(false); return; }
+      window.history.replaceState(null, '', window.location.pathname); onDone(r.user, r.role);
+    }).catch(e => { setErr(e.message); setBusy(false); });
+  };
+  return html`<div className="lg-wrap" style=${{ gridTemplateColumns: 'minmax(0,1fr)' }}><section className="lg-form"><div className="lg-box">
+    <div className="brand" style=${{ padding: '0 0 28px' }}><span className="mark"></span><span className="brand-t"><b>Maayasthra</b><span>People</span></span></div>
+    <h2>Choose a password</h2>
+    <form onSubmit=${submit} noValidate>
+      <div className="fld"><label htmlFor="np1">New password</label><div className="pw"><input id="np1" className="inp" type=${show ? 'text' : 'password'} autoComplete="new-password" value=${pw} onChange=${ev => setPw(ev.target.value)}/><button type="button" className="pw-b" onClick=${() => setShow(!show)}>${show ? 'Hide' : 'Show'}</button></div></div>
+      <div className="fld"><label htmlFor="np2">Repeat it</label><input id="np2" className="inp" type=${show ? 'text' : 'password'} autoComplete="new-password" value=${pw2} onChange=${ev => setPw2(ev.target.value)}/></div>
+      ${err && html`<div className="lg-err" role="alert">${err}</div>`}
+      <button className="btn pri" type="submit" disabled=${busy}>${busy ? 'Saving…' : 'Save and continue'}</button>
+    </form></div></section></div>`;
+}

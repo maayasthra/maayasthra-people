@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { html, Icon, Av } from './ui.jsx';
 import { LEAVES0, HIST0, TODISO, TOD, DAY, isoOf } from './data.js';
-import { Login } from './screens/Login.jsx';
+import { Login, SetPassword } from './screens/Login.jsx';
+import { authEnabled, currentSession, resolveUser, onAuthChange, signOutAuth, isLinkFlow } from './auth.js';
 import { Home } from './screens/Home.jsx';
 import { People, EmployeeForm } from './screens/People.jsx';
 import { Profile } from './screens/Profile.jsx';
@@ -69,6 +70,7 @@ function App() {
   const [att, setAtt] = useState(loadAtt);
   const [sOpen, setSOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [booting, setBooting] = useState(authEnabled), [linkFlow, setLinkFlow] = useState(isLinkFlow);
   const [app, setAppState] = useState('people');
   const [tasks, setTasks] = useState(loadTasks), [collapsed, setCollapsed] = useState(loadCollapsed);
   const [focus, setFocus] = useState(null);
@@ -77,12 +79,28 @@ function App() {
   const [navHidden, setNavHidden] = useState(() => { try { return localStorage.getItem('mp-nav') === '1'; } catch (x) { return false; } });
   const bump = () => setVer(v => v + 1);
   useEffect(() => { saveAtt(att); }, [att]);
+  // Restore a saved session on load, and follow sign-outs from other tabs
+  useEffect(() => {
+    if (!authEnabled) return;
+    let live = true;
+    (async () => {
+      if (!isLinkFlow()) {
+        const sess = await currentSession();
+        if (sess && live) { const r = await resolveUser(sess); if (r.user && live) { setMe(r.user.n); setAuth({ user: r.user, role: r.role }); } else if (r.error) signOutAuth(); }
+      }
+      if (live) setBooting(false);
+    })();
+    const sub = onAuthChange((ev, sess) => { if (ev === 'SIGNED_OUT') setAuth(null); if (ev === 'PASSWORD_RECOVERY') setLinkFlow(true); });
+    return () => { live = false; sub.unsubscribe(); };
+  }, []);
   useEffect(() => { saveTasks(tasks); }, [tasks]);
   useEffect(() => { saveCollapsed(collapsed); }, [collapsed]);
   useEffect(() => { saveCustom(custom); }, [custom]);
   useEffect(() => { saveView(tf); }, [tf]);
   useEffect(() => { try { localStorage.setItem('mp-nav', navHidden ? '1' : '0'); } catch (x) {} }, [navHidden]);
 
+  if (booting) return html`<div className="boot"><span className="mark"></span></div>`;
+  if (!auth && linkFlow) return html`<${SetPassword} onDone=${(user, role) => { setMe(user.n); setLinkFlow(false); setNav({ view: 'home' }); setAuth({ user, role }); }}/>`;
   if (!auth) return html`<${Login} onLogin=${(user, role) => { setMe(user.n); setNav({ view: 'home' }); setAuth({ user, role }); window.scrollTo({ top: 0 }); }}/>`;
   const user = auth.user, role = auth.role;
   const peopleKeys = role === 'admin' ? ['home', 'people', 'org', 'calendar', 'attendance', 'leaves', 'requests', 'settings'] : ['home', 'people', 'org', 'calendar', 'hours', 'leaves'];
@@ -96,7 +114,7 @@ function App() {
   const openForm = id => { setNav(p => ({ view: 'form', id, from: p.view === 'profile' ? p.from : p.view })); top(); };
   const back = () => { setNav({ view: nav.from || 'people' }); top(); };
   const formDone = id => { if (id) { setNav(p => ({ view: 'profile', id, from: p.from || 'people' })); } else go('people'); top(); };
-  const signOut = () => { setAuth(null); setAppState('people'); setTaskSel(null); setNav({ view: 'home' }); top(); };
+  const signOut = () => { signOutAuth(); setAuth(null); setAppState('people'); setTaskSel(null); setNav({ view: 'home' }); top(); };
   const mob = app === 'task' ? keys : role === 'admin' ? ['home', 'people', 'attendance', 'requests', 'more'] : ['home', 'people', 'hours', 'leaves', 'more'];
   const more = keys.filter(k => !mob.includes(k));
   const active = nav.view === 'profile' || nav.view === 'form' ? (nav.from || 'people') : nav.view;
