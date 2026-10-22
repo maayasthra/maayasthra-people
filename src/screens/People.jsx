@@ -25,10 +25,12 @@ export function People({ pf, setPf, open, openForm, role, ver }) {
       ${role === 'admin' && html`<button className="btn pri" onClick=${() => openForm(null)}><${Icon} n="plus" s=${16}/> Add</button>`}</div>
     <div className="tools">
       <div className="search"><${Icon} n="search"/><input id="people-search" value=${pf.q} placeholder="Search" onChange=${ev => setPf({ ...pf, q: ev.target.value })} aria-label="Search people"/></div>
+      <div className="filters">
       <${Sel} icon="building" id="dept-filter" value=${pf.dept} label="Department" onChange=${ev => setPf({ ...pf, dept: ev.target.value })}><option value="All">All</option>${DEPTS.map(d => html`<option key=${d} value=${d}>${d}</option>`)}<//>
       <${Sel} icon="pin" id="city-filter" value=${pf.city} label="City" onChange=${ev => setPf({ ...pf, city: ev.target.value })}><option value="All">All</option>${cities.map(c => html`<option key=${c} value=${c}>${c}</option>`)}<//>
       <${Sel} icon="filter" id="sort-by" value=${pf.sort} label="Sort" onChange=${ev => setPf({ ...pf, sort: ev.target.value })}><option value="name">A–Z</option><option value="new">Newest</option><option value="old">Longest serving</option><//>
       ${role === 'admin' && html`<button className=${'ibx' + (pf.former ? ' on' : '')} title="Include former employees" aria-label="Include former employees" aria-pressed=${!!pf.former} onClick=${() => setPf({ ...pf, former: !pf.former })}><${Icon} n="user" s=${18}/></button>`}
+      </div>
       ${list.length !== act.length && html`<span className="tools-n">${list.length} of ${act.length}</span>`}
     </div>
     ${list.length === 0 ? html`<div className="none"><b>No match</b><button className="btn ghost" onClick=${clear}>Clear</button></div>` :

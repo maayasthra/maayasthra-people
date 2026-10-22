@@ -33,7 +33,7 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, leaves, custo
 
   return html`<${Sheet} title=${isNew ? 'New card' : 'Card'} onClose=${close} footer=${footer}>
     ${!canEdit && html`<div className="note-row" style=${{ marginBottom: 14 }}><${Icon} n="user" s=${16}/> <span>View only. You can comment.</span></div>`}
-    <input id="td-title" autoFocus className="td-title" value=${t.title} disabled=${!canEdit} placeholder="Card title" onChange=${ev => upd({ title: ev.target.value })} aria-label="Card title"/>
+    <textarea id="td-title" rows="1" autoFocus className="td-title" value=${t.title} disabled=${!canEdit} placeholder="Card title" ref=${el => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }} onChange=${ev => upd({ title: ev.target.value.replace(/\n/g, ' ') })} onKeyDown=${ev => { if (ev.key === 'Enter') ev.preventDefault(); }} aria-label="Card title"></textarea>
     ${err && html`<div className="lg-err" role="alert">${err}</div>`}
     <div className="td-g one">
       <label>Due date<input className="inp" type="date" value=${t.due || ''} disabled=${!canEdit} onChange=${ev => upd({ due: ev.target.value })}/></label>

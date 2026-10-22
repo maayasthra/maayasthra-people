@@ -68,6 +68,7 @@ function App() {
   const [ver, setVer] = useState(0);
   const [att, setAtt] = useState(loadAtt);
   const [sOpen, setSOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [app, setAppState] = useState('people');
   const [tasks, setTasks] = useState(loadTasks), [collapsed, setCollapsed] = useState(loadCollapsed);
   const [focus, setFocus] = useState(null);
@@ -90,12 +91,14 @@ function App() {
   const openTask = (id, ctx) => setTaskSel({ id, ctx });
   const goTask = id => { setAppState('task'); setNav({ view: 'mytasks' }); setTaskSel(id ? { id } : null); window.scrollTo({ top: 0 }); };
   const top = () => window.scrollTo({ top: 0 });
-  const go = v => { setNav({ view: v }); setTaskSel(null); top(); };
+  const go = v => { setNav({ view: v }); setTaskSel(null); setMoreOpen(false); top(); };
   const open = (id, tab) => { setNav(p => ({ view: 'profile', id, tab: typeof tab === 'string' ? tab : undefined, from: p.view === 'profile' ? p.from : p.view === 'form' ? 'people' : p.view })); top(); };
   const openForm = id => { setNav(p => ({ view: 'form', id, from: p.view === 'profile' ? p.from : p.view })); top(); };
   const back = () => { setNav({ view: nav.from || 'people' }); top(); };
   const formDone = id => { if (id) { setNav(p => ({ view: 'profile', id, from: p.from || 'people' })); } else go('people'); top(); };
   const signOut = () => { setAuth(null); setAppState('people'); setTaskSel(null); setNav({ view: 'home' }); top(); };
+  const mob = app === 'task' ? keys : role === 'admin' ? ['home', 'people', 'attendance', 'requests', 'more'] : ['home', 'people', 'hours', 'leaves', 'more'];
+  const more = keys.filter(k => !mob.includes(k));
   const active = nav.view === 'profile' || nav.view === 'form' ? (nav.from || 'people') : nav.view;
   const pending = role === 'admin' ? leaves.filter(l => !l.past && l.emp !== user.n && l.state === 'pending').length : 0;
 
@@ -127,13 +130,16 @@ function App() {
       <header className="hdr"><button className="ib nav-t" onClick=${() => setNavHidden(h => !h)} aria-label=${navHidden ? 'Show the navigation bar' : 'Hide the navigation bar'} title=${navHidden ? 'Show the navigation bar' : 'Hide the navigation bar'}><${Icon} n="sidebar" s=${18}/></button><div className="hdr-b"><${AppSwitch} app=${app} setApp=${setApp}/></div>
         <div className=${'hs' + (sOpen ? ' open' : '')}>${app === 'task' ? html`<div className="qs"><${Icon} n="search"/><input id="quick-search" className="qs-in" value=${tq} placeholder="Search tasks" onChange=${ev => setTq(ev.target.value)} aria-label="Search tasks"/></div>` : html`<${QuickSearch} open=${id => { setSOpen(false); open(id); }}/>`}</div>
         <button className="ib hs-b" onClick=${() => { setSOpen(o => !o); setTimeout(() => { const el = document.getElementById('quick-search'); if (el) el.focus(); }, 30); }} aria-label="Search"><${Icon} n="search" s=${17}/></button>
-        <${CheckWidget} user=${user} att=${att} setAtt=${setAtt}/>
+        <div className="ck-d"><${CheckWidget} user=${user} att=${att} setAtt=${setAtt}/></div>
         <${TopRight} user=${user} role=${role} open=${open} openForm=${openForm} signOut=${signOut}/></header>
+      <div className="ck-m"><${CheckWidget} user=${user} att=${att} setAtt=${setAtt}/></div>
       <main className="main" key=${app + nav.view + (nav.id || '')}>${screen}</main>
     </div>
     ${taskSel && html`<${TaskDetail} key=${taskSel.id} id=${taskSel.id} ctx=${taskSel.ctx} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} leaves=${leaves} custom=${custom} close=${() => setTaskSel(null)}/>`}
-    <nav className="bnav" style=${{ gridTemplateColumns: 'repeat(' + keys.length + ', 1fr)' }} aria-label="Main">${keys.map(k => html`<button key=${k} className=${active === k ? 'on' : ''} onClick=${() => go(k)}>
-      <${Icon} n=${k} s=${21}/>${SHORT[k] || ALL[k]}${k === 'requests' && pending > 0 && html`<span className="cnt">${pending}</span>`}</button>`)}</nav>
+    <nav className="bnav" style=${{ gridTemplateColumns: 'repeat(' + mob.length + ', 1fr)' }} aria-label="Main">${mob.map(k => k === 'more'
+      ? html`<button key=${k} className=${more.includes(active) || moreOpen ? 'on' : ''} onClick=${() => setMoreOpen(o => !o)} aria-expanded=${moreOpen}><${Icon} n="dots" s=${22}/>More</button>`
+      : html`<button key=${k} className=${active === k && !moreOpen ? 'on' : ''} onClick=${() => go(k)}><${Icon} n=${k} s=${22}/>${SHORT[k] || ALL[k]}${k === 'requests' && pending > 0 && html`<span className="cnt">${pending}</span>`}</button>`)}</nav>
+    ${moreOpen && html`<div className="mo-bg" onClick=${() => setMoreOpen(false)}></div><div className="mo" role="menu">${more.map(k => html`<button key=${k} role="menuitem" className=${active === k ? 'on' : ''} onClick=${() => go(k)}><${Icon} n=${k} s=${22}/>${ALL[k]}${k === 'requests' && pending > 0 && html`<span className="cnt">${pending}</span>`}</button>`)}</div>`}
   </div>`;
 }
 

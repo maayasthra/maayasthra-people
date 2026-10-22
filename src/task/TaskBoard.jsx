@@ -153,6 +153,7 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
   const lcount = tf.labels.length;
   return html`<div>
     <div className="pg-h kbh"><div><h1><${HI} n="board" tone="purple"/>Board</h1><p>${openCount} open</p></div>
+      <button className="btn pri new-m" onClick=${() => openTask('new', { col: role === 'admin' ? 'priority' : user.n })}><${Icon} n="plus" s=${16}/> New</button>
       <div className="kbh-r">
         <${Sel} icon="building" id="kb-dept" value=${tf.dept} label="Department" onChange=${ev => setTf({ ...tf, dept: ev.target.value })}><option value="All">All</option>${DEPTS.map(d => html`<option key=${d} value=${d}>${d}</option>`)}<//>
         <button className="ibx" title="Jump to a person" aria-label="Jump to a person" onMouseDown=${ev => ev.stopPropagation()} onClick=${ev => { const r = ev.currentTarget.getBoundingClientRect(); setJmenu(jmenu ? null : { x: r.right - 260, y: r.bottom + 8 }); }}><${Icon} n="jump" s=${18}/></button>
@@ -165,7 +166,7 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
             <hr/>
             <label className="lm-r" htmlFor="lb-filter"><input id="lb-filter" type="checkbox" checked=${tf.lfilter} disabled=${!lcount} onChange=${ev => setTf({ ...tf, lfilter: ev.target.checked })}/><${Icon} n="filter" s=${14}/>Filter cards</label></div>`}
         </div>
-        <button className="btn pri" onClick=${() => openTask('new', { col: role === 'admin' ? 'priority' : user.n })}><${Icon} n="plus" s=${16}/> New</button>
+        <button className="btn pri new-d" onClick=${() => openTask('new', { col: role === 'admin' ? 'priority' : user.n })}><${Icon} n="plus" s=${16}/> New</button>
       </div></div>
     <div className="kb2" ref=${scroller} onDragOver=${edge}>
       ${PINNED.map((p, i) => renderCol(p[0], 'pin', p[1], { color: p[2], left: pinLeft(i) }))}
