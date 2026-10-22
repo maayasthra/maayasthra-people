@@ -40,7 +40,7 @@ export async function resolveUser(session) {
   if (!user) {
     if (!data) return { error: 'Your account is not set up yet. Ask an admin.' };
     const name = email.split('@')[0].split(/[._-]+/).filter(Boolean).map(titleCase).join(' ') || 'New member';
-    user = addEmployee({ name, role: 'Team member', dept: 'Studio', city: 'Chennai', mgr: 0, status: 'Full-time', join: new Date().toISOString().slice(0, 10), dob: '1990-06-15', g: 'f' });
+    user = addEmployee({ name, role: 'Team member', dept: 'Studio', city: 'Chennai', mgr: 0, status: 'Full-time', join: new Date().toISOString().slice(0, 10), dob: '', g: 'f' });
     user.email = email;
   }
   if (user.status === 'Exited') return { error: 'This account is no longer active.' };

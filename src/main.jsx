@@ -22,16 +22,17 @@ import { MyTasks } from './task/MyTasks.jsx';
 import { TeamView } from './task/TeamView.jsx';
 import { TaskDetail } from './task/TaskDetail.jsx';
 import { loadTasks, saveTasks, loadCollapsed, saveCollapsed, loadCustom, saveCustom, loadView, saveView } from './tasks.js';
+import { IS_DEMO } from './env.js';
 import './styles.css';
 
 const ALL = { board: 'Board', mytasks: 'My Tasks', team: 'Team', home: 'Home', people: 'People', org: 'Org chart', calendar: 'Calendar', attendance: 'Attendance', hours: 'My Hours', leaves: 'My Leaves', requests: 'Requests', settings: 'Settings' };
 const SHORT = { mytasks: 'Mine', org: 'Org', leaves: 'Leaves', attendance: 'Hours', hours: 'Hours' };
 
-const SEED_ANN = [
+const SEED_ANN = IS_DEMO ? [
   { id: 1, kind: 'holiday', title: 'Studio closed for Dussehra', body: 'The studio is closed on 20 October. Normal hours resume the next working day.', date: TODISO, by: 'Meera Iyer' },
   { id: 2, kind: 'reminder', title: 'Planning time off for Diwali?', body: 'Please send leave requests for the Diwali week early so the team can plan coverage.', date: isoOf(TOD - 2 * DAY), by: 'Meera Iyer' },
   { id: 3, kind: 'general', title: 'Keep your profile current', body: 'Add your phone number and an emergency contact from your profile. It takes a minute.', date: isoOf(TOD - 5 * DAY), by: 'Meera Iyer' }
-];
+] : [];
 
 /* Two clear buttons switch between the apps. The active one is filled with its own colour. */
 function AppSwitch({ app, setApp }) {

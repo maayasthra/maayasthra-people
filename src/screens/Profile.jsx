@@ -30,7 +30,7 @@ export function Profile({ id, tab: tab0, from, back, open, openForm, user, role,
           <${Fact} l="Department">${e.dept}<//>
           <${Fact} l="Date of joining">${fmt(e.join)}<//>
           <${Fact} l="Work tenure">${tenureText(e.join)}<//>
-          <${Fact} l="Birthday">${fmtDM(e.dob)}${bd.days <= 30 ? ' · ' + rel(bd.days).toLowerCase() : ''}<//>
+          <${Fact} l="Birthday">${e.dob ? fmtDM(e.dob) : '–'}${e.dob && bd.days <= 30 ? ' · ' + rel(bd.days).toLowerCase() : ''}<//>
           <${Fact} l="Reporting manager">${mgr ? html`<button onClick=${() => open(mgr.n)}>${mgr.name}</button>` : 'Founder'}<//>
           <${Fact} l="Employment status">${e.status}<//>
           <${Fact} l="Location">${e.city}, India<//>

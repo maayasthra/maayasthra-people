@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { IS_DEMO } from './env.js';
 import { BY, HOL, TEAM_LEAVES, HIST0, DAY, pd, isoOf, isAway, activeEmps } from './data.js';
 
 /* ---------------------------------------------------------------------
@@ -29,6 +30,7 @@ const hash = (a, b, c) => { let h = (a * 374761393 + b * 668265263 + c * 2147483
 const STATIC_AWAY = [...TEAM_LEAVES, ...HIST0.filter(l => l.state === 'approved')];
 const cache = new Map();
 function buildSample(e, iso, now) {
+  if (!IS_DEMO) return null;
   const w = weekday(iso);
   if (w === 0 || w === 6 || HOL[iso] || iso < e.join || isAway(e.n, iso, STATIC_AWAY)) return null;
   const dn = Math.round(pd(iso) / DAY), r = k => hash(e.n, dn, k);

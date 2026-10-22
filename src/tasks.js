@@ -1,4 +1,5 @@
 import { TOD, DAY, TODISO, isoOf } from './data.js';
+import { IS_DEMO } from './env.js';
 
 /* ---------------------------------------------------------------------
    Maayasthra Task: one General board. Columns, left to right:
@@ -18,7 +19,7 @@ const subs = (...a) => a.map(([t, done]) => ({ id: ++sid, t, done: !!done }));
 const cm = (by, text, ago) => ({ id: ++sid, by, text, at: Date.now() - ago * 3600000 });
 
 // [title, client, columns, priority, due offset, labels, creator, done]
-const T = [
+const T = IS_DEMO ? [
   ['Client pitch deck: Sahyadri Hotels', '', ['priority'], 'high', 2, ['Client', 'Urgent'], 1],
   ['Fix checkout bug on Kaveri store', 'Kaveri Foods', ['priority'], 'high', 1, ['Development', 'Urgent'], 1],
   ['Diwali greeting video', '', ['priority'], 'high', 5, ['Motion'], 1],
@@ -48,16 +49,18 @@ const T = [
   ['Accessibility audit', '', [38], 'med', 2, ['Development'], 5],
   ['Brand guideline refresh', 'Nila Tea Co.', [9], 'low', 12, ['Design'], 3, true],
   ['Renew design software licences', '', [5], 'low', -8, [], 1, true]
-];
+] : [];
 
 export const TASKS0 = T.map(([title, client, cols, prio, off, labels, by, done], i) => ({
   id: 't' + (i + 1), title, client, cols: done ? [DONE] : cols, prev: done ? cols : undefined, prio, due: d(off), labels, by, done: !!done, desc: '', subs: [], comments: [], created: Date.now() - (14 - i % 9) * 86400000
 }));
 const set = (title, p) => { const t = TASKS0.find(x => x.title === title); Object.assign(t, p); };
+if (IS_DEMO) {
 set('Instagram reels (4)', { desc: 'Four reels for the October campaign. Nikhil cuts, Naina does the motion graphics.', subs: subs(['Script and shot list', true], ['Rough cuts', false], ['Motion graphics', false], ['Client review', false]), comments: [cm(8, 'Client wants a festive feel in reel 3.', 20), cm(13, 'Noted, adding a lantern sequence.', 6)] });
 set('Festive ad creatives', { desc: 'Print and social set for the Diwali sale.', subs: subs(['Hero visual', true], ['Social crops', false], ['Print layout', false]), comments: [cm(8, 'Final files are needed by end of day.', 3)] });
 set('Client pitch deck: Sahyadri Hotels', { desc: 'Pitch on Friday. Need case studies, a mood direction and pricing.', subs: subs(['Case studies', false], ['Mood direction', false], ['Pricing page', false]) });
 set('Fix checkout bug on Kaveri store', { desc: 'Customers see a blank screen after entering a coupon code.' });
+}
 
 /* ---------- helpers ---------- */
 export const isOpen = t => !t.done;

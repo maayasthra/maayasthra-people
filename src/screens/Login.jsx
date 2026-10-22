@@ -2,6 +2,7 @@ import { useState } from 'react';
 import React from 'react';
 import { html, Icon, Av, Photo } from '../ui.jsx';
 import { EMP, BY, DEMO_PW, isAdminRole } from '../data.js';
+import { IS_DEMO } from '../env.js';
 import { authEnabled, signIn, sendReset, setNewPassword, resolveUser, currentSession, signOutAuth } from '../auth.js';
 
 /* ---------- Login ---------- */
@@ -46,7 +47,7 @@ export function Login({ onLogin }) {
     <section className="lg-art">
       <div className="brand" style=${{ padding: 0 }}><span className="mark"></span><span className="brand-t"><b>Maayasthra</b><span>People</span></span></div>
       <div className="lg-copy"><h1>Everyone at Maayasthra, in one place.</h1></div>
-      <div><div className="lg-mos" aria-hidden="true">${art.map(n => html`<div key=${n}><${Photo} e=${BY[n]}/></div>`)}</div><div className="lg-url" style=${{ marginTop: 28 }}>people.maayasthra.com</div></div>
+      <div><div className="lg-mos" aria-hidden="true">${IS_DEMO && art.map(n => html`<div key=${n}><${Photo} e=${BY[n]}/></div>`)}</div><div className="lg-url" style=${{ marginTop: 28 }}>people.maayasthra.com</div></div>
     </section>
     <section className="lg-form"><div className="lg-box">
       ${view === 'signin' ? html`<${React.Fragment}>
