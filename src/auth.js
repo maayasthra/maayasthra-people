@@ -14,6 +14,13 @@ export async function signIn(email, password) {
   if (error) throw new Error(friendly(error.message));
   return data.session;
 }
+// Self sign-up. The database only lets staff-list emails through, and the person must confirm by email.
+export async function signUp(email, password) {
+  const { data, error } = await supabase.auth.signUp({ email: email.trim().toLowerCase(), password, options: { emailRedirectTo: window.location.origin } });
+  if (error) throw new Error(/not in the staff list|database error/i.test(error.message) ? 'That email is not in the staff list. Use your work email, or ask an admin to add you.' : friendly(error.message));
+  // A session here means Supabase is not asking for email confirmation. Refuse to continue.
+  if (data.session) { await supabase.auth.signOut(); throw new Error('Sign-up is not set up safely yet. Tell an admin.'); }
+}
 export const signOutAuth = () => supabase ? supabase.auth.signOut() : Promise.resolve();
 export async function sendReset(email) {
   const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: window.location.origin });

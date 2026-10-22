@@ -3,12 +3,12 @@ import React from 'react';
 import { html, Icon, Av, Photo } from '../ui.jsx';
 import { EMP, BY, DEMO_PW, isAdminRole } from '../data.js';
 import { IS_DEMO } from '../env.js';
-import { authEnabled, signIn, sendReset, setNewPassword, resolveUser, currentSession, signOutAuth } from '../auth.js';
+import { authEnabled, signIn, signUp, sendReset, setNewPassword, resolveUser, currentSession, signOutAuth } from '../auth.js';
 
 /* ---------- Login ---------- */
 export function Login({ onLogin }) {
   const [mode, setMode] = useState('employee'); const [view, setView] = useState('signin');
-  const [email, setEmail] = useState(''); const [pw, setPw] = useState(''); const [show, setShow] = useState(false);
+  const [pw2, setPw2] = useState(''); const [email, setEmail] = useState(''); const [pw, setPw] = useState(''); const [show, setShow] = useState(false);
   const [err, setErr] = useState(''); const [busy, setBusy] = useState(false); const [sent, setSent] = useState(false);
   const check = (em, p, md) => {
     const e = EMP.find(x => x.email === em.trim().toLowerCase());
@@ -42,6 +42,14 @@ export function Login({ onLogin }) {
     if (!authEnabled) { setSent(true); return; }
     setBusy(true); sendReset(email).then(() => { setSent(true); setBusy(false); }).catch(e => { setErr(e.message); setBusy(false); });
   };
+  const register = ev => {
+    ev.preventDefault(); if (busy) return;
+    if (!email.trim()) { setErr('Enter your work email.'); return; }
+    if (pw.length < 8) { setErr('Use at least 8 characters.'); return; }
+    if (pw !== pw2) { setErr('The two passwords do not match.'); return; }
+    setErr(''); setBusy(true);
+    signUp(email, pw).then(() => { setSent(true); setBusy(false); }).catch(e => { setErr(e.message); setBusy(false); });
+  };
   const art = [3, 10, 6, 17, 14];
   return html`<div className="lg-wrap">
     <section className="lg-art">
@@ -64,6 +72,17 @@ export function Login({ onLogin }) {
           <button className="dm" onClick=${() => demo(2, 'admin')} disabled=${busy}><${Av} e=${BY[2]} s=${38}/><span className="row-t"><b>Meera Iyer</b><span>Admin · approves leave</span></span><span className="go"><${Icon} n="arrow" s=${16}/></span></button>
           <button className="dm" onClick=${() => demo(9, 'employee')} disabled=${busy}><${Av} e=${BY[9]} s=${38}/><span className="row-t"><b>Dev Malhotra</b><span>Employee · applies for leave</span></span><span className="go"><${Icon} n="arrow" s=${16}/></span></button>
           <div className="lg-note">Demo password: ${DEMO_PW}</div></div>`}
+        ${authEnabled && html`<div className="lg-row" style=${{ justifyContent: 'center', marginTop: 18 }}><span>New here?</span> <button type="button" className="link" onClick=${() => { setView('signup'); setErr(''); setSent(false); setPw(''); setPw2(''); }}>Create your account</button></div>`}
+      <//>` : view === 'signup' ? html`<${React.Fragment}>
+        <button className="back" onClick=${() => { setView('signin'); setErr(''); setPw(''); setPw2(''); }}><${Icon} n="back" s=${16}/> Back to sign in</button>
+        <h2>Create your account</h2><p>Use your work email. You will get a link to confirm it.</p>
+        ${sent ? html`<div className="lg-ok" role="status"><${Icon} n="check" s=${16}/> Check your inbox. Click the link we sent to ${email.trim()} to finish.</div>` : html`<form onSubmit=${register} noValidate>
+          <div className="fld"><label htmlFor="su-email">Work email</label><input id="su-email" className="inp" type="email" autoComplete="username" placeholder="name@maayasthra.com" value=${email} onChange=${ev => setEmail(ev.target.value)}/></div>
+          <div className="fld"><label htmlFor="su-pw">Password</label><div className="pw"><input id="su-pw" className="inp" type=${show ? 'text' : 'password'} autoComplete="new-password" value=${pw} onChange=${ev => setPw(ev.target.value)}/></div></div>
+          <div className="fld"><label htmlFor="su-pw2">Repeat it</label><input id="su-pw2" className="inp" type=${show ? 'text' : 'password'} autoComplete="new-password" value=${pw2} onChange=${ev => setPw2(ev.target.value)}/></div>
+          ${err && html`<div className="lg-err" role="alert">${err}</div>`}
+          <button className="btn pri" type="submit" disabled=${busy}>${busy ? 'Creating…' : 'Create account'}</button>
+        </form>`}
       <//>` : html`<${React.Fragment}>
         <button className="back" onClick=${() => { setView('signin'); setErr(''); }}><${Icon} n="back" s=${16}/> Back to sign in</button>
         <h2>Reset your password</h2><p>Enter your work email and we will send a reset link.</p>
