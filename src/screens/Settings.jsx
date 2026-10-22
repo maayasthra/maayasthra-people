@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { html, Icon, Av, Switch, HI } from '../ui.jsx';
+import { IS_DEMO } from '../env.js';
+import { saveRole } from '../staff.js';
 import { EMP, HOL, TODISO, WD, POLICY, ROLE_NAMES, ROLEMAP, setRole, fmt, pd, plural, searchPeople } from '../data.js';
 
 const PERMS = [
@@ -9,7 +11,14 @@ const PERMS = [
 ];
 
 function Access({ onChange }) {
-  const [q, setQ] = useState('');
+  const [q, setQ] = useState(''), [err, setErr] = useState('');
+  const change = async (e, r) => {
+    if (r !== 'Admin' && ROLEMAP[e.n] === 'Admin' && counts('Admin') <= 1) { setErr('There must be at least one admin.'); return; }
+    setErr('');
+    if (IS_DEMO) { setRole(e.n, r); onChange(); return; }
+    try { await saveRole(e.n, r); } catch (x) { setErr(x.message); }
+    onChange();
+  };
   const counts = r => EMP.filter(e => e.status !== 'Exited' && ROLEMAP[e.n] === r).length;
   const list = searchPeople(q).sort((a, b) => ROLE_NAMES.indexOf(ROLEMAP[b.n]) - ROLE_NAMES.indexOf(ROLEMAP[a.n]) || a.name.localeCompare(b.name)).slice(0, q.trim() ? 20 : 8);
   return html`<div className="st-w" style=${{ maxWidth: 900 }}>
@@ -19,7 +28,8 @@ function Access({ onChange }) {
     <div className="st-s"><h2 className="st-h">People</h2>
       <div className="search" style=${{ maxWidth: 'none', marginBottom: 8 }}><${Icon} n="search"/><input id="role-search" value=${q} onChange=${ev => setQ(ev.target.value)} placeholder="Search" aria-label="Search people to change role"/></div>
       ${list.map(e => html`<div className="pr" key=${e.n}><${Av} e=${e} s=${38}/><span className="row-t"><b>${e.name}</b><span>${e.role} · ${e.dept}</span></span>
-        <select className="sel" value=${ROLEMAP[e.n]} aria-label=${'Role for ' + e.name} onChange=${ev => { setRole(e.n, ev.target.value); onChange(); }}>${ROLE_NAMES.map(r => html`<option key=${r} value=${r}>${r}</option>`)}</select></div>`)}
+        <select className="sel" value=${ROLEMAP[e.n]} aria-label=${'Role for ' + e.name} onChange=${ev => change(e, ev.target.value)}>${ROLE_NAMES.map(r => html`<option key=${r} value=${r}>${r}</option>`)}</select></div>`)}
+      ${err && html`<div className="lg-err" role="alert">${err}</div>`}
       ${list.length === 0 && html`<div className="empty" style=${{ textAlign: 'left' }}>No one matches "${q}".</div>`}
       <div className="bar-l">${q.trim() ? 'Showing ' + list.length + ' result' + (list.length === 1 ? '' : 's') : '8 shown'}</div></div>
   </div>`;

@@ -5,7 +5,7 @@ const TOD = Date.UTC(_now.getFullYear(), _now.getMonth(), _now.getDate()), DAY =
 const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const WD = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const WDL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const pd = iso => { const [a,b,c] = iso.split('-').map(Number); return Date.UTC(a, b-1, c); };
+const pd = iso => { if (!iso) return 0; const [a,b,c] = iso.split('-').map(Number); return Date.UTC(a, b-1, c); };
 const fmt = iso => { if (!iso) return '–'; const [a,b,c] = iso.split('-').map(Number); return c + ' ' + MON[b-1] + ' ' + a; };
 const fmtDM = iso => { if (!iso) return '–'; const [,b,c] = iso.split('-').map(Number); return c + ' ' + MON[b-1]; };
 const fmtDay = t => { const d = new Date(t); return WD[d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + MON[d.getUTCMonth()]; };
@@ -26,6 +26,7 @@ const ago = iso => {
   return Math.round(d / 30) + ' months ago';
 };
 const tenure = join => {
+  if (!join) return { total: 0, yrs: 0, mos: 0, days: 0 };
   const [y,m,d] = join.split('-').map(Number);
   const n = new Date(TOD);
   const total = (n.getUTCFullYear() - y) * 12 + (n.getUTCMonth() + 1 - m) - (n.getUTCDate() < d ? 1 : 0);
@@ -33,6 +34,7 @@ const tenure = join => {
 };
 const plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's');
 const tenureText = join => {
+  if (!join) return '–';
   const t = tenure(join);
   if (t.yrs > 0) return plural(t.yrs, 'year') + (t.mos ? ' ' + plural(t.mos, 'month') : '');
   if (t.mos > 0) return plural(t.mos, 'month');
@@ -44,6 +46,7 @@ const range = (a, b) => {
   return m1 === m2 ? d1 + '–' + d2 + ' ' + MON[m1-1] : fmtDM(a) + ' – ' + fmtDM(b);
 };
 const addMonths = (iso, n) => {
+  if (!iso) return '';
   const [y,m,d] = iso.split('-').map(Number);
   const t = new Date(Date.UTC(y, m-1+n, d));
   return t.getUTCFullYear() + '-' + String(t.getUTCMonth()+1).padStart(2,'0') + '-' + String(t.getUTCDate()).padStart(2,'0');
@@ -120,6 +123,7 @@ const PATH = IS_DEMO ? {
 
 function journey(e) {
   const out = [];
+  if (!e.join) return out;
   const path = PATH[e.n] || [[e.join, e.role]];
   path.forEach((p, i) => out.push({
     date: p[0], hi: i > 0,

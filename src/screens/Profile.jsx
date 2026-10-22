@@ -48,12 +48,12 @@ export function Profile({ id, tab: tab0, from, back, open, openForm, user, role,
         <div className="tl">${J.map((m, i) => html`<div key=${i} className=${'tl-i' + (m.hi ? ' hi' : '') + (m.up ? ' up' : '')}>
           <time>${fmt(m.date)}${m.up ? ' · upcoming' : ''}</time><b>${m.title}</b>${m.note && html`<p>${m.note}</p>`}</div>`)}</div></section>
       <aside>
-        <div className="side-sec"><h3>Tenure</h3>
+        ${e.join && html`<div className="side-sec"><h3>Tenure</h3>
           ${ten.total >= 1 ? html`<div className="ten">${ten.yrs > 0 && html`<b>${ten.yrs}<small>${ten.yrs === 1 ? 'year' : 'years'}</small></b>`}<b>${ten.mos}<small>${ten.mos === 1 ? 'month' : 'months'}</small></b></div>`
             : html`<div className="ten"><b>${ten.days}<small>${ten.days === 1 ? 'day' : 'days'}</small></b></div>`}
           ${nxYrs >= 1 ? html`<div className="bar"><u style=${{ width: pct + '%' }}></u></div><div className="bar-l">${plural(nxYrs, 'year')} on ${fmtDM(e.join)} · ${rel(nx.days).toLowerCase()}</div>`
             : html`<div className="bar-l">First day was ${ago(e.join).toLowerCase()}.</div>`}
-        </div>
+        </div>`}
         ${canSee && html`<div className="side-sec"><h3>Leave balance</h3>${bal.map(b => html`<div className="hl" key=${b.t}>${b.t}<span>${b.left} of ${b.total} left</span></div>`)}</div>`}
         <div className="side-sec"><h3>Reports to</h3>
           ${mgr ? html`<button className="row" style=${{ padding: '8px 0' }} onClick=${() => open(mgr.n)}><${Av} e=${mgr} s=${40}/><span className="row-t"><b>${mgr.name}</b><span>${mgr.role}</span></span></button>` : html`<div className="bar-l" style=${{ margin: 0 }}>Leads the studio.</div>`}

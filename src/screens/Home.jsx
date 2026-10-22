@@ -52,7 +52,7 @@ function ApprovalsCarousel({ queue, setLeaves, open }) {
 }
 
 function Reviews({ people, open }) {
-  const rows = people.filter(e => e.status === 'Probation').map(e => { const d = addMonths(e.join, 3); return { e, d, days: Math.round((pd(d) - TOD) / DAY) }; })
+  const rows = people.filter(e => e.status === 'Probation' && e.join).map(e => { const d = addMonths(e.join, 3); return { e, d, days: Math.round((pd(d) - TOD) / DAY) }; })
     .filter(x => x.days <= 45).sort((a, b) => a.days - b.days);
   return html`<${Panel} title="Probation" sub="">
     ${rows.length === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="clock" s=${22}/></span><b>None due</b></div>` :
@@ -173,7 +173,7 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
 
   if (role === 'admin') {
     const onLeave = people.filter(e => isAway(e.n, TODISO, away)).length;
-    const probation = people.filter(e => e.status === 'Probation');
+    const probation = people.filter(e => e.status === 'Probation' && e.join);
     const due = probation.filter(e => Math.round((pd(addMonths(e.join, 3)) - TOD) / DAY) <= 45).length;
     const depts = new Set(people.map(e => e.dept)).size;
     const nowT = Date.now();
