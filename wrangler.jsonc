@@ -1,0 +1,6 @@
+{
+  "name": "maayasthra-people",
+  "compatibility_date": "2026-10-01",
+  "assets": { "directory": "./dist" },
+  "routes": [{ "pattern": "people.maayasthra.com/*", "zone_name": "maayasthra.com" }]
+}
