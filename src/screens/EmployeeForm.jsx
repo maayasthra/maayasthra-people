@@ -4,6 +4,9 @@ import { IS_DEMO } from '../env.js';
 import { saveEmployee, saveMyProfile } from '../staff.js';
 import { EMP, BY, DEPTS, STATUSES, TODISO, ROLE_NAMES, ROLEMAP, defaultStart, activeEmps, addEmployee, updateEmployee, emailFor, fmt, fmtTime } from '../data.js';
 
+/* One labelled field. It must stay outside EmployeeForm: a component defined inside would be rebuilt on every keystroke and lose the cursor. */
+const Fld = ({ id, label, children, hint }) => html`<div className="fld"><label htmlFor=${id}>${label}</label>${children}${hint && html`<small className="fld-h">${hint}</small>`}</div>`;
+
 /* ---------- Add / edit a person ---------- */
 export function EmployeeForm({ id, role, user, done, bump }) {
   const e = id ? BY[id] : null;
@@ -53,7 +56,6 @@ export function EmployeeForm({ id, role, user, done, bump }) {
   const preview = { n: e ? e.n : 99, g: f.g, name: f.name || 'New person', photo: f.photo };
   const mgrs = activeEmps().filter(x => !e || x.n !== e.n).sort((a, b) => a.name.localeCompare(b.name));
   const title = !e ? 'Add a person' : self && !isAdmin ? 'Edit your profile' : self ? 'Edit your profile' : 'Edit ' + e.name;
-  const Fld = ({ id: fid, label, children, hint }) => html`<div className="fld"><label htmlFor=${fid}>${label}</label>${children}${hint && html`<small className="fld-h">${hint}</small>`}</div>`;
 
   return html`<div className="ef2">
     <button className="back" onClick=${() => done(e ? e.n : null)}><${Icon} n="back" s=${16}/> ${e ? 'Back to profile' : 'Back to people'}</button>
@@ -94,12 +96,11 @@ export function EmployeeForm({ id, role, user, done, bump }) {
             <${Fld} id="ef-g" label="Avatar style" hint="Used until a photo is added."><select id="ef-g" className="inp" value=${f.g} onChange=${ev => set({ g: ev.target.value })}><option value="f">Style A</option><option value="m">Style B</option></select><//></div></section>`
         : html`<section className="ef2-card"><h2>Work details</h2><p className="ef2-s">Your admin manages these. Ask them if anything is wrong.</p>
           ${[['Name', e.name], ['Job title', e.role], ['Department', e.dept], ['Reports to', BY[e.mgr] ? BY[e.mgr].name : '–'], ['Working hours', fmtTime(e.shiftStart) + ' – ' + fmtTime(e.shiftEnd)], ['Joined', e.join ? fmt(e.join) : '–']].map(([k, v]) => html`<div className="pf2-row" key=${k}><span>${k}</span><div>${v}</div></div>`)}</section>`}
-      </div>
-
-      <div className="ef2-bar">
-        <span className=${'ef2-msg' + (err ? ' bad' : '')} role=${err ? 'alert' : 'status'}>${err || (busy ? 'Saving…' : '')}</span>
-        <button type="button" className="btn ghost" onClick=${() => done(e ? e.n : null)}>Cancel</button>
-        <button className="btn pri" type="submit" disabled=${busy}>${busy ? 'Saving…' : e ? 'Save changes' : 'Add person'}</button>
+        <div className="ef2-end">
+          <span className=${'ef2-msg' + (err ? ' bad' : '')} role=${err ? 'alert' : 'status'}>${err || ''}</span>
+          <button type="button" className="btn ghost" onClick=${() => done(e ? e.n : null)}>Cancel</button>
+          <button className="btn pri" type="submit" disabled=${busy}>${busy ? 'Saving…' : e ? 'Save changes' : 'Add person'}</button>
+        </div>
       </div>
     </form>
   </div>`;

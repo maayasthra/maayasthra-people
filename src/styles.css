@@ -1788,13 +1788,19 @@ button.td2-ck:hover:not(:disabled){border-color:var(--ok);color:var(--ok)}
 .ef2-pb{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
 .ef2-photo small{font-size:12.5px;line-height:1.45;color:var(--muted)}
 .ef2-card .pf2-row{padding:12px 0}
-.ef2-bar{grid-column:1/-1;position:sticky;bottom:16px;z-index:40;display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:4px;padding:12px 14px 12px 22px;border-radius:24px;background:rgba(30,30,32,.9);-webkit-backdrop-filter:blur(22px);backdrop-filter:blur(22px);border:1px solid var(--line-hi);box-shadow:0 14px 40px rgba(0,0,0,.5)}
-.ef2-bar .btn{height:42px;padding:0 22px;border-radius:21px}
+.ef2-end{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding-top:4px}
+.ef2-end .btn{height:42px;padding:0 22px;border-radius:21px}
 .ef2-msg{flex:1;min-width:0;font-size:13.5px;color:var(--muted)}
 .ef2-msg.bad{color:#FF8A80}
 @media (max-width:860px){
   .ef2-f{grid-template-columns:minmax(0,1fr)}
   .ef2-photo{position:static}
-  .ef2-bar{bottom:calc(76px + env(safe-area-inset-bottom,0px));padding:10px 10px 10px 16px}
+  .ef2-end{flex-wrap:wrap}
+  .ef2-end .btn{flex:1}
+  .ef2-msg{flex:1 1 100%}
 }
 .ef2 .pg-h p{margin-left:0;padding-left:0}
+.ef2-card .two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}
+.ef2-card .two>.fld,.ef2-card .fld{min-width:0}
+.ef2-card .inp{min-width:0;width:100%;max-width:100%}
+@media (max-width:560px){.ef2-card .two{grid-template-columns:minmax(0,1fr)}}
