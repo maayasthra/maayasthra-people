@@ -61,7 +61,7 @@ export function MyLeaves({ leaves, setLeaves, user }) {
       <section><div className="sec-h"><h2>History</h2><span>${plural(hist.length, 'request')}</span></div>
         <div>${hist.length === 0 ? html`<div className="empty" style=${{ textAlign: 'left', padding: '12px 0' }}>No requests</div>` : hist.map(l => html`<div className="hx" key=${l.id}>
           <span className="row-t"><b>${l.type}${l.half ? ' · half day' : ''}</b><span>${range(l.from, l.to)} · ${plural(l.days, 'day')}${l.reason ? ' · ' + l.reason : ''}</span></span>
-          <span className="pill" style=${{ '--c': LS_C[l.state] }}><i></i>${l.state[0].toUpperCase() + l.state.slice(1)}</span>
+          <span className="hx-s"><span className="pill" style=${{ '--c': LS_C[l.state] }}><i></i>${l.state[0].toUpperCase() + l.state.slice(1)}</span>${l.by && l.state !== 'pending' && html`<small>by ${l.byId === me.n ? 'you' : l.by}</small>`}</span>
           ${(l.state === 'pending' || (l.state === 'approved' && l.from > TODISO)) && html`<button className="link" onClick=${() => setLeaves(ls => ls.filter(x => x.id !== l.id))}>${l.state === 'pending' ? 'Withdraw' : 'Cancel'}</button>`}</div>`)}</div></section>
     </div>
   </div>`;

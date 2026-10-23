@@ -90,7 +90,7 @@ t('other employees cannot see that phone', m.data.BY[ids.karthik].phone === '');
 as('vijay'); await m.loadStaff();
 t('admins can see it', m.data.BY[ids.karthik].phone === '98400');
 const added = await m.saveEmployee({ n: 0, email: 'ajjey@example.test', name: 'Ajjey', role: 'Manager', dept: 'Ops', city: 'Chennai', mgr: ids.harish, status: 'Full-time', join: '', dob: '', shiftStart: '10:00', shiftEnd: '18:00', access: 'Employee', phone: '', emergency: '', emergencyPhone: '', bio: '', photo: '' });
-t('admin adds a person, who gets the next employee code', added && /^MAY-009$/.test(added.empId), added && added.empId);
+t('admin adds a person, who gets the next employee code', added && /^M-9$/.test(added.empId), added && added.empId);
 t('same work email twice is refused', /already in the staff list/.test(await tryit(() => m.saveEmployee({ n: 0, email: 'ajjey@example.test', name: 'Dup', role: 'r', dept: 'd', city: 'c', mgr: 0, status: 'Full-time', join: '', dob: '', shiftStart: '10:00', shiftEnd: '18:00', access: 'Employee' }))));
 as('abines'); await m.loadStaff();
 t('an employee cannot add or edit people', /Only admins|Could not save/.test(await tryit(() => m.saveEmployee({ n: 0, email: 'x@example.test', name: 'X', role: 'r', dept: 'd', city: 'c', mgr: 0, status: 'Full-time', join: '', dob: '', shiftStart: '10:00', shiftEnd: '18:00', access: 'Admin' }))));
@@ -115,6 +115,30 @@ t('an admin’s edit is saved with their name', (await m.loadAttendance(3))[ids.
 as('karthik'); const mine = await m.loadAttendance(3);
 t('an employee cannot edit their own hours', !!(await tryit(() => m.persistAtt(mine, m.att.saveDay(mine, ids.karthik, dk, [{ in: 1, out: 2, loc: 'home' }], 'x')))));
 t('an admin cannot edit their own hours', /another admin/.test(await (async () => { as('vijay'); await m.loadStaff(); const own = await m.loadAttendance(3); return tryit(() => m.persistAtt(own, m.att.saveDay(own, ids.vijay, dk, [{ in: 1, out: 2, loc: 'home' }], 'x'))); })()));
+
+
+// ================= NEW RULES: IDs, own leave, who decided, photos =================
+as('abines'); await m.loadStaff();
+t('employee IDs read M-<number>', m.data.BY[ids.abines].empId === 'M-' + ids.abines, m.data.BY[ids.abines].empId);
+as('karthik'); await m.loadStaff(); await m.saveMyProfile({ phone: '1', emergency: '', emergencyPhone: '', bio: '', photo: 'data:image/jpeg;base64,AAAA' });
+as('arunkumar'); await m.loadStaff();
+t('everyone sees a new profile photo after reloading the staff list', m.data.BY[ids.karthik].photo === 'data:image/jpeg;base64,AAAA');
+// an admin decides their own leave, and the record says who decided
+as('sanjay'); await m.loadStaff(); await m.loadLeaveConfig();
+const own = { id: 1, emp: ids.sanjay, type: 'Casual leave', from: '2027-08-09', to: '2027-08-09', days: 1, half: false, reason: '', state: 'pending' };
+await m.persistLeaves([], [own]); let sl = await m.loadLeaves();
+t('admin can file their own leave', sl.length >= 1);
+const mineReq = sl.find(l => l.emp === ids.sanjay && l.from === '2027-08-09');
+t('admin approves their own leave', (await tryit(() => m.persistLeaves(sl, sl.map(l => l.id === mineReq.id ? { ...l, state: 'approved' } : l)))) === '');
+sl = await m.loadLeaves(); const done = sl.find(l => l.id === mineReq.id);
+t('it records who approved it', done.state === 'approved' && done.byId === ids.sanjay && /Sanjay/.test(done.by) && done.at > 0, { by: done.by, at: done.at });
+as('vijay'); await m.loadStaff(); let vl = await m.loadLeaves(); const other = vl.find(l => l.id === mineReq.id);
+await m.persistLeaves(vl, vl.map(l => l.id === other.id ? { ...l, state: 'declined' } : l));
+as('sanjay'); sl = await m.loadLeaves(); const redone = sl.find(l => l.id === mineReq.id);
+t('another admin can change it, and the record shows them', redone.state === 'declined' && /Vijay/.test(redone.by) && redone.byId === ids.vijay, { by: redone.by });
+as('karthik'); await m.loadStaff(); const kreq = { id: 5, emp: ids.karthik, type: 'Casual leave', from: '2027-08-16', to: '2027-08-16', days: 1, half: false, reason: '', state: 'pending' };
+await m.persistLeaves(await m.loadLeaves(), [kreq]); let kl = await m.loadLeaves();
+t('an employee still cannot approve their own leave', /cannot decide/.test(await tryit(() => m.persistLeaves(kl, kl.map(l => ({ ...l, state: l.emp === ids.karthik && l.from === '2027-08-16' ? 'approved' : l.state }))))));
 
 console.log('--- done ---');
 

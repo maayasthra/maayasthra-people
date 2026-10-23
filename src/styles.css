@@ -1728,3 +1728,73 @@ button.td2-ck:hover:not(:disabled){border-color:var(--ok);color:var(--ok)}
 @media (max-width:860px){
   .td2-r{grid-template-columns:minmax(0,1fr);gap:10px;align-items:start;padding:14px 0}
 }
+
+/* Who decided */
+.rq3-sw{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.rq3-sw small,.hx-s small{font-size:12px;color:var(--muted)}
+.hx-s{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.rq3-you{font-style:normal;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--fill-hi);color:var(--text)}
+
+/* ---- Profile ---- */
+.pf2-hero{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:28px;align-items:center;margin-top:8px;padding:28px;border-radius:28px;background:var(--card);border:1px solid var(--line)}
+.pf2-ph{width:132px;height:132px}
+.pf2-ph .ph{width:100%;height:100%;aspect-ratio:1/1;border-radius:30px}
+.pf2-t{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+.pf2-t h1{font-size:32px;font-weight:700;letter-spacing:-.03em;line-height:1.1}
+.pf2-r{margin:6px 0 0;font-size:17px;color:var(--muted)}
+.pf2-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.pf2-chips span{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 13px 0 11px;border-radius:999px;background:var(--fill);font-size:13.5px;font-weight:500;color:var(--text)}
+.pf2-chips svg{color:var(--muted)}
+.pf2-bio{margin:16px 0 0;max-width:62ch;font-size:15px;line-height:1.55;color:var(--text)}
+.pf2-act{display:flex;flex-direction:column;gap:10px;align-self:flex-start}
+.pf2-act .btn{justify-content:center;min-width:150px}
+.pf2-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-top:24px;align-items:start}
+.pf2-card{padding:22px 24px 14px;border-radius:24px;background:var(--card);border:1px solid var(--line)}
+.pf2-card h2{margin:0 0 6px;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+.pf2-wide{grid-column:1/-1}
+.pf2-row{display:flex;align-items:baseline;justify-content:space-between;gap:20px;min-height:48px;padding:13px 0;border-top:1px solid var(--line);font-size:14.5px}
+.pf2-card h2+.pf2-row{border-top:0}
+.pf2-row>span{flex:none;color:var(--muted)}
+.pf2-row>div{min-width:0;text-align:right;font-weight:500;overflow-wrap:anywhere}
+.pf2-row b{font-weight:650}
+.pf2-sm{color:var(--muted);font-weight:400}
+.pf2-em{font-weight:500}
+.pf2-lk{color:var(--accent);font-weight:500}
+.pf2-lk:hover{text-decoration:underline}
+.pf2-sub{margin:14px 0 4px;font-size:12.5px;color:var(--muted)}
+.pf2-p{display:flex;align-items:center;gap:12px;width:100%;padding:8px 0;text-align:left}
+.pf2-p:hover .row-t b{color:var(--accent)}
+.pf2-none{margin:12px 0 8px;font-size:14px;color:var(--faint)}
+@media (max-width:860px){
+  .pf2-hero{grid-template-columns:minmax(0,1fr);gap:18px;padding:22px;text-align:left}
+  .pf2-ph{width:104px;height:104px}
+  .pf2-act{flex-direction:row;width:100%}
+  .pf2-act .btn{flex:1;min-width:0}
+  .pf2-grid{grid-template-columns:minmax(0,1fr)}
+  .pf2-t h1{font-size:27px}
+}
+
+/* ---- Edit profile ---- */
+.ef2-f{display:grid;grid-template-columns:260px minmax(0,1fr);gap:20px;margin-top:24px;align-items:start;padding-bottom:24px}
+.ef2-card{padding:22px 24px 24px;border-radius:24px;background:var(--card);border:1px solid var(--line)}
+.ef2-card h2{margin:0;font-size:17px;font-weight:650;letter-spacing:-.015em}
+.ef2-s{margin:4px 0 4px;font-size:13.5px;color:var(--muted)}
+.ef2-card .fld{margin-top:18px}
+.ef2-card .fld label{display:block;margin-bottom:8px;font-size:12.5px;font-weight:500;color:var(--muted)}
+.ef2-main{display:flex;flex-direction:column;gap:20px;min-width:0}
+.ef2-photo{position:sticky;top:84px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center}
+.ef2-ph{width:164px;height:164px}
+.ef2-ph .ph{width:100%;height:100%;aspect-ratio:1/1;border-radius:34px}
+.ef2-pb{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.ef2-photo small{font-size:12.5px;line-height:1.45;color:var(--muted)}
+.ef2-card .pf2-row{padding:12px 0}
+.ef2-bar{grid-column:1/-1;position:sticky;bottom:16px;z-index:40;display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:4px;padding:12px 14px 12px 22px;border-radius:24px;background:rgba(30,30,32,.9);-webkit-backdrop-filter:blur(22px);backdrop-filter:blur(22px);border:1px solid var(--line-hi);box-shadow:0 14px 40px rgba(0,0,0,.5)}
+.ef2-bar .btn{height:42px;padding:0 22px;border-radius:21px}
+.ef2-msg{flex:1;min-width:0;font-size:13.5px;color:var(--muted)}
+.ef2-msg.bad{color:#FF8A80}
+@media (max-width:860px){
+  .ef2-f{grid-template-columns:minmax(0,1fr)}
+  .ef2-photo{position:static}
+  .ef2-bar{bottom:calc(76px + env(safe-area-inset-bottom,0px));padding:10px 10px 10px 16px}
+}
+.ef2 .pg-h p{margin-left:0;padding-left:0}

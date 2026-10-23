@@ -97,7 +97,7 @@ const RAW = IS_DEMO ? [
 [40,'Jai Arora','m','Art Director','Creative','2018-02-12','1989-01-19','Full-time',1,'Jaipur']
 ] : [];
 const EMP = RAW.map(r => ({ n:r[0], name:r[1], g:r[2], role:r[3], dept:r[4], join:r[5], dob:r[6], status:r[7], mgr:r[8], city:r[9], phone:'', emergency:'', emergencyPhone:'', bio:'', photo:'', shiftStart:'10:00', shiftEnd:'18:00' }));
-[...EMP].sort((a,b) => pd(a.join) - pd(b.join) || a.n - b.n).forEach((e,i) => { e.empId = 'MAY-' + String(i+1).padStart(3,'0'); });
+[...EMP].sort((a,b) => pd(a.join) - pd(b.join) || a.n - b.n).forEach((e,i) => { e.empId = 'M-' + (i+1); });
 const emailFor = name => name.toLowerCase().replace(/[^a-z ]/g,'').trim().replace(/\s+/g,'.') + '@maayasthra.com';
 EMP.forEach(e => { e.email = emailFor(e.name); });
 const BY = {}; EMP.forEach(e => BY[e.n] = e);
@@ -204,8 +204,8 @@ const isAdminRole = e => ROLEMAP[e.n] === 'Admin';
 const activeEmps = () => EMP.filter(e => e.status !== 'Exited');
 const refreshDepts = () => { DEPTS.splice(0, DEPTS.length, ...[...new Set(EMP.map(e => e.dept))].sort()); };
 const addEmployee = d => {
-  const n = EMP.reduce((m, e) => Math.max(m, e.n), 0) + 1, idn = EMP.reduce((m, e) => Math.max(m, Number(e.empId.slice(4)) || 0), 0) + 1;
-  const e = { phone:'', emergency:'', emergencyPhone:'', bio:'', photo:'', shiftStart:'10:00', shiftEnd:'18:00', ...d, n, empId:'MAY-' + String(idn).padStart(3,'0'), email: emailFor(d.name) };
+  const n = EMP.reduce((m, e) => Math.max(m, e.n), 0) + 1, idn = EMP.reduce((m, e) => Math.max(m, Number(String(e.empId).replace(/\D/g, '')) || 0), 0) + 1;
+  const e = { phone:'', emergency:'', emergencyPhone:'', bio:'', photo:'', shiftStart:'10:00', shiftEnd:'18:00', ...d, n, empId:'M-' + idn, email: emailFor(d.name) };
   EMP.push(e); BY[n] = e; ROLEMAP[n] = 'Employee'; refreshDepts(); return e;
 };
 const updateEmployee = (n, patch) => { const e = BY[n]; Object.assign(e, patch); if (patch.name) e.email = emailFor(patch.name); refreshDepts(); return e; };

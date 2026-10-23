@@ -1,10 +1,10 @@
 import { supabase } from './auth.js';
-import { HOL, POLICY } from './data.js';
+import { HOL, POLICY, BY } from './data.js';
 
 /* Leave requests, holidays and leave rules, kept in Supabase. */
 // Messages from the database's own leave rules are clear enough to show as they are.
 const RULE = /start date|weekends or holidays|half day|does not match|short note|notice|already have leave|not enough|Half days/i;
-const mapReq = r => ({ id: r.id, emp: r.employee_id, type: r.type, from: r.from_date, to: r.to_date, days: Number(r.days), half: r.half, reason: r.reason || '', state: r.state });
+const mapReq = r => ({ id: r.id, emp: r.employee_id, type: r.type, from: r.from_date, to: r.to_date, days: Number(r.days), half: r.half, reason: r.reason || '', state: r.state, by: r.decided_by ? ((BY[r.decided_by] || {}).name || 'An admin') : '', byId: r.decided_by || 0, at: r.decided_at ? Date.parse(r.decided_at) : 0 });
 
 // Holidays and rules go into the shared HOL and POLICY objects the screens already read.
 export async function loadLeaveConfig() {
@@ -38,7 +38,7 @@ export async function persistLeaves(prev, next) {
     } else if (old.state !== l.state) {
       const { data, error } = await supabase.from('leave_requests').update({ state: l.state }).eq('id', l.id).select('id');
       if (error) throw new Error('Could not save that decision. Try again.');
-      if (!data.length) throw new Error('You cannot decide this request. Another admin has to.');
+      if (!data.length) throw new Error('You cannot decide this request.');
     }
   }
   for (const l of prev) {

@@ -5,6 +5,7 @@ import { LEAVES0, HIST0, TODISO, TOD, DAY, isoOf, BY } from './data.js';
 import { loadLeaves, persistLeaves } from './leave.js';
 import { loadAttendance, mergeAtt, persistAtt } from './attendanceDb.js';
 import { loadBoard, persistBoard, loadAnnouncements, persistAnnouncements, subscribeBoard, subscribeTables } from './tasksDb.js';
+import { loadStaff } from './staff.js';
 import { Login, SetPassword } from './screens/Login.jsx';
 import { authEnabled, currentSession, resolveUser, onAuthChange, signOutAuth, isLinkFlow } from './auth.js';
 import { Home } from './screens/Home.jsx';
@@ -133,10 +134,14 @@ function App() {
     const lv = () => { if (!saving.current.leave) loadLeaves().then(l => { if (ok && !saving.current.leave && JSON.stringify(l) !== JSON.stringify(leavesRef.current)) applyLeaves(l); }).catch(() => {}); };
     const at = () => { if (!saving.current.att) fresh(3); };
     let tm = 0; const poke = () => { clearTimeout(tm); tm = setTimeout(() => { at(); lv(); }, 300); };
+    // The staff list (photos, names, new people, roles) is refreshed whenever anyone changes it, and every few minutes as a backup.
+    let sm = 0, lastStaff = Date.now(); const staffNow = () => { lastStaff = Date.now(); loadStaff().then(() => { if (ok) bump(); }).catch(() => {}); };
+    const unsubStaff = subscribeTables('mp-staff', ['employees'], () => { clearTimeout(sm); sm = setTimeout(staffNow, 400); });
+    const staffTick = setInterval(staffNow, 300000);
     const unsub = subscribeTables('mp-live', ['attendance_days', 'leave_requests'], poke);
-    const t = setInterval(() => { at(); lv(); }, 60000), vis = () => { if (!document.hidden) { at(); lv(); } };
+    const t = setInterval(() => { at(); lv(); }, 60000), vis = () => { if (!document.hidden) { at(); lv(); if (Date.now() - lastStaff > 60000) staffNow(); } };
     document.addEventListener('visibilitychange', vis);
-    return () => { ok = false; unsub(); clearTimeout(tm); clearInterval(t); document.removeEventListener('visibilitychange', vis); };
+    return () => { ok = false; unsub(); unsubStaff(); clearTimeout(sm); clearInterval(staffTick); clearTimeout(tm); clearInterval(t); document.removeEventListener('visibilitychange', vis); };
   }, [auth]);
   useEffect(() => {
     if (IS_DEMO) return;
@@ -217,7 +222,7 @@ function App() {
   const mob = app === 'task' ? keys : role === 'admin' ? ['home', 'people', 'attendance', 'requests', 'more'] : ['home', 'people', 'hours', 'leaves', 'more'];
   const more = keys.filter(k => !mob.includes(k));
   const active = nav.view === 'profile' || nav.view === 'form' ? (nav.from || 'people') : nav.view;
-  const pending = role === 'admin' ? leaves.filter(l => !l.past && l.emp !== user.n && l.state === 'pending').length : 0;
+  const pending = role === 'admin' ? leaves.filter(l => !l.past && l.state === 'pending').length : 0;
 
   const home = html`<${Home} role=${role} user=${user} leaves=${leaves} setLeaves=${setLeaves} ann=${ann} setAnn=${setAnn} att=${att} setAtt=${setAtt} tasks=${tasks} goTask=${goTask} go=${go} openForm=${openForm} open=${open}/>`;
   const taskScreen = nav.view === 'mytasks' ? html`<${MyTasks} tasks=${tasks} setTasks=${setTasks} user=${user} tq=${tq} openTask=${openTask}/>`
