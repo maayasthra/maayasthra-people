@@ -3,6 +3,8 @@ import { html, Icon, Tile, HI, Switch } from '../ui.jsx';
 import { typeIcon, typeTone } from './Home.jsx';
 import { TOD, DAY, TODISO, BY, POLICY, isoOf, pd, fmtDay, plural, range, workDays, balances, noticeDays, TEAM_LEAVES, HOL } from '../data.js';
 
+// These can be taken without the usual notice
+const NO_NOTICE = ['Sick leave', 'Emergency leave'];
 const LS_C = { pending:'#FF9F0A', approved:'#30D158', declined:'#FF453A' };
 
 export function MyLeaves({ leaves, setLeaves, user }) {
@@ -10,7 +12,7 @@ export function MyLeaves({ leaves, setLeaves, user }) {
   const mine = leaves.filter(l => l.emp === me.n);
   // Open on a day that can actually be booked: far enough ahead, and not a weekend or holiday.
   const start = (() => { let t = TOD + (POLICY.notice + 5) * DAY; while ([0, 6].includes(new Date(t).getUTCDay()) || HOL[isoOf(t)]) t += DAY; return isoOf(t); })();
-  const [f, setF] = useState({ type: 'Annual leave', from: start, to: start, reason: '', half: false });
+  const [f, setF] = useState({ type: 'Casual leave', from: start, to: start, reason: '', half: false });
   const [sent, setSent] = useState(false);
   const up = p => { setF(o => { const n = { ...o, ...p }; if (n.from && n.to && n.to < n.from && p.from) n.to = n.from; if (n.from !== n.to) n.half = false; return n; }); setSent(false); };
   const bal = balances(mine);
@@ -22,7 +24,7 @@ export function MyLeaves({ leaves, setLeaves, user }) {
   if (ok && f.to < f.from) err = 'The end date is before the start date.';
   else if (ok && f.from < TODISO) err = 'Choose a start date from today onwards.';
   else if (wd && wd.days === 0) err = 'Those dates fall on weekends or holidays only.';
-  else if (wd && f.type !== 'Sick leave' && noticeDays(f.from) < POLICY.notice) err = 'Planned leave needs ' + plural(POLICY.notice, 'working day') + ' notice. Sick leave is exempt.';
+  else if (wd && !NO_NOTICE.includes(f.type) && noticeDays(f.from) < POLICY.notice) err = 'Planned leave needs ' + plural(POLICY.notice, 'working day') + ' notice. Sick and emergency leave are exempt.';
   else if (wd && days > avail) err = 'You have ' + plural(Math.max(avail, 0), 'day') + ' of ' + f.type.toLowerCase() + ' available.';
   else if (POLICY.note && !f.reason.trim()) err = 'Add a short note for the approver.';
   const valid = ok && wd && !err;

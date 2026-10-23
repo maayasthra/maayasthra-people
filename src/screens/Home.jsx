@@ -11,9 +11,9 @@ import {
 } from '../data.js';
 
 const LS_C = { pending: '#FF9F0A', approved: '#30D158', declined: '#FF453A' };
-const TYPE_ICON = { 'Annual leave': 'sun', 'Casual leave': 'cup', 'Sick leave': 'heart' };
+const TYPE_ICON = { 'Sick leave': 'heart', 'Casual leave': 'cup', 'Emergency leave': 'bell' };
 export const typeIcon = t => TYPE_ICON[t] || 'leaves';
-export const typeTone = t => t === 'Sick leave' ? 'orange' : t === 'Casual leave' ? 'amber' : 'blue';
+export const typeTone = t => t === 'Sick leave' ? 'orange' : t === 'Casual leave' ? 'amber' : 'purple';
 
 /* A fixed-height card so panels in a row line up */
 function Panel({ title, sub, right, children }) {
@@ -214,7 +214,7 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
   return html`<div>
     <div className="date-l">${dateL}</div>
     <h1 className="h-greet">${greet}, ${first(user)}.</h1>
-    <p className="lede"><span><b>${bal[0].left} days</b> annual leave left${hols[0] ? ' · Next: ' + HOL[hols[0]] + ', ' + fmtDay(pd(hols[0])) : ''}</span></p>
+    <p className="lede"><span>${hols[0] ? html`Next holiday: <b>${HOL[hols[0]]}</b>, ${fmtDay(pd(hols[0]))}` : 'No holidays coming up'}</span></p>
     <div className="tiles">
       ${bal.map(b => html`<${Tile} key=${b.t} icon=${typeIcon(b.t)} tone=${typeTone(b.t)} label=${b.t} value=${b.left} sub=${b.pend ? 'days left · ' + b.pend + ' pending' : 'of ' + b.total + ' days left'} onClick=${() => go('leaves')}/>`)}
       <${Tile} icon="clock" tone="green" label="Worked today" value=${hm(worked)} sub=${live ? 'timer is running' : sessions.length ? 'checked out' : 'not checked in yet'}/>

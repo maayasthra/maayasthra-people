@@ -152,7 +152,7 @@ function journey(e) {
 
 const LEAVES0 = IS_DEMO ? [
   { id:1, emp:9,  type:'Casual leave', from:'2026-10-28', to:'2026-10-30', days:3,  reason:'Family function in Kochi.', sent:'2 days ago' },
-  { id:2, emp:14, type:'Annual leave', from:'2026-11-09', to:'2026-11-20', days:10, reason:'Travelling over the Diwali break.', sent:'Yesterday' },
+  { id:2, emp:14, type:'Casual leave', from:'2026-11-09', to:'2026-11-20', days:10, reason:'Travelling over the Diwali break.', sent:'Yesterday' },
   { id:3, emp:15, type:'Sick leave',   from:'2026-10-20', to:'2026-10-20', days:1,  reason:'Medical appointment.', sent:'Today' },
   { id:4, emp:20, type:'Casual leave', from:'2026-10-23', to:'2026-10-23', days:1,  reason:'Personal errand.', sent:'3 days ago' }
 ] : [];
@@ -168,15 +168,15 @@ const HOL = IS_DEMO ? {
   '2026-11-24':'Guru Nanak Jayanti','2026-12-25':'Christmas','2027-01-01':"New Year's Day",'2027-01-26':'Republic Day'
 } : {};
 const TEAM_LEAVES = IS_DEMO ? [
-  { emp:12, type:'Annual leave', from:'2026-10-19', to:'2026-10-21' },
+  { emp:12, type:'Casual leave', from:'2026-10-19', to:'2026-10-21' },
   { emp:36, type:'Medical leave', from:'2026-10-05', to:'2026-11-02' },
   { emp:25, type:'Casual leave', from:'2026-10-26', to:'2026-10-27' },
-  { emp:17, type:'Annual leave', from:'2026-11-02', to:'2026-11-06' },
+  { emp:17, type:'Casual leave', from:'2026-11-02', to:'2026-11-06' },
   { emp:26, type:'Casual leave', from:'2026-11-24', to:'2026-11-25' },
-  { emp:23, type:'Annual leave', from:'2026-12-21', to:'2026-12-31' }
+  { emp:23, type:'Casual leave', from:'2026-12-21', to:'2026-12-31' }
 ] : [];
 // Leave rules. Edited from Settings, applied to every new request.
-const POLICY = { allow: { 'Annual leave':18, 'Casual leave':8, 'Sick leave':8 }, notice:3, half:true, note:false };
+const POLICY = { allow: { 'Sick leave':8, 'Casual leave':8, 'Emergency leave':3 }, notice:3, half:true, note:false };
 const leaveTypes = () => Object.entries(POLICY.allow);
 const balances = mine => leaveTypes().map(([t, total]) => {
   const used = mine.filter(l => l.type === t && l.state === 'approved').reduce((n, l) => n + l.days, 0);
@@ -184,10 +184,10 @@ const balances = mine => leaveTypes().map(([t, total]) => {
   return { t, total, used, pend, left: total - used };
 });
 const HIST0 = IS_DEMO ? [
-  { id:101, emp:2, type:'Annual leave', from:'2026-08-10', to:'2026-08-13', days:4, reason:'Trip to Munnar.', state:'approved', past:true },
+  { id:101, emp:2, type:'Casual leave', from:'2026-08-10', to:'2026-08-13', days:4, reason:'Trip to Munnar.', state:'approved', past:true },
   { id:102, emp:2, type:'Casual leave', from:'2026-05-22', to:'2026-05-22', days:1, reason:'Personal errand.', state:'approved', past:true },
   { id:103, emp:2, type:'Casual leave', from:'2026-03-16', to:'2026-03-16', days:1, reason:'Home repairs.', state:'approved', past:true },
-  { id:111, emp:9, type:'Annual leave', from:'2026-06-08', to:'2026-06-11', days:4, reason:'Family trip.', state:'approved', past:true },
+  { id:111, emp:9, type:'Casual leave', from:'2026-06-08', to:'2026-06-09', days:2, reason:'Family trip.', state:'approved', past:true },
   { id:112, emp:9, type:'Casual leave', from:'2026-02-13', to:'2026-02-13', days:1, reason:'Passport appointment.', state:'approved', past:true }
 ] : [];
 const ROLE_NAMES = ['Employee','Admin'];
