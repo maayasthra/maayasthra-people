@@ -1,44 +1,52 @@
+import { useState } from 'react';
 import { html, Icon, Av, HI } from '../ui.jsx';
 import { downloadLeaveReport } from '../report.js';
-import { BY, pd, fmtDay, plural, range, workDays, awayList } from '../data.js';
+import { BY, TODISO, pd, fmtDay, plural, range, workDays, awayList, balances } from '../data.js';
 import { typeIcon } from './Home.jsx';
 
-const LS_C = { pending: '#FF9F0A', approved: '#30D158', declined: '#FF453A' };
+const STATE_C = { approved: '#30D158', declined: '#FF453A' };
+const TYPE_C = { 'Annual leave': '#0A84FF', 'Casual leave': '#FF9F0A', 'Sick leave': '#FF453A' };
 
 export function Requests({ user, leaves: all, setLeaves, open }) {
-  const leaves = all.filter(l => !l.past && l.emp !== user.n);
-  const waiting = leaves.filter(l => l.state === 'pending');
-  const decided = leaves.filter(l => l.state !== 'pending');
+  const [tab, setTab] = useState('pending');
+  const leaves = all.filter(l => !l.past && l.emp !== user.n && BY[l.emp]);
+  const waiting = leaves.filter(l => l.state === 'pending').sort((a, b) => a.from.localeCompare(b.from));
+  const decided = leaves.filter(l => l.state !== 'pending').sort((a, b) => b.from.localeCompare(a.from));
   const away = awayList(all);
   const decide = (l, state) => setLeaves(ls => ls.map(x => x.id === l.id ? { ...x, state } : x));
+  const list = tab === 'pending' ? waiting : decided;
 
-  const Row = ({ l }) => {
-    const e = BY[l.emp], wd = workDays(l.from, l.to);
-    const peers = [...new Set(away.filter(a => a.emp !== e.n && BY[a.emp] && BY[a.emp].dept === e.dept && l.from <= a.to && l.to >= a.from).map(a => BY[a.emp].name))];
-    const pend = l.state === 'pending';
-    return html`<article className=${'rr' + (pend ? '' : ' done')}>
-      <button onClick=${() => open(e.n)} aria-label=${'Open ' + e.name}><${Av} e=${e} s=${44}/></button>
-      <div className="rr-m">
-        <div className="rr-t"><b>${e.name}</b><span>${e.dept}</span></div>
-        <div className="rr-d"><${Icon} n=${typeIcon(l.type)} s=${15}/> ${l.type} · ${range(l.from, l.to)} · ${plural(l.days, 'day')}</div>
-        ${pend && html`<p>${l.reason || 'No note added.'}</p>
-          <small>${wd.hol.length ? 'Skips ' + wd.hol.join(', ') + '. ' : ''}${peers.length ? peers.join(' and ') + ' in ' + e.dept + (peers.length === 1 ? ' is' : ' are') + ' also out.' : 'No one else in ' + e.dept + ' is out.'}</small>`}
+  const When = ({ l }) => html`<span className="rq3-w">${l.from === l.to ? fmtDay(pd(l.from)) : range(l.from, l.to)}<i></i>${plural(l.days, 'day')}</span>`;
+  const Type = ({ l }) => html`<span className="rq3-t" style=${{ '--c': TYPE_C[l.type] || '#8E8E93' }}><${Icon} n=${typeIcon(l.type)} s=${14}/>${l.type}${l.half ? ' · half day' : ''}</span>`;
+
+  const Card = ({ l }) => {
+    const e = BY[l.emp], pend = l.state === 'pending';
+    const peers = [...new Set(away.filter(a => a.emp !== e.n && BY[a.emp] && BY[a.emp].dept === e.dept && l.from <= a.to && l.to >= a.from).map(a => BY[a.emp].name.split(' ')[0]))];
+    const bal = balances(all.filter(x => x.emp === e.n)).find(b => b.t === l.type);
+    const hol = pend ? workDays(l.from, l.to).hol : [];
+    return html`<article className=${'rq3-c' + (pend ? '' : ' done')}>
+      <button className="rq3-av" onClick=${() => open(e.n)} aria-label=${'Open ' + e.name}><${Av} e=${e} s=${46}/></button>
+      <div className="rq3-m">
+        <div className="rq3-n"><b>${e.name}</b><span>${e.dept}</span></div>
+        <div className="rq3-d"><${Type} l=${l}/><${When} l=${l}/></div>
+        ${pend && l.reason && html`<p className="rq3-r">${l.reason}</p>`}
+        ${pend && html`<div className="rq3-i">
+          ${bal && html`<span><${Icon} n="check" s=${13}/>${Math.max(bal.left - l.days, 0)} of ${bal.total} ${l.type.toLowerCase().replace(' leave', '')} days left after this</span>`}
+          <span className=${peers.length ? 'warn' : ''}><${Icon} n="people" s=${13}/>${peers.length ? peers.join(' and ') + (peers.length === 1 ? ' is' : ' are') + ' also out' : 'No one else in ' + e.dept + ' is out'}</span>
+          ${hol.length > 0 && html`<span><${Icon} n="calendar" s=${13}/>Skips ${hol.join(', ')}</span>`}</div>`}
       </div>
-      <div className="rr-a">${pend ? html`<button className="btn pri sm" onClick=${() => decide(l, 'approved')}>Approve</button><button className="btn ghost sm" onClick=${() => decide(l, 'declined')}>Decline</button>`
-        : html`<span className="pill" style=${{ '--c': LS_C[l.state] }}><i></i>${l.state === 'approved' ? 'Approved' : 'Declined'}</span><button className="link" onClick=${() => decide(l, 'pending')}>Undo</button>`}</div>
+      <div className="rq3-a">${pend ? html`<button className="btn pri sm" onClick=${() => decide(l, 'approved')}><${Icon} n="check" s=${15}/> Approve</button><button className="btn ghost sm" onClick=${() => decide(l, 'declined')}>Decline</button>`
+        : html`<span className="pill" style=${{ '--c': STATE_C[l.state] }}><i></i>${l.state === 'approved' ? 'Approved' : 'Declined'}</span><button className="link" onClick=${() => decide(l, 'pending')}>Undo</button>`}</div>
     </article>`;
   };
 
+  const Tab = ({ k, label, n }) => html`<button className=${tab === k ? 'on' : ''} onClick=${() => setTab(k)}>${label}${n > 0 && html`<em className=${k === 'pending' ? 'hot' : ''}>${n}</em>`}</button>`;
   return html`<div>
-    <div className="pg-h"><div><h1><${HI} n="requests" tone="orange"/>Requests</h1><p>${waiting.length ? waiting.length + ' waiting' : 'All clear'}</p></div>
-      <button className="btn sec2 sq" title="Download report" aria-label="Download report" onClick=${() => downloadLeaveReport(all)}><${Icon} n="download" s=${16}/></button></div>
-    <section className="rq1">
-      <div className="sec-h"><h2>Pending</h2><span>${waiting.length}</span></div>
-      ${waiting.length === 0 ? html`<div className="pn-e card" style=${{ padding: '40px 20px' }}><span className="pn-ei"><${Icon} n="check" s=${22}/></span><b>All clear</b></div>`
-        : html`<div className="card" style=${{ padding: '4px 22px' }}>${waiting.map(l => html`<${Row} key=${l.id} l=${l}/>`)}</div>`}
-    </section>
-    ${decided.length > 0 && html`<section className="rq1" style=${{ marginTop: 48 }}>
-      <div className="sec-h"><h2>Decided</h2><span>${decided.length}</span></div>
-      <div className="card" style=${{ padding: '4px 22px' }}>${decided.map(l => html`<${Row} key=${l.id} l=${l}/>`)}</div></section>`}
+    <div className="pg-h"><div><h1><${HI} n="requests" tone="orange"/>Requests</h1><p>${waiting.length ? waiting.length + ' waiting for you' : 'All clear'}</p></div>
+      <button className="btn sec2" onClick=${() => downloadLeaveReport(all)}><${Icon} n="download" s=${16}/> Export</button></div>
+    <div className="seg rq3-seg" role="group" aria-label="Requests"><${Tab} k="pending" label="Pending" n=${waiting.length}/><${Tab} k="decided" label="Decided" n=${decided.length}/></div>
+    ${list.length === 0
+      ? html`<div className="rq3-e"><span><${Icon} n=${tab === 'pending' ? 'check' : 'requests'} s=${22}/></span><div><b>${tab === 'pending' ? 'You are all caught up' : 'Nothing decided yet'}</b><p>${tab === 'pending' ? 'New leave requests will show up here.' : 'Approved and declined requests will be listed here.'}</p></div></div>`
+      : html`<div className="rq3-l">${list.map(l => html`<${Card} key=${l.id} l=${l}/>`)}</div>`}
   </div>`;
 }
