@@ -17,7 +17,7 @@ export function useDay(user, att) {
 }
 
 /* Top-right check-in / check-out with a running timer and an Office or Home choice */
-export function CheckWidget({ user, att, setAtt }) {
+export function CheckWidget({ user, att, setAtt, onOut, onAutoOut }) {
   const { now, sessions, live, worked } = useDay(user, att);
   const [pop, setPop] = useState(false);
   const ref = useRef(null);
@@ -28,13 +28,13 @@ export function CheckWidget({ user, att, setAtt }) {
   }, [pop]);
   const lunch = lunchInfo(now), ended = shiftEnded(now, user.shiftEnd);
   const tried = useRef(false);
-  useEffect(() => { if (ended && live && !tried.current) { tried.current = true; setAtt(a => checkOut(a, user.n, shiftEndAt(user.shiftEnd))); } }, [ended, live]);
+  useEffect(() => { if (ended && live && !tried.current) { tried.current = true; onAutoOut(shiftEndAt(user.shiftEnd)); } }, [ended, live]);
   const line2 = ended ? 'Shift ended ' + fmtTime(user.shiftEnd)
     : lunch.state === 'on' || lunch.state === 'soon' ? lunch.text
     : live ? 'Shift ends ' + fmtTime(user.shiftEnd)
     : sessions.length ? 'Checked out ' + clock(sessions[sessions.length - 1].out) : fmtTime(user.shiftStart) + ' – ' + fmtTime(user.shiftEnd);
   const main = live && !ended ? hms(worked) : sessions.length ? hm(worked) + ' worked' : ended ? 'No check-in today' : 'Not checked in';
-  const act = () => setAtt(a => live ? checkOut(a, user.n) : checkIn(a, user.n));
+  const act = () => live ? onOut() : setAtt(a => checkIn(a, user.n));
   return html`<div className="ck" ref=${ref}>
     <button className="ck-t" onClick=${() => setPop(p => !p)} aria-expanded=${pop} aria-label="Today's check-ins">
       <span className=${'ck-dot' + (live && !ended ? ' on' : '')}></span>

@@ -18,15 +18,16 @@ import { Requests } from './screens/Requests.jsx';
 import { Settings } from './screens/Settings.jsx';
 import { QuickSearch } from './QuickSearch.jsx';
 import { CheckWidget } from './Attendance.jsx';
-import { loadAtt, saveAtt, setMe, dayKey as dayKeyNow } from './attendance.js';
+import { loadAtt, saveAtt, setMe, checkOut, dayKey as dayKeyNow } from './attendance.js';
 import { MyHours } from './screens/Hours.jsx';
 import { AttendancePage } from './screens/AttendancePage.jsx';
 import { TaskBoard } from './task/TaskBoard.jsx';
 import { MyTasks } from './task/MyTasks.jsx';
 import { TeamView } from './task/TeamView.jsx';
 import { ProjectHours } from './task/ProjectHours.jsx';
+import { CheckoutWarning } from './task/CheckoutWarning.jsx';
 import { TaskDetail } from './task/TaskDetail.jsx';
-import { loadTasks, saveTasks, loadCollapsed, saveCollapsed, loadCustom, saveCustom, loadLayout, saveLayout, loadView, saveView } from './tasks.js';
+import { isDoing, stopFor, loadTasks, saveTasks, loadCollapsed, saveCollapsed, loadCustom, saveCustom, loadLayout, saveLayout, loadView, saveView } from './tasks.js';
 import { IS_DEMO } from './env.js';
 import './styles.css';
 
@@ -82,6 +83,7 @@ function App() {
       .catch(e => { setSyncErr(e.message || 'Could not save. Try again.'); return loadLeaves(); })
       .then(l => { if (l) applyLeaves(l); }).catch(() => {}).finally(() => { saving.current.leave--; });
   };
+  const [outAsk, setOutAsk] = useState(false);
   const [ann, setAnnRaw] = useState(SEED_ANN);
   const annRef = useRef(ann);
   const applyAnn = a => { annRef.current = a; setAnnRaw(a); };
@@ -216,6 +218,12 @@ function App() {
   const peopleKeys = role === 'admin' ? ['home', 'people', 'org', 'calendar', 'attendance', 'leaves', 'requests', 'settings'] : ['home', 'people', 'org', 'calendar', 'hours', 'leaves'];
   // Admins and project managers get the whole task app. Everyone else gets only their own tasks.
   const isMgr = role === 'admin' || role === 'pm';
+  // Checking out ends the day's task timers. If any are running, show them first.
+  const running = tasks.filter(t => isDoing(t, user.n));
+  const stopMyTimers = at => setTasks(ts => ts.map(t => isDoing(t, user.n) ? { ...t, time: stopFor(t.time, user.n, at) } : t));
+  const requestOut = () => { if (running.length) setOutAsk(true); else setAtt(a => checkOut(a, user.n)); };
+  const confirmOut = () => { setOutAsk(false); setAtt(a => checkOut(a, user.n)); stopMyTimers(Date.now()); };
+  const autoOut = at => { setAtt(a => checkOut(a, user.n, at)); stopMyTimers(at); };
   const keys = app === 'task' ? (isMgr ? ['board', 'mytasks', 'timer', 'team'] : ['mytasks']) : peopleKeys;
   const setApp = a => { setAppState(a); setNav({ view: a === 'task' ? (isMgr ? 'board' : 'mytasks') : 'home' }); setTaskSel(null); setSOpen(false); window.scrollTo({ top: 0 }); };
   const openTask = (id, ctx) => setTaskSel({ id, ctx });
@@ -232,7 +240,7 @@ function App() {
   const active = nav.view === 'profile' || nav.view === 'form' ? (nav.from || 'people') : nav.view;
   const pending = role === 'admin' ? leaves.filter(l => !l.past && l.state === 'pending').length : 0;
 
-  const home = html`<${Home} role=${role} user=${user} leaves=${leaves} setLeaves=${setLeaves} ann=${ann} setAnn=${setAnn} att=${att} setAtt=${setAtt} tasks=${tasks} goTask=${goTask} go=${go} openForm=${openForm} open=${open}/>`;
+  const home = html`<${Home} role=${role} user=${user} leaves=${leaves} setLeaves=${setLeaves} ann=${ann} setAnn=${setAnn} att=${att} setAtt=${setAtt} onOut=${requestOut} tasks=${tasks} goTask=${goTask} go=${go} openForm=${openForm} open=${open}/>`;
   const taskScreen = nav.view === 'timer' && isMgr ? html`<${ProjectHours} tasks=${tasks} user=${user} role=${role}/>`
     : nav.view === 'mytasks' || !isMgr ? html`<${MyTasks} tasks=${tasks} setTasks=${setTasks} user=${user} tq=${tq} openTask=${openTask}/>`
     : nav.view === 'team' && isMgr ? html`<${TeamView} tasks=${tasks} onPick=${n => { setTf(f => ({ ...f, dept: 'All' })); setFocus(n); go('board'); }}/>`
@@ -261,12 +269,13 @@ function App() {
       <header className="hdr"><button className="ib nav-t" onClick=${() => setNavHidden(h => !h)} aria-label=${navHidden ? 'Show the navigation bar' : 'Hide the navigation bar'} title=${navHidden ? 'Show the navigation bar' : 'Hide the navigation bar'}><${Icon} n="sidebar" s=${18}/></button><div className="hdr-b"><${AppSwitch} app=${app} setApp=${setApp}/></div>
         <div className=${'hs' + (sOpen ? ' open' : '')}>${app === 'task' ? html`<div className="qs"><${Icon} n="search"/><input id="quick-search" className="qs-in" value=${tq} placeholder="Search tasks" onChange=${ev => setTq(ev.target.value)} aria-label="Search tasks"/></div>` : html`<${QuickSearch} open=${id => { setSOpen(false); open(id); }}/>`}</div>
         <button className="ib hs-b" onClick=${() => { setSOpen(o => !o); setTimeout(() => { const el = document.getElementById('quick-search'); if (el) el.focus(); }, 30); }} aria-label="Search"><${Icon} n="search" s=${17}/></button>
-        <div className="ck-d"><${CheckWidget} user=${user} att=${att} setAtt=${setAtt}/></div>
+        <div className="ck-d"><${CheckWidget} user=${user} att=${att} setAtt=${setAtt} onOut=${requestOut} onAutoOut=${autoOut}/></div>
         <${TopRight} user=${user} role=${role} open=${open} openForm=${openForm} signOut=${signOut}/></header>
-      <div className="ck-m"><${CheckWidget} user=${user} att=${att} setAtt=${setAtt}/></div>
+      <div className="ck-m"><${CheckWidget} user=${user} att=${att} setAtt=${setAtt} onOut=${requestOut} onAutoOut=${autoOut}/></div>
       <main className="main" key=${app + nav.view + (nav.id || '')}>${screen}</main>
       ${syncErr && html`<div className="sync-err" role="alert"><span>${syncErr}</span><button onClick=${() => setSyncErr('')} aria-label="Dismiss">Dismiss</button></div>`}
     </div>
+    ${outAsk && html`<${CheckoutWarning} running=${running} me=${user.n} onConfirm=${confirmOut} onCancel=${() => setOutAsk(false)}/>`}
     ${taskSel && html`<${TaskDetail} key=${taskSel.id} id=${taskSel.id} ctx=${taskSel.ctx} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} leaves=${leaves} custom=${custom} close=${() => setTaskSel(null)}/>`}
     <nav className="bnav" style=${{ gridTemplateColumns: 'repeat(' + mob.length + ', 1fr)' }} aria-label="Main">${mob.map(k => k === 'more'
       ? html`<button key=${k} className=${more.includes(active) || moreOpen ? 'on' : ''} onClick=${() => setMoreOpen(o => !o)} aria-expanded=${moreOpen}><${Icon} n="dots" s=${22}/>More</button>`

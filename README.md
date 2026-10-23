@@ -46,6 +46,7 @@ Run these in the Supabase SQL Editor, in order. Each file can be run again safel
 | `0011_board_layout.sql` | Board column order and hidden columns, shared, admin-only |
 | `0012_task_timer.sql` | Task timers (server-stamped) for My Tasks and Project hours |
 | `0013_project_manager.sql` | Project manager role; employees see only their own tasks; only admins and project managers assign and remove tasks; one running timer per person |
+| `0014_checkout_stops_timers.sql` | Checking out ends the person's task timers; a timer left running overnight is closed at that day's shift end |
 
 ## Tests
 

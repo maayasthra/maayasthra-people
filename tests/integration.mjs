@@ -226,6 +226,31 @@ t('and the database refuses it directly', !!direct.error, direct.error && direct
 as('abines'); tb = await m.loadBoard(); const stopOther = await globalThis.__q("select task_timer('tm1','stop'," + ids.arunkumar + ")");
 t('an employee cannot stop someone else’s timer', !!stopOther.error);
 
+
+// ================= CHECK-OUT ENDS TIMERS =================
+as('vijay'); await m.loadStaff(); tb = await m.loadBoard();
+await m.persistBoard(tb, { ...tb, tasks: [...tb.tasks, T('co1', ids.vijay, { cols: [ids.vandhana] }), T('co2', ids.vijay, { cols: [ids.vandhana, ids.abines] })] });
+as('vandhana'); await m.loadStaff(); m.att.setMe(ids.vandhana);
+let co = {}; await m.persistAtt({}, (co = m.att.checkIn(co, ids.vandhana)));
+tb = await m.loadBoard(); await m.persistBoard(tb, { ...tb, tasks: m.tasks.startTimer(tb.tasks, 'co1', ids.vandhana) }, { mgr: false, me: ids.vandhana });
+as('abines'); tb = await m.loadBoard(); await m.persistBoard(tb, { ...tb, tasks: m.tasks.startTimer(tb.tasks, 'co2', ids.abines) }, { mgr: false, me: ids.abines });
+as('vandhana'); tb = await m.loadBoard();
+t('the warning has something to show: she has one running task', tb.tasks.filter(x => m.tasks.isDoing(x, ids.vandhana)).map(x => x.id).join() === 'co1');
+await wait(30);
+const dayK = Object.keys((await m.loadAttendance(3))[ids.vandhana])[0];
+const before = await m.loadAttendance(3); await m.persistAtt(before, m.att.checkOut(before, ids.vandhana));
+tb = await m.loadBoard();
+t('checking out stops her running timer, in the database', tb.tasks.filter(x => m.tasks.isDoing(x, ids.vandhana)).length === 0 && tb.tasks.find(x => x.id === 'co1').time[0].end !== null, tb.tasks.find(x => x.id === 'co1').time);
+as('abines'); tb = await m.loadBoard();
+t('and does not touch anyone else’s running timer', m.tasks.isDoing(tb.tasks.find(x => x.id === 'co2'), ids.abines));
+// a timer left running from an earlier day is closed at that day’s shift end when the person next checks in
+const yday2 = (await q("select (public.today_ist() - 1)::text d"))[0].d, startMs = Date.parse(yday2 + 'T10:00:00+05:30'), endMs = Date.parse(yday2 + 'T23:59:00+05:30');
+as('vijay'); tb = await m.loadBoard(); await m.persistBoard(tb, { ...tb, tasks: [...tb.tasks, T('st1', ids.vijay, { cols: [ids.yogan] })] });
+await db.exec("begin; select set_config('mp.timer','on',true); update tasks set time_log = '" + JSON.stringify([{ id: 'old', emp: ids.yogan, start: startMs, end: null }]) + "'::jsonb where id='st1'; commit;");
+as('yogan'); await m.loadStaff(); m.att.setMe(ids.yogan); let yo = {}; await m.persistAtt({}, (yo = m.att.checkIn(yo, ids.yogan)));
+tb = await m.loadBoard(); const st = tb.tasks.find(x => x.id === 'st1').time[0];
+t('a timer left running overnight is closed at the previous shift end', st.end === endMs, { end: st.end, expected: endMs });
+
 console.log('--- done ---');
 
 if (process.exitCode) console.log('SOME CHECKS FAILED');

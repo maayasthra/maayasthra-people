@@ -145,19 +145,19 @@ function TeamPanel({ user, open }) {
   <//>`;
 }
 
-function YourDay({ user, att, setAtt }) {
+function YourDay({ user, att, setAtt, onOut }) {
   const { now, sessions, live, worked } = useDay(user, att);
   const lunch = lunchInfo(now), ended = shiftEnded(now, user.shiftEnd);
   return html`<${Panel} title="Your day" sub=${'Shift ' + fmtTime(user.shiftStart) + ' – ' + fmtTime(user.shiftEnd)}>
     <div className=${'dy-l' + (lunch.state === 'on' ? ' on' : '')}><${Icon} n="cup" s=${16}/> ${lunch.state === 'over' ? 'Lunch was 1:00 – 2:00 PM' : lunch.text}</div>
     <${SessionList} sessions=${sessions} now=${now}/>
     <div className="dy-f"><span>${ended && !sessions.length ? 'Your working hours have ended.' : dayNote(sessions, user)}</span>
-      <button className=${'btn sm ' + (live || ended ? 'ghost' : 'pri')} disabled=${ended} onClick=${() => setAtt(a => live ? checkOut(a, user.n) : checkIn(a, user.n))}>${ended ? 'Day ended' : live ? 'Check out' : sessions.length ? 'Check in again' : 'Check in'}</button></div>
+      <button className=${'btn sm ' + (live || ended ? 'ghost' : 'pri')} disabled=${ended} onClick=${() => live ? onOut() : setAtt(a => checkIn(a, user.n))}>${ended ? 'Day ended' : live ? 'Check out' : sessions.length ? 'Check in again' : 'Check in'}</button></div>
   <//>`;
 }
 
 /* ---------- Home ---------- */
-export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, tasks, goTask, go, openForm, open }) {
+export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, onOut, tasks, goTask, go, openForm, open }) {
   const h = new Date().getHours(), t = new Date(TOD);
   const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
   const mine = leaves.filter(l => l.emp === user.n);
@@ -220,7 +220,7 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
       <${Tile} icon="clock" tone="green" label="Worked today" value=${hm(worked)} sub=${live ? 'timer is running' : sessions.length ? 'checked out' : 'not checked in yet'}/>
     </div>
     <section className="eq3 sec">
-      <${YourDay} user=${user} att=${att} setAtt=${setAtt}/>
+      <${YourDay} user=${user} att=${att} setAtt=${setAtt} onOut=${onOut}/>
       <${Panel} title="Announcements" sub="From People and Ops"><${AnnList} ann=${ann} setAnn=${setAnn} canPost=${false}/><//>
       <${TeamPanel} user=${user} open=${open}/>
     </section>
