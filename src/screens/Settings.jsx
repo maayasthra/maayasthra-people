@@ -85,6 +85,6 @@ export function Settings({ onChange }) {
   const tabs = [['access', 'Access', 'user'], ['policy', 'Leave', 'leaves'], ['holidays', 'Holidays', 'calendar']];
   const [tab, setTab] = useState('access');
   return html`<div><div className="pg-h"><div><h1><${HI} n="settings" tone="purple"/>Settings</h1></div></div>
-    <div className="chips" style=${{ marginTop: 28 }}>${tabs.map(([k, l, ic]) => html`<button key=${k} className=${'chip ic' + (tab === k ? ' on' : '')} onClick=${() => setTab(k)}><${Icon} n=${ic} s=${15}/>${l}</button>`)}</div>
+    <div className="seg seg-t" role="group" aria-label="Settings">${tabs.map(([k, l, ic]) => html`<button key=${k} className=${tab === k ? 'on' : ''} onClick=${() => setTab(k)}><${Icon} n=${ic} s=${15}/>${l}</button>`)}</div>
     ${tab === 'access' ? html`<${Access} onChange=${onChange}/>` : tab === 'policy' ? html`<${Policy} onChange=${onChange}/>` : html`<${Holidays} onChange=${onChange}/>`}</div>`;
 }

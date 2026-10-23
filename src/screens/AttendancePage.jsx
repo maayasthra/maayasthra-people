@@ -76,8 +76,8 @@ export function AttendancePage({ att, leaves, open }) {
   return html`<div>
     <div className="pg-h"><div><h1><${HI} n="attendance" tone="green"/>Attendance</h1><p>${people.length} people</p></div>
       <div style=${{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-        <div className="seg" style=${{ width: 220, margin: 0 }} role="group" aria-label="Period">${[['overall', 'Month', 'calendar'], ['week', 'Week', 'attendance']].map(([k, l, ic]) => html`<button key=${k} className=${tab === k ? 'on' : ''} onClick=${() => setTab(k)}><${Icon} n=${ic} s=${15}/>${l}</button>`)}</div>
-        <button className="btn sec2 sq" title="Download CSV" aria-label="Download CSV" onClick=${exportCSV}><${Icon} n="download" s=${16}/></button></div></div>
+        <div className="seg" role="group" aria-label="Period">${[['overall', 'Month', 'calendar'], ['week', 'Week', 'attendance']].map(([k, l, ic]) => html`<button key=${k} className=${tab === k ? 'on' : ''} onClick=${() => setTab(k)}><${Icon} n=${ic} s=${15}/>${l}</button>`)}</div>
+        <button className="btn sec2" onClick=${exportCSV}><${Icon} n="download" s=${16}/> Export</button></div></div>
     <div className="tiles">
       <${Tile} icon="check" tone="green" label="Attendance rate" value=${rate + '%'} sub=${present + ' of ' + (present + absent)}/>
       <${Tile} icon="people" tone="blue" label="Days present" value=${present} sub=${'avg ' + (present ? hh(tot / present) : '–')}/>

@@ -41,10 +41,9 @@ function ApprovalsCarousel({ queue, setLeaves, open }) {
       html`<div className="car" ref=${track} onScroll=${onScroll}>${pending.map(l => { const e = BY[l.emp]; return html`<div className="slide" key=${l.id}>
         <div className="ap-h"><button onClick=${() => open(e.n)}><${Av} e=${e} s=${44}/></button>
           <span><b>${e.name}</b><span>${e.role}</span></span></div>
-        <div className="slide-t"><span className="slide-i"><${Icon} n=${typeIcon(l.type)} s=${16}/></span>${l.type}<em>${plural(l.days, 'day')}</em></div>
-        <div className="slide-d">${range(l.from, l.to)}</div>
-        <p className="slide-q">${l.reason || 'No note added.'}</p>
-        <div className="ap-a" style=${{ margin: 0 }}><button className="btn pri sm" onClick=${() => decide(l, 'approved')}>Approve</button><button className="btn ghost sm" onClick=${() => decide(l, 'declined')}>Decline</button></div>
+        <div className="rq3-d"><span className="rq3-w"><b>${l.from === l.to ? fmtDay(pd(l.from)) : range(l.from, l.to)}</b><i></i><b>${l.half ? 'Half day' : plural(l.days, 'day')}</b></span><span className="rq3-t"><${Icon} n=${typeIcon(l.type)} s=${15}/>${l.type}</span></div>
+        ${l.reason && html`<p className="rq3-r">${l.reason}</p>`}
+        <div className="ap-a" style=${{ margin: 0 }}><button className="btn pri sm" onClick=${() => decide(l, 'approved')}><${Icon} n="check" s=${15}/> Approve</button><button className="btn ghost sm" onClick=${() => decide(l, 'declined')}>Decline</button></div>
       </div>`; })}</div>`}
     ${undo && html`<div className="toast" role="status"><span>${undo.state === 'approved' ? 'Approved' : 'Declined'} ${undo.name}'s request.</span>
       <button className="link" onClick=${() => { setLeaves(ls => ls.map(x => x.id === undo.id ? { ...x, state: 'pending' } : x)); setUndo(null); }}>Undo</button></div>`}

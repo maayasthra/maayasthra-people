@@ -1494,10 +1494,6 @@ textarea.td-title{resize:none;overflow:hidden;line-height:1.25;display:block;fon
 div.none{padding:44px 16px}
 
 /* Requests */
-.rq3-seg{display:inline-grid;grid-template-columns:repeat(2,auto);margin:28px 0 0;padding:4px;border-radius:14px}
-.rq3-seg button{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:8px 18px;font-size:14px;border-radius:10px}
-.rq3-seg em{font-style:normal;font-size:12px;font-weight:600;min-width:20px;padding:1px 6px;border-radius:999px;background:var(--fill-hi);color:var(--muted);font-variant-numeric:tabular-nums}
-.rq3-seg em.hot{background:var(--orange);color:#140800}
 .rq3-l{display:grid;gap:12px;margin-top:22px}
 .rq3-c{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:18px;align-items:center;padding:18px 22px 18px 18px;background:var(--card);border:1px solid var(--line);border-radius:20px}
 .rq3-c.done{padding-top:14px;padding-bottom:14px}
@@ -1523,16 +1519,9 @@ div.none{padding:44px 16px}
   .rq3-c{grid-template-columns:auto minmax(0,1fr);padding:16px}
   .rq3-a{grid-column:1/-1;justify-content:flex-end}
   .rq3-a .btn{flex:1}
-  .rq3-seg{display:grid;grid-template-columns:1fr 1fr;width:100%}
-}
+  }
 
 /* Requests: one highlight (date and days), everything else quiet */
-.rq3-seg{background:var(--surface);border:1px solid var(--line)}
-.rq3-seg button{color:var(--muted);font-weight:500}
-.rq3-seg button.on{background:var(--accent);color:#fff}
-.rq3-seg em{background:var(--fill-hi);color:var(--text)}
-.rq3-seg em.hot{background:var(--orange);color:#140800}
-.rq3-seg button.on em,.rq3-seg button.on em.hot{background:rgba(255,255,255,.26);color:#fff}
 .rq3-t{padding:0;background:none;color:var(--muted);font-weight:500;font-size:13.5px}
 .rq3-w{padding:5px 12px;border-radius:999px;background:rgba(10,132,255,.16);color:#8CC1FF;gap:9px}
 .rq3-w b{font-weight:600;font-size:13.5px;letter-spacing:-.005em}
@@ -1579,3 +1568,37 @@ div.none{padding:44px 16px}
 .lf-s.muted>span{background:var(--fill-hi);color:var(--muted)}
 .lf-s.muted b{color:var(--muted);font-weight:500}
 .lf-send{width:100%;height:50px;border-radius:25px;margin-top:18px;font-size:15px}
+
+/* ---- One segmented control for the whole app ---- */
+.seg{display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:2px;margin:0;padding:4px;border-radius:14px;background:var(--surface);border:1px solid var(--line);max-width:100%}
+.seg button{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:8px 18px;border-radius:10px;font-size:14px;font-weight:500;color:var(--muted);white-space:nowrap;box-shadow:none;transition:background .15s,color .15s}
+.seg button:hover:not(.on):not(:disabled){color:var(--text)}
+.seg button.on{background:var(--accent);color:#fff;box-shadow:none}
+.seg button:disabled{opacity:.45;cursor:not-allowed}
+.seg.s3{grid-template-columns:repeat(3,1fr)}
+.seg em{font-style:normal;font-size:12px;font-weight:600;min-width:20px;padding:1px 6px;border-radius:999px;background:var(--fill-hi);color:var(--text);font-variant-numeric:tabular-nums}
+.seg em.hot{background:var(--orange);color:#140800}
+.seg button.on em,.seg button.on em.hot{background:rgba(255,255,255,.26);color:#fff}
+.seg-t{margin-top:28px}
+@media (max-width:860px){.seg-t{display:grid;grid-auto-flow:column;width:100%}.seg button{padding:8px 10px}}
+
+/* ---- Consistency and phone fixes ---- */
+.oc3{grid-template-columns:minmax(0,1fr)}
+.oc3-b{min-width:0}
+.mx td svg{color:var(--ok)}
+.pn-b{padding-bottom:6px;-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 14px),transparent);mask-image:linear-gradient(to bottom,#000 calc(100% - 14px),transparent)}
+.pg-h .btn{flex:none}
+@media (max-width:860px){
+  .filters{display:flex;flex-wrap:wrap;overflow:visible;gap:8px;width:100%}
+  .filters>*{flex:1 1 calc(50% - 8px);min-width:0}
+  .filters>.ibx{flex:none}
+  .mx table{min-width:0}
+  .mx th,.mx td{padding:12px 8px}
+  .mx th:first-child,.mx td:first-child{padding-left:14px;font-size:13.5px;line-height:1.35}
+  .mx th small{display:none}
+}
+
+@media (max-width:860px){
+  .pg-h{flex-wrap:wrap;gap:14px 16px}
+  .pg-h>div:last-child:not(:first-child){max-width:100%}
+}

@@ -43,7 +43,7 @@ export function Requests({ user, leaves: all, setLeaves, open }) {
   return html`<div>
     <div className="pg-h"><div><h1><${HI} n="requests" tone="orange"/>Requests</h1><p>${waiting.length ? waiting.length + ' waiting for you' : 'All clear'}</p></div>
       <button className="btn sec2" onClick=${() => downloadLeaveReport(all)}><${Icon} n="download" s=${16}/> Export</button></div>
-    <div className="seg rq3-seg" role="group" aria-label="Requests"><${Tab} k="pending" label="Pending" n=${waiting.length}/><${Tab} k="decided" label="Decided" n=${decided.length}/></div>
+    <div className="seg seg-t" role="group" aria-label="Requests"><${Tab} k="pending" label="Pending" n=${waiting.length}/><${Tab} k="decided" label="Decided" n=${decided.length}/></div>
     ${list.length === 0
       ? html`<div className="rq3-e"><span><${Icon} n=${tab === 'pending' ? 'check' : 'requests'} s=${22}/></span><div><b>${tab === 'pending' ? 'You are all caught up' : 'Nothing decided yet'}</b><p>${tab === 'pending' ? 'New leave requests will show up here.' : 'Approved and declined requests will be listed here.'}</p></div></div>`
       : html`<div className="rq3-l">${list.map(l => html`<${Card} key=${l.id} l=${l}/>`)}</div>`}
