@@ -1,0 +1,9 @@
+name,work_email,job_title,department,join_date,birth_date,manager_email,city,role,status,shift_start,shift_end
+Test Vijay,vijay@example.test,Founder,Operations,,,,Chennai,Admin,Full-time,09:00,18:00
+Test Harish,harish@example.test,CEO,Operations,,,vijay@example.test,Chennai,Admin,Full-time,09:00,18:00
+Test Arunkumar,arunkumar@example.test,COO,Operations,,,vijay@example.test,Tiruppur,Admin,Full-time,09:00,18:00
+Test Vandhana,vandhana@example.test,Head of Talent Acquisition,Human Resources,,,vijay@example.test,Chennai,Admin,Full-time,09:00,18:00
+Test Yogan,yogan@example.test,Head of Business Development,Business Development,,,harish@example.test,Chennai,Admin,Full-time,09:00,18:00
+Test Karthik Jayaraj,karthik@example.test,Design Manager,Design,,,sanjay@example.test,Kerala,Employee,Full-time,10:00,18:00
+Test Abines,abines@example.test,UI/UX Designer,Design,,,sanjay@example.test,Coimbatore,Employee,Full-time,10:00,18:00
+Test Sanjay,sanjay@example.test,Team member,Design,,,,Chennai,Admin,Full-time,09:00,18:00

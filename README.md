@@ -26,3 +26,25 @@ The People and Task buttons (top left) switch between Maayasthra People and Maay
 4. Add real work-email sign-in for all employees.
 5. Deploy to a free host and point `people.maayasthra.com` at it.
 6. Write HANDOVER.md for the owner.
+
+## Database (Supabase)
+
+Run these in the Supabase SQL Editor, in order. Each file can be run again safely.
+
+| File | What it sets up |
+|---|---|
+| `0001_auth.sql` | Sign-in accounts, roles |
+| `0002_staff.sql` | Staff directory, private contact details, CSV import |
+| `0003_signup_guard.sql` | Only people in the staff list can sign up |
+| `0004_leave.sql` | Leave requests, holidays, leave rules |
+| `0005_attendance.sql` | Check-ins (server-timed) |
+| `0006_tasks.sql` | Kanban board and announcements |
+| `0007_live_updates.sql` | Live updates for check-ins and leave |
+| `0008_leave_types.sql` | Leave types: Sick, Casual, Emergency |
+| `0009_integrity.sql` | Rules the database itself enforces (leave overlap, balance, notice, last admin, safe comments) |
+
+## Tests
+
+`npm run test:db` runs the real application code against a real Postgres (in memory) with every migration applied.
+It checks who can see and change what, the leave rules, check-ins, and people editing the same card at once.
+Run it after any change to `supabase/migrations` or to the files in `src/` that talk to the database.

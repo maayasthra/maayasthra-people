@@ -31,14 +31,16 @@ const upsertPrivate = async (id, e) => {
   const { error } = await supabase.from('employee_private').upsert({ employee_id: id, phone: e.phone || '', emergency_name: e.emergency || '', emergency_phone: e.emergencyPhone || '' });
   if (error) throw new Error('Could not save contact details.');
 };
-const nice = m => /duplicate key/i.test(m) ? 'That work email is already in the staff list.' : 'Could not save. Check your connection and try again.';
+const NOT_ALLOWED = 'Only admins can change that.';
+const nice = m => /duplicate key/i.test(m) ? 'That work email is already in the staff list.' : /at least one admin/i.test(m) ? 'There must be at least one admin.' : 'Could not save. Check your connection and try again.';
 
 // Admin: add or change a person. Returns the saved record.
 export async function saveEmployee(e) {
   let id = e.n;
   if (id) {
-    const { error } = await supabase.from('employees').update({ ...toRow(e), bio: e.bio || '', photo: e.photo || '' }).eq('id', id);
+    const { data, error } = await supabase.from('employees').update({ ...toRow(e), bio: e.bio || '', photo: e.photo || '' }).eq('id', id).select('id');
     if (error) throw new Error(nice(error.message));
+    if (!data.length) throw new Error(NOT_ALLOWED);
   } else {
     const { data, error } = await supabase.from('employees').insert({ ...toRow(e), bio: e.bio || '', photo: e.photo || '' }).select('id').single();
     if (error) throw new Error(nice(error.message));
@@ -58,7 +60,8 @@ export async function saveMyProfile(e) {
 
 // Admin: change someone's app access. A database trigger copies it to their sign-in account.
 export async function saveRole(id, role) {
-  const { error } = await supabase.from('employees').update({ role }).eq('id', id);
-  if (error) throw new Error('Could not change the role. Try again.');
+  const { data, error } = await supabase.from('employees').update({ role }).eq('id', id).select('id');
+  if (!error && !data.length) throw new Error(NOT_ALLOWED);
+  if (error) throw new Error(/at least one admin/i.test(error.message) ? 'There must be at least one admin.' : 'Could not change the role. Try again.');
   await loadStaff();
 }

@@ -23,6 +23,7 @@ export function MyLeaves({ leaves, setLeaves, user }) {
   let err = '';
   if (ok && f.to < f.from) err = 'The end date is before the start date.';
   else if (ok && f.from < TODISO) err = 'Choose a start date from today onwards.';
+  else if (ok && mine.some(l => (l.state === 'pending' || l.state === 'approved') && f.from <= l.to && f.to >= l.from)) err = 'You already have leave on those dates.';
   else if (wd && wd.days === 0) err = 'Those dates fall on weekends or holidays only.';
   else if (wd && !NO_NOTICE.includes(f.type) && noticeDays(f.from) < POLICY.notice) err = 'Planned leave needs ' + plural(POLICY.notice, 'working day') + ' notice. Sick and emergency leave are exempt.';
   else if (wd && days > avail) err = 'You have ' + plural(Math.max(avail, 0), 'day') + ' of ' + f.type.toLowerCase() + ' available.';

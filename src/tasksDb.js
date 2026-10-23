@@ -28,6 +28,17 @@ export async function loadBoard() {
   return { tasks, custom: (b.data && b.data.columns) || [] };
 }
 
+
+const FIELDS = { title: 'title', client: 'client', cols: 'cols', prev: 'prev', prio: 'prio', due: 'due', labels: 'labels', done: 'done', desc: 'descr' };
+const fieldValue = (t, k) => k === 'prev' ? (t.prev && t.prev.length ? t.prev : null) : k === 'due' ? (t.due || null) : k === 'done' ? !!t.done : k === 'labels' ? (t.labels || []) : (t[k] == null ? '' : t[k]);
+const changedFields = (a, b) => { const patch = {}; for (const k in FIELDS) if (JSON.stringify(fieldValue(a, k)) !== JSON.stringify(fieldValue(b, k))) patch[FIELDS[k]] = fieldValue(b, k); return patch; };
+const listChanges = (a, b) => {
+  const am = new Map(a.map(x => [x.id, x])), bm = new Map(b.map(x => [x.id, x])), out = [];
+  b.forEach(x => { if (!am.has(x.id)) out.push(['add', x]); else if (JSON.stringify(am.get(x.id)) !== JSON.stringify(x)) out.push(['set', x]); });
+  a.forEach(x => { if (!bm.has(x.id)) out.push(['remove', x]); });
+  return out;
+};
+
 const denied = 'You can only change cards you created or are on.';
 // The screens change the board in memory. This works out what changed and saves it.
 export async function persistBoard(prev, next) {
@@ -40,16 +51,27 @@ export async function persistBoard(prev, next) {
   for (const t of next.tasks) {
     const old = before.get(t.id);
     if (!old || old === t) continue;
-    const { data, error } = await supabase.from('tasks').update(toRow(t)).eq('id', t.id).select('id');
-    if (error) throw new Error('Could not save that change. Try again.');
-    if (!data.length) throw new Error(denied);
+    // Only the fields that changed are sent, so two people editing different parts of a card never undo each other.
+    const patch = changedFields(old, t);
+    if (Object.keys(patch).length) {
+      const { data, error } = await supabase.from('tasks').update(patch).eq('id', t.id).select('id');
+      if (error) throw new Error('Could not save that change. Try again.');
+      if (!data.length) throw new Error(denied);
+    }
+    // Subtasks and comments are changed one item at a time on the server.
+    for (const kind of ['subs', 'comments']) {
+      for (const [op, item] of listChanges(old[kind] || [], t[kind] || [])) {
+        const { error } = await supabase.rpc('patch_task_list', { p_task: t.id, p_kind: kind, p_op: op, p_item: item });
+        if (error) throw new Error(/only change|only remove/i.test(error.message) ? denied : 'Could not save that change. Try again.');
+      }
+    }
   }
   const ids = next.tasks.map(t => t.id), same = ids.length === prev.tasks.length && prev.tasks.every((t, i) => t.id === ids[i]);
   const cust = JSON.stringify(next.custom) !== JSON.stringify(prev.custom);
   if (!same || cust) {
     const patch = {}; if (!same) patch.ord = ids; if (cust) patch.columns = next.custom;
-    const { error } = await supabase.from('task_board').update(patch).eq('id', 1);
-    if (error) throw new Error('Could not save the board layout. Try again.');
+    const { data, error } = await supabase.from('task_board').update(patch).eq('id', 1).select('id');
+    if (error || !data.length) throw new Error('Could not save the board layout. Try again.');
   }
   const gone = prev.tasks.filter(t => !after.has(t.id)).map(t => t.id);
   if (gone.length) {
@@ -72,8 +94,8 @@ export async function persistAnnouncements(prev, next, me) {
   }
   const gone = prev.filter(a => !after.has(a.id)).map(a => a.id);
   if (gone.length) {
-    const { error } = await supabase.from('announcements').delete().in('id', gone);
-    if (error) throw new Error('Could not remove that announcement. Try again.');
+    const { data, error } = await supabase.from('announcements').delete().in('id', gone).select('id');
+    if (error || data.length < gone.length) throw new Error('Could not remove that announcement. Only admins can.');
   }
 }
 

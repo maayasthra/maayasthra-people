@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { html, Icon, Av } from './ui.jsx';
-import { LEAVES0, HIST0, TODISO, TOD, DAY, isoOf } from './data.js';
+import { LEAVES0, HIST0, TODISO, TOD, DAY, isoOf, BY } from './data.js';
 import { loadLeaves, persistLeaves } from './leave.js';
 import { loadAttendance, mergeAtt, persistAtt } from './attendanceDb.js';
 import { loadBoard, persistBoard, loadAnnouncements, persistAnnouncements, subscribeBoard, subscribeTables } from './tasksDb.js';
@@ -17,7 +17,7 @@ import { Requests } from './screens/Requests.jsx';
 import { Settings } from './screens/Settings.jsx';
 import { QuickSearch } from './QuickSearch.jsx';
 import { CheckWidget } from './Attendance.jsx';
-import { loadAtt, saveAtt, setMe } from './attendance.js';
+import { loadAtt, saveAtt, setMe, dayKey as dayKeyNow } from './attendance.js';
 import { MyHours } from './screens/Hours.jsx';
 import { AttendancePage } from './screens/AttendancePage.jsx';
 import { TaskBoard } from './task/TaskBoard.jsx';
@@ -117,6 +117,13 @@ function App() {
   const [navHidden, setNavHidden] = useState(() => { try { return localStorage.getItem('mp-nav') === '1'; } catch (x) { return false; } });
   const bump = () => setVer(v => v + 1);
   useEffect(() => { if (IS_DEMO) saveAtt(att); }, [att]);
+  // A tab left open overnight still shows yesterday. Once it is a new day and nothing is waiting to be saved, start fresh.
+  useEffect(() => {
+    if (IS_DEMO) return;
+    const day = TODISO, chk = () => { const b = board.current; if (dayKeyNow() !== day && !b.dirty && !b.flying && !saving.current.leave && !saving.current.att) window.location.reload(); };
+    const t = setInterval(chk, 60000); document.addEventListener('visibilitychange', chk);
+    return () => { clearInterval(t); document.removeEventListener('visibilitychange', chk); };
+  }, []);
   useEffect(() => {
     if (IS_DEMO) return;
     if (!auth) { applyAtt({}); return; }
@@ -193,7 +200,8 @@ function App() {
   if (booting) return html`<div className="boot"><span className="mark"></span></div>`;
   if (!auth && linkFlow) return html`<${SetPassword} onDone=${(user, role) => { setMe(user.n); setLinkFlow(false); setNav({ view: 'home' }); setAuth({ user, role }); }}/>`;
   if (!auth) return html`<${Login} onLogin=${(user, role) => { setMe(user.n); setNav({ view: 'home' }); setAuth({ user, role }); window.scrollTo({ top: 0 }); }}/>`;
-  const user = auth.user, role = auth.role;
+  // The live record, so a change to your own details (shift times, name) shows straight away
+  const user = (!IS_DEMO && BY[auth.user.n]) || auth.user, role = auth.role;
   const peopleKeys = role === 'admin' ? ['home', 'people', 'org', 'calendar', 'attendance', 'leaves', 'requests', 'settings'] : ['home', 'people', 'org', 'calendar', 'hours', 'leaves'];
   const keys = app === 'task' ? (role === 'admin' ? ['board', 'mytasks', 'team'] : ['board', 'mytasks']) : peopleKeys;
   const setApp = a => { setAppState(a); setNav({ view: a === 'task' ? 'board' : 'home' }); setTaskSel(null); setSOpen(false); window.scrollTo({ top: 0 }); };

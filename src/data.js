@@ -178,9 +178,11 @@ const TEAM_LEAVES = IS_DEMO ? [
 // Leave rules. Edited from Settings, applied to every new request.
 const POLICY = { allow: { 'Sick leave':8, 'Casual leave':8, 'Emergency leave':3 }, notice:3, half:true, note:false };
 const leaveTypes = () => Object.entries(POLICY.allow);
+// Each year starts fresh: only leave that starts this year counts against the allowance.
 const balances = mine => leaveTypes().map(([t, total]) => {
-  const used = mine.filter(l => l.type === t && l.state === 'approved').reduce((n, l) => n + l.days, 0);
-  const pend = mine.filter(l => l.type === t && l.state === 'pending').reduce((n, l) => n + l.days, 0);
+  const yr = TODISO.slice(0, 4), thisYear = l => (l.from || '').slice(0, 4) === yr;
+  const used = mine.filter(l => l.type === t && l.state === 'approved' && thisYear(l)).reduce((n, l) => n + l.days, 0);
+  const pend = mine.filter(l => l.type === t && l.state === 'pending' && thisYear(l)).reduce((n, l) => n + l.days, 0);
   return { t, total, used, pend, left: total - used };
 });
 const HIST0 = IS_DEMO ? [

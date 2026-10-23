@@ -2,6 +2,8 @@ import { supabase } from './auth.js';
 import { HOL, POLICY } from './data.js';
 
 /* Leave requests, holidays and leave rules, kept in Supabase. */
+// Messages from the database's own leave rules are clear enough to show as they are.
+const RULE = /start date|weekends or holidays|half day|does not match|short note|notice|already have leave|not enough|Half days/i;
 const mapReq = r => ({ id: r.id, emp: r.employee_id, type: r.type, from: r.from_date, to: r.to_date, days: Number(r.days), half: r.half, reason: r.reason || '', state: r.state });
 
 // Holidays and rules go into the shared HOL and POLICY objects the screens already read.
@@ -32,10 +34,11 @@ export async function persistLeaves(prev, next) {
     const old = before.get(l.id);
     if (!old) {
       const { error } = await supabase.from('leave_requests').insert({ employee_id: l.emp, type: l.type, from_date: l.from, to_date: l.to, days: l.days, half: !!l.half, reason: l.reason || '' });
-      if (error) throw new Error('Could not send that request. Try again.');
+      if (error) throw new Error(RULE.test(error.message) ? error.message : 'Could not send that request. Try again.');
     } else if (old.state !== l.state) {
-      const { error } = await supabase.from('leave_requests').update({ state: l.state }).eq('id', l.id);
+      const { data, error } = await supabase.from('leave_requests').update({ state: l.state }).eq('id', l.id).select('id');
       if (error) throw new Error('Could not save that decision. Try again.');
+      if (!data.length) throw new Error('You cannot decide this request. Another admin has to.');
     }
   }
   for (const l of prev) {
@@ -50,10 +53,10 @@ export async function saveHoliday(day, name) {
   if (error) throw new Error('Could not save the holiday.');
 }
 export async function deleteHoliday(day) {
-  const { error } = await supabase.from('holidays').delete().eq('day', day);
-  if (error) throw new Error('Could not remove the holiday.');
+  const { data, error } = await supabase.from('holidays').delete().eq('day', day).select('day');
+  if (error || !data.length) throw new Error('Could not remove the holiday.');
 }
 export async function savePolicy() {
-  const { error } = await supabase.from('leave_policy').update({ allow: POLICY.allow, notice: POLICY.notice, half: POLICY.half, note: POLICY.note }).eq('id', 1);
-  if (error) throw new Error('Could not save the leave rules.');
+  const { data, error } = await supabase.from('leave_policy').update({ allow: POLICY.allow, notice: POLICY.notice, half: POLICY.half, note: POLICY.note }).eq('id', 1).select('id');
+  if (error || !data.length) throw new Error('Could not save the leave rules. Only admins can change them.');
 }
