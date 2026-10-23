@@ -4,6 +4,7 @@ import { html, Icon, Av } from './ui.jsx';
 import { LEAVES0, HIST0, TODISO, TOD, DAY, isoOf } from './data.js';
 import { loadLeaves, persistLeaves } from './leave.js';
 import { loadAttendance, mergeAtt, persistAtt } from './attendanceDb.js';
+import { loadBoard, persistBoard, loadAnnouncements, persistAnnouncements, subscribeBoard } from './tasksDb.js';
 import { Login, SetPassword } from './screens/Login.jsx';
 import { authEnabled, currentSession, resolveUser, onAuthChange, signOutAuth, isLinkFlow } from './auth.js';
 import { Home } from './screens/Home.jsx';
@@ -78,7 +79,16 @@ function App() {
       .catch(e => { setSyncErr(e.message || 'Could not save. Try again.'); return loadLeaves(); })
       .then(l => { if (l) applyLeaves(l); }).catch(() => {});
   };
-  const [ann, setAnn] = useState(SEED_ANN);
+  const [ann, setAnnRaw] = useState(SEED_ANN);
+  const annRef = useRef(ann);
+  const applyAnn = a => { annRef.current = a; setAnnRaw(a); };
+  const setAnn = fn => {
+    const prev = annRef.current, next = typeof fn === 'function' ? fn(prev) : fn;
+    applyAnn(next);
+    if (IS_DEMO) return;
+    persistAnnouncements(prev, next, auth && auth.user.n).then(loadAnnouncements).then(applyAnn)
+      .catch(e => { setSyncErr(e.message || 'Could not save. Try again.'); return loadAnnouncements().then(applyAnn); }).catch(() => {});
+  };
   const [pf, setPf] = useState({ q: '', dept: 'All', city: 'All', sort: 'name', former: false });
   const [ver, setVer] = useState(0);
   const [att, setAttRaw] = useState(() => IS_DEMO ? loadAtt() : {});
@@ -96,10 +106,12 @@ function App() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [booting, setBooting] = useState(authEnabled), [linkFlow, setLinkFlow] = useState(isLinkFlow);
   const [app, setAppState] = useState('people');
-  const [tasks, setTasks] = useState(loadTasks), [collapsed, setCollapsed] = useState(loadCollapsed);
+  const [tasks, setTasksRaw] = useState(() => IS_DEMO ? loadTasks() : []), [collapsed, setCollapsed] = useState(loadCollapsed);
   const [focus, setFocus] = useState(null);
   const [taskSel, setTaskSel] = useState(null), [tq, setTq] = useState('');
-  const [tf, setTf] = useState(loadView), [custom, setCustom] = useState(loadCustom);
+  const [tf, setTf] = useState(loadView), [custom, setCustomRaw] = useState(() => IS_DEMO ? loadCustom() : []);
+  const board = useRef(null);
+  if (!board.current) board.current = { tasks, custom, saved: { tasks, custom }, timer: 0, flying: false, dirty: false };
   const [navHidden, setNavHidden] = useState(() => { try { return localStorage.getItem('mp-nav') === '1'; } catch (x) { return false; } });
   const bump = () => setVer(v => v + 1);
   useEffect(() => { if (IS_DEMO) saveAtt(att); }, [att]);
@@ -134,9 +146,41 @@ function App() {
     const sub = onAuthChange((ev, sess) => { if (ev === 'SIGNED_OUT') setAuth(null); if (ev === 'PASSWORD_RECOVERY') setLinkFlow(true); });
     return () => { live = false; sub.unsubscribe(); };
   }, []);
-  useEffect(() => { saveTasks(tasks); }, [tasks]);
+  // The board is shared. Changes are saved half a second after the last edit, and other people's changes arrive live.
+  const flush = async () => {
+    const b = board.current; if (b.flying) return;
+    b.flying = true; b.dirty = false;
+    const snap = { tasks: b.tasks, custom: b.custom };
+    try { await persistBoard(b.saved, snap); b.saved = snap; }
+    catch (e) { setSyncErr(e.message || 'Could not save. Try again.'); b.dirty = false; await refreshBoard(true); }
+    finally { b.flying = false; if (b.dirty) queueSave(); }
+  };
+  const queueSave = () => { const b = board.current; b.dirty = true; clearTimeout(b.timer); b.timer = setTimeout(flush, 500); };
+  const setTasks = fn => { const b = board.current; b.tasks = typeof fn === 'function' ? fn(b.tasks) : fn; setTasksRaw(b.tasks); if (!IS_DEMO) queueSave(); };
+  const setCustom = fn => { const b = board.current; b.custom = typeof fn === 'function' ? fn(b.custom) : fn; setCustomRaw(b.custom); if (!IS_DEMO) queueSave(); };
+  const refreshBoard = async force => {
+    const b = board.current; if (!force && (b.dirty || b.flying)) return;
+    try {
+      const f = await loadBoard(), a = await loadAnnouncements();
+      if (!force && (b.dirty || b.flying)) return;
+      if (JSON.stringify(f.tasks) !== JSON.stringify(b.tasks) || JSON.stringify(f.custom) !== JSON.stringify(b.custom)) { b.tasks = f.tasks; b.custom = f.custom; setTasksRaw(f.tasks); setCustomRaw(f.custom); }
+      b.saved = { tasks: f.tasks, custom: f.custom };
+      if (JSON.stringify(a) !== JSON.stringify(annRef.current)) applyAnn(a);
+    } catch (e) { if (force) setSyncErr(e.message); }
+  };
+  useEffect(() => {
+    if (IS_DEMO) return;
+    const b = board.current;
+    if (!auth) { clearTimeout(b.timer); Object.assign(b, { tasks: [], custom: [], saved: { tasks: [], custom: [] }, dirty: false }); setTasksRaw([]); setCustomRaw([]); applyAnn([]); return; }
+    refreshBoard(true);
+    let t = 0; const poke = () => { clearTimeout(t); t = setTimeout(() => refreshBoard(false), 300); };
+    const unsub = subscribeBoard(poke), poll = setInterval(() => refreshBoard(false), 45000), vis = () => { if (!document.hidden) refreshBoard(false); };
+    document.addEventListener('visibilitychange', vis);
+    return () => { unsub(); clearInterval(poll); clearTimeout(t); document.removeEventListener('visibilitychange', vis); };
+  }, [auth]);
+  useEffect(() => { if (IS_DEMO) saveTasks(tasks); }, [tasks]);
   useEffect(() => { saveCollapsed(collapsed); }, [collapsed]);
-  useEffect(() => { saveCustom(custom); }, [custom]);
+  useEffect(() => { if (IS_DEMO) saveCustom(custom); }, [custom]);
   useEffect(() => { saveView(tf); }, [tf]);
   useEffect(() => { try { localStorage.setItem('mp-nav', navHidden ? '1' : '0'); } catch (x) {} }, [navHidden]);
 
