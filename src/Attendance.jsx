@@ -27,7 +27,8 @@ export function CheckWidget({ user, att, setAtt }) {
     document.addEventListener('mousedown', f); return () => document.removeEventListener('mousedown', f);
   }, [pop]);
   const lunch = lunchInfo(now), ended = shiftEnded(now, user.shiftEnd);
-  useEffect(() => { if (ended && live) setAtt(a => checkOut(a, user.n, shiftEndAt(user.shiftEnd))); }, [ended, live]);
+  const tried = useRef(false);
+  useEffect(() => { if (ended && live && !tried.current) { tried.current = true; setAtt(a => checkOut(a, user.n, shiftEndAt(user.shiftEnd))); } }, [ended, live]);
   const line2 = ended ? 'Shift ended ' + fmtTime(user.shiftEnd)
     : lunch.state === 'on' || lunch.state === 'soon' ? lunch.text
     : live ? 'Shift ends ' + fmtTime(user.shiftEnd)

@@ -43,7 +43,7 @@ export function Profile({ id, tab: tab0, from, back, open, openForm, user, role,
     </div>
 
     ${canSee && html`<div className="seg" style=${{ width: 260, margin: '48px 0 0' }} role="group" aria-label="Profile section"><button className=${tab === 'overview' ? 'on' : ''} onClick=${() => setTab('overview')}><${Icon} n="user" s=${15}/>Overview</button><button className=${tab === 'hours' ? 'on' : ''} onClick=${() => setTab('hours')}><${Icon} n="clock" s=${15}/>Hours</button></div>`}
-    ${tab === 'hours' && canSee ? html`<div style=${{ marginTop: 28 }}><${HoursPanel} emp=${e} att=${att} setAtt=${setAtt} leaves=${leaves} canEdit=${role === 'admin'} editor=${user}/></div>` : html`<div className="lower grid2b" style=${canSee ? { marginTop: 40 } : null}>
+    ${tab === 'hours' && canSee ? html`<div style=${{ marginTop: 28 }}><${HoursPanel} emp=${e} att=${att} setAtt=${setAtt} leaves=${leaves} canEdit=${role === 'admin' && e.n !== user.n} editor=${user}/></div>` : html`<div className="lower grid2b" style=${canSee ? { marginTop: 40 } : null}>
       <section><div className="sec-h"><h2>Career milestones</h2><span>${J.length} moments</span></div>
         <div className="tl">${J.map((m, i) => html`<div key=${i} className=${'tl-i' + (m.hi ? ' hi' : '') + (m.up ? ' up' : '')}>
           <time>${fmt(m.date)}${m.up ? ' · upcoming' : ''}</time><b>${m.title}</b>${m.note && html`<p>${m.note}</p>`}</div>`)}</div></section>

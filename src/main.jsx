@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { html, Icon, Av } from './ui.jsx';
 import { LEAVES0, HIST0, TODISO, TOD, DAY, isoOf } from './data.js';
 import { loadLeaves, persistLeaves } from './leave.js';
+import { loadAttendance, mergeAtt, persistAtt } from './attendanceDb.js';
 import { Login, SetPassword } from './screens/Login.jsx';
 import { authEnabled, currentSession, resolveUser, onAuthChange, signOutAuth, isLinkFlow } from './auth.js';
 import { Home } from './screens/Home.jsx';
@@ -80,7 +81,17 @@ function App() {
   const [ann, setAnn] = useState(SEED_ANN);
   const [pf, setPf] = useState({ q: '', dept: 'All', city: 'All', sort: 'name', former: false });
   const [ver, setVer] = useState(0);
-  const [att, setAtt] = useState(loadAtt);
+  const [att, setAttRaw] = useState(() => IS_DEMO ? loadAtt() : {});
+  const attRef = useRef(att);
+  const applyAtt = a => { attRef.current = a; setAttRaw(a); };
+  // Check-ins and hour edits are saved to the database in the live app, then the recent days are re-read.
+  const setAtt = fn => {
+    const prev = attRef.current, next = typeof fn === 'function' ? fn(prev) : fn;
+    applyAtt(next);
+    if (IS_DEMO) return;
+    persistAtt(prev, next).then(() => loadAttendance(3)).then(f => applyAtt(mergeAtt(attRef.current, f)))
+      .catch(e => { setSyncErr(e.message || 'Could not save. Try again.'); return loadAttendance(120).then(applyAtt); }).catch(() => {});
+  };
   const [sOpen, setSOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [booting, setBooting] = useState(authEnabled), [linkFlow, setLinkFlow] = useState(isLinkFlow);
@@ -91,7 +102,17 @@ function App() {
   const [tf, setTf] = useState(loadView), [custom, setCustom] = useState(loadCustom);
   const [navHidden, setNavHidden] = useState(() => { try { return localStorage.getItem('mp-nav') === '1'; } catch (x) { return false; } });
   const bump = () => setVer(v => v + 1);
-  useEffect(() => { saveAtt(att); }, [att]);
+  useEffect(() => { if (IS_DEMO) saveAtt(att); }, [att]);
+  useEffect(() => {
+    if (IS_DEMO) return;
+    if (!auth) { applyAtt({}); return; }
+    let ok = true;
+    const fresh = days => loadAttendance(days).then(f => { if (ok) applyAtt(days > 10 ? f : mergeAtt(attRef.current, f)); }).catch(e => { if (ok && days > 10) setSyncErr(e.message); });
+    fresh(120);
+    const t = setInterval(() => fresh(3), 60000), vis = () => { if (!document.hidden) fresh(3); };
+    document.addEventListener('visibilitychange', vis);
+    return () => { ok = false; clearInterval(t); document.removeEventListener('visibilitychange', vis); };
+  }, [auth]);
   useEffect(() => {
     if (IS_DEMO) return;
     if (!auth) { applyLeaves([]); return; }
