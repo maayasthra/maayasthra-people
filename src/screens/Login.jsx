@@ -6,6 +6,8 @@ import { IS_DEMO } from '../env.js';
 import { authEnabled, signIn, signUp, sendReset, setNewPassword, resolveUser, currentSession, signOutAuth } from '../auth.js';
 
 /* ---------- Login ---------- */
+// Illustrated portraits for the sign-in art. They are drawings, not staff records.
+const FACES = [[3, 'm'], [10, 'f'], [6, 'f'], [17, 'm'], [14, 'f']].map(([n, g]) => ({ n, g, name: 'Illustrated portrait', photo: '' }));
 export function Login({ onLogin }) {
   const [mode, setMode] = useState('employee'); const [view, setView] = useState('signin');
   const [pw2, setPw2] = useState(''); const [email, setEmail] = useState(''); const [pw, setPw] = useState(''); const [show, setShow] = useState(false);
@@ -50,13 +52,11 @@ export function Login({ onLogin }) {
     setErr(''); setBusy(true);
     signUp(email, pw).then(() => { setSent(true); setBusy(false); }).catch(e => { setErr(e.message); setBusy(false); });
   };
-  const art = [3, 10, 6, 17, 14];
   return html`<div className="lg-wrap">
     <section className="lg-art">
       <div className="brand" style=${{ padding: 0 }}><span className="mark"></span><span className="brand-t"><b>Maayasthra</b><span>People</span></span></div>
       <div className="lg-copy"><h1>Everyone at Maayasthra, in one place.</h1><p>Your team, your time off, your hours and your tasks. Sign in with your work email.</p></div>
-      <div>${IS_DEMO ? html`<div className="lg-mos" aria-hidden="true">${art.map(n => html`<div key=${n}><${Photo} e=${BY[n]}/></div>`)}</div>`
-        : html`<ul className="lg-feat">${[['people', 'Team directory', 'Find anyone, see who reports to whom'], ['leaves', 'Leave', 'Apply, get approved, see balances'], ['hours', 'Hours', 'Check in and out, track your day'], ['board', 'Tasks', 'One board for everything in flight']].map(([ic, t, d]) => html`<li key=${t}><span><${Icon} n=${ic} s=${18}/></span><div><b>${t}</b><small>${d}</small></div></li>`)}</ul>`}
+      <div><div className="lg-mos" aria-hidden="true">${FACES.map(f => html`<div key=${f.n}><${Photo} e=${f}/></div>`)}</div>
         <div className="lg-url">people.maayasthra.com</div></div>
     </section>
     <section className="lg-form"><div className="lg-box">
