@@ -5,9 +5,9 @@ import { dayInfo, useNow, hm, clock, addDays, weekStart, monthDays, GRACE } from
 
 const hh = ms => hm(ms).replace(' ', '');
 const STATUS = { in: 'Checked in', out: 'Checked out', notyet: 'Not in yet', absent: 'Absent', leave: 'On leave', off: 'Holiday or weekend' };
-const LEGEND = [['ok', 'On time'], ['late', 'Late'], ['short', 'Short day'], ['leave', 'On leave'], ['none', 'Absent'], ['off', 'Holiday or weekend']];
+const LEGEND = [['ok', 'On time'], ['late', 'Late'], ['short', 'Short day'], ['leave', 'On leave'], ['miss', 'Absent'], ['off', 'Holiday or weekend']];
 
-const cellClass = c => !c ? 'fut' : c.sessions.length ? (c.lateFlag ? 'late' : c.short ? 'short' : 'ok') : c.state === 'leave' ? 'leave' : c.state === 'off' ? 'off' : c.state === 'absent' ? 'none' : 'fut';
+const cellClass = c => !c ? 'fut' : c.sessions.length ? (c.lateFlag ? 'late' : c.short ? 'short' : 'ok') : c.state === 'leave' ? 'leave' : c.state === 'off' ? 'off' : c.state === 'absent' ? 'miss' : 'fut';
 
 /* One matrix for both views: a row per person, a square per day, then the totals. */
 function Matrix({ rows, days, wide, open }) {

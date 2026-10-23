@@ -959,7 +959,7 @@ button.tile:hover{transform:none;background:var(--card-hi)}
 .ovc.late{background:#FF9F0A}
 .ovc.short{background:#FF6A5E}
 .ovc.leave{background:#BF5AF2;color:#fff}
-.ovc.none{background:transparent;box-shadow:inset 0 0 0 1.5px #FF453A;color:#FF6961}
+.ovc.miss{background:transparent;box-shadow:inset 0 0 0 1.5px #FF453A;color:#FF6961}
 .ovc.off{background:rgba(255,255,255,.05);color:var(--faint)}
 .ovc.fut{background:transparent}
 button.ovc:hover{filter:brightness(1.18)}
@@ -1491,4 +1491,4 @@ textarea.td-title{resize:none;overflow:hidden;line-height:1.25;display:block;fon
 
 .pg-h{align-items:center}
 .mt-add{max-width:none}
-.none{padding:44px 16px}
+div.none{padding:44px 16px}
