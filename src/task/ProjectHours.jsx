@@ -11,7 +11,8 @@ export function ProjectHours({ tasks, user, role }) {
   const now = useNow(1000);
   const [period, setPeriod] = useState('week'), [openN, setOpenN] = useState(null);
   const from = startOf(period, now), to = now + 1;
-  const people = activeEmps().filter(e => role === 'admin' || e.n === user.n);
+  const mgr = role === 'admin' || role === 'pm';
+  const people = activeEmps().filter(e => mgr || e.n === user.n);
   const rows = people.map(e => {
     const items = tasks.map(t => ({ t, ms: spentIn(t, from, to, now, e.n) })).filter(x => x.ms > 0).sort((a, b) => b.ms - a.ms);
     return { e, items, total: items.reduce((s, x) => s + x.ms, 0), live: tasks.some(t => isDoing(t, e.n)) };
@@ -20,11 +21,11 @@ export function ProjectHours({ tasks, user, role }) {
   const label = { week: 'this week', month: 'this month', all: 'all time' }[period];
 
   return html`<div>
-    <div className="pg-h"><div><h1><${HI} n="timer" tone="green"/>Project hours</h1><p>${role === 'admin' ? 'Time logged on cards, by person' : 'Your logged time'}</p></div>
+    <div className="pg-h"><div><h1><${HI} n="timer" tone="green"/>Project hours</h1><p>${mgr ? 'Time logged on cards, by person' : 'Your logged time'}</p></div>
       <div className="seg" role="group" aria-label="Period">${[['week', 'This week'], ['month', 'This month'], ['all', 'All time']].map(([k, l]) => html`<button key=${k} className=${period === k ? 'on' : ''} onClick=${() => setPeriod(k)}>${l}</button>`)}</div></div>
     <div className="tiles t3">
       <${Tile} icon="timer" tone="green" label="Hours logged" value=${fmtDur(total)} sub=${label}/>
-      <${Tile} icon="people" tone="blue" label=${role === 'admin' ? 'Working now' : 'Timers running'} value=${working} sub=${role === 'admin' ? 'people with a timer on' : 'right now'}/>
+      <${Tile} icon="people" tone="blue" label=${mgr ? 'Working now' : 'Timers running'} value=${working} sub=${mgr ? 'people with a timer on' : 'right now'}/>
       <${Tile} icon="board" tone="purple" label="Cards timed" value=${timed} sub=${label}/>
     </div>
     <div className="ph3">

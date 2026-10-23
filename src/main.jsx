@@ -57,7 +57,7 @@ function TopRight({ user, role, open, openForm, signOut }) {
   }, [menu]);
   return html`<div className="tr" ref=${ref}>
     <button className="tr-me" onClick=${() => setMenu(m => !m)} aria-haspopup="menu" aria-expanded=${menu} aria-label="Account menu">
-      <${Av} e=${user} s=${32}/><span className="tr-n"><b>${user.name}</b><span>${role === 'admin' ? 'Admin' : 'Employee'}</span></span></button>
+      <${Av} e=${user} s=${32}/><span className="tr-n"><b>${user.name}</b><span>${role === 'admin' ? 'Admin' : role === 'pm' ? 'Project manager' : 'Employee'}</span></span></button>
     ${menu && html`<div className="menu" role="menu">
       <div className="menu-h"><b>${user.name}</b><span>${user.email}</span></div>
       <button role="menuitem" onClick=${() => { setMenu(false); open(user.n); }}><${Icon} n="user" s=${16}/> View profile</button>
@@ -115,6 +115,8 @@ function App() {
   const [taskSel, setTaskSel] = useState(null), [tq, setTq] = useState('');
   const [tf, setTf] = useState(loadView), [custom, setCustomRaw] = useState(() => IS_DEMO ? loadCustom() : []), [layout, setLayoutRaw] = useState(() => IS_DEMO ? loadLayout() : { order: [], hidden: [] });
   const board = useRef(null);
+  const who = useRef({ mgr: false, me: 0 });
+  who.current = { mgr: !!auth && (auth.role === 'admin' || auth.role === 'pm'), me: auth ? auth.user.n : 0 };
   if (!board.current) board.current = { tasks, custom, layout, saved: { tasks, custom, layout }, timer: 0, flying: false, dirty: false };
   const [navHidden, setNavHidden] = useState(() => { try { return localStorage.getItem('mp-nav') === '1'; } catch (x) { return false; } });
   const bump = () => setVer(v => v + 1);
@@ -170,7 +172,7 @@ function App() {
     const b = board.current; if (b.flying) return;
     b.flying = true; b.dirty = false;
     const snap = { tasks: b.tasks, custom: b.custom, layout: b.layout };
-    try { await persistBoard(b.saved, snap); b.saved = snap; }
+    try { await persistBoard(b.saved, snap, who.current); b.saved = snap; }
     catch (e) { setSyncErr(e.message || 'Could not save. Try again.'); b.dirty = false; await refreshBoard(true); }
     finally { b.flying = false; if (b.dirty) queueSave(); }
   };
@@ -212,8 +214,10 @@ function App() {
   // The live record, so a change to your own details (shift times, name) shows straight away
   const user = (!IS_DEMO && BY[auth.user.n]) || auth.user, role = auth.role;
   const peopleKeys = role === 'admin' ? ['home', 'people', 'org', 'calendar', 'attendance', 'leaves', 'requests', 'settings'] : ['home', 'people', 'org', 'calendar', 'hours', 'leaves'];
-  const keys = app === 'task' ? (role === 'admin' ? ['board', 'mytasks', 'timer', 'team'] : ['board', 'mytasks', 'timer']) : peopleKeys;
-  const setApp = a => { setAppState(a); setNav({ view: a === 'task' ? 'board' : 'home' }); setTaskSel(null); setSOpen(false); window.scrollTo({ top: 0 }); };
+  // Admins and project managers get the whole task app. Everyone else gets only their own tasks.
+  const isMgr = role === 'admin' || role === 'pm';
+  const keys = app === 'task' ? (isMgr ? ['board', 'mytasks', 'timer', 'team'] : ['mytasks']) : peopleKeys;
+  const setApp = a => { setAppState(a); setNav({ view: a === 'task' ? (isMgr ? 'board' : 'mytasks') : 'home' }); setTaskSel(null); setSOpen(false); window.scrollTo({ top: 0 }); };
   const openTask = (id, ctx) => setTaskSel({ id, ctx });
   const goTask = id => { setAppState('task'); setNav({ view: 'mytasks' }); setTaskSel(id ? { id } : null); window.scrollTo({ top: 0 }); };
   const top = () => window.scrollTo({ top: 0 });
@@ -229,9 +233,9 @@ function App() {
   const pending = role === 'admin' ? leaves.filter(l => !l.past && l.state === 'pending').length : 0;
 
   const home = html`<${Home} role=${role} user=${user} leaves=${leaves} setLeaves=${setLeaves} ann=${ann} setAnn=${setAnn} att=${att} setAtt=${setAtt} tasks=${tasks} goTask=${goTask} go=${go} openForm=${openForm} open=${open}/>`;
-  const taskScreen = nav.view === 'timer' ? html`<${ProjectHours} tasks=${tasks} user=${user} role=${role}/>`
-    : nav.view === 'mytasks' ? html`<${MyTasks} tasks=${tasks} setTasks=${setTasks} user=${user} tq=${tq} openTask=${openTask}/>`
-    : nav.view === 'team' && role === 'admin' ? html`<${TeamView} tasks=${tasks} onPick=${n => { setTf(f => ({ ...f, dept: 'All' })); setFocus(n); go('board'); }}/>`
+  const taskScreen = nav.view === 'timer' && isMgr ? html`<${ProjectHours} tasks=${tasks} user=${user} role=${role}/>`
+    : nav.view === 'mytasks' || !isMgr ? html`<${MyTasks} tasks=${tasks} setTasks=${setTasks} user=${user} tq=${tq} openTask=${openTask}/>`
+    : nav.view === 'team' && isMgr ? html`<${TeamView} tasks=${tasks} onPick=${n => { setTf(f => ({ ...f, dept: 'All' })); setFocus(n); go('board'); }}/>`
     : html`<${TaskBoard} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} tf=${tf} setTf=${setTf} tq=${tq} openTask=${openTask} focus=${focus} collapsed=${collapsed} setCollapsed=${setCollapsed} custom=${custom} setCustom=${setCustom} layout=${layout} setLayout=${setLayout}/>`;
   const screen = app === 'task' ? taskScreen : nav.view === 'home' ? home
     : nav.view === 'people' ? html`<${People} pf=${pf} setPf=${setPf} open=${open} openForm=${openForm} role=${role} ver=${ver}/>`

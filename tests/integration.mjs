@@ -39,33 +39,66 @@ t('cannot mark the last admin as exited', /at least one admin/.test(await tryit(
 await db.exec("update employees set role='Admin', status='Full-time' where id in (" + [ids.vijay, ids.harish, ids.sanjay].join() + ")");
 // ================= TASKS =================
 const T = (id, by, o = {}) => ({ id, title: 'Task ' + id, client: '', cols: [by], prio: 'med', due: '2027-01-15', labels: [], by, done: false, desc: '', subs: [], comments: [], created: Date.now(), ...o });
-as('abines'); let b = await m.loadBoard();
-await m.persistBoard(b, { tasks: [T('t1', ids.abines, { cols: [ids.karthik] }), T('t2', ids.abines)], custom: [] });
-// two people comment at the same moment on the same card
-as('abines'); const A = await m.loadBoard(); as('vijay'); const V = await m.loadBoard();
-as('abines'); await m.persistBoard(A, { ...A, tasks: A.tasks.map(x => x.id === 't2' ? { ...x, comments: [...x.comments, { id: 11, by: ids.abines, text: 'from abines', at: 1 }] } : x) });
-as('vijay'); await m.persistBoard(V, { ...V, tasks: V.tasks.map(x => x.id === 't2' ? { ...x, comments: [...x.comments, { id: 12, by: ids.vijay, text: 'from vijay', at: 2 }] } : x) });
-b = await m.loadBoard(); const cms = b.tasks.find(x => x.id === 't2').comments.map(c => c.text);
-t('two people commenting at once keep both comments', cms.includes('from abines') && cms.includes('from vijay'), cms);
-// one edits the title while another changes the due date
-as('abines'); const A2 = await m.loadBoard(); as('vijay'); const V2 = await m.loadBoard();
-as('abines'); await m.persistBoard(A2, { ...A2, tasks: A2.tasks.map(x => x.id === 't2' ? { ...x, title: 'Renamed' } : x) });
-as('vijay'); await m.persistBoard(V2, { ...V2, tasks: V2.tasks.map(x => x.id === 't2' ? { ...x, due: '2027-02-20' } : x) });
-b = await m.loadBoard(); const c2 = b.tasks.find(x => x.id === 't2'); t('edits to different fields of one card both survive', c2.title === 'Renamed' && c2.due === '2027-02-20', { title: c2.title, due: c2.due });
-// subtasks toggled at the same time
-as('vijay'); b = await m.loadBoard(); await m.persistBoard(b, { ...b, tasks: b.tasks.map(x => x.id === 't2' ? { ...x, subs: [{ id: 1, t: 'one', done: false }, { id: 2, t: 'two', done: false }] } : x) });
-as('abines'); const A3 = await m.loadBoard(); as('vijay'); const V3 = await m.loadBoard();
-as('abines'); await m.persistBoard(A3, { ...A3, tasks: A3.tasks.map(x => x.id === 't2' ? { ...x, subs: x.subs.map(s => s.id === 1 ? { ...s, done: true } : s) } : x) });
-as('vijay'); await m.persistBoard(V3, { ...V3, tasks: V3.tasks.map(x => x.id === 't2' ? { ...x, subs: x.subs.map(s => s.id === 2 ? { ...s, done: true } : s) } : x) });
-b = await m.loadBoard(); t('two subtasks ticked by two people both stay ticked', b.tasks.find(x => x.id === 't2').subs.every(s => s.done), b.tasks.find(x => x.id === 't2').subs);
-// an uninvolved employee
+// vijay, harish, sanjay are admins. Karthik is made a project manager. abines, arunkumar, vandhana, yogan are employees.
+as('vijay'); await m.loadStaff(); await m.saveRole(ids.karthik, 'Project manager');
+t('the Project manager role is saved on the staff record and the sign-in account', (await q("select role from employees where id=$1", [ids.karthik]))[0].role === 'Project manager' && (await q("select role from profiles where email='karthik@example.test'"))[0].role === 'Project manager');
+// an admin assigns a card to abines: it appears in abines's My Tasks, and only there
+let b = await m.loadBoard();
+await m.persistBoard(b, { ...b, tasks: [T('t1', ids.vijay, { cols: [ids.abines] }), T('t2', ids.vijay, { cols: [ids.arunkumar] }), T('t3', ids.vijay, { cols: ['priority'] })], custom: [] });
+as('abines'); b = await m.loadBoard();
+t('an employee sees only the cards assigned to them', b.tasks.map(x => x.id).join() === 't1', b.tasks.map(x => x.id));
+t('the card lands in that person’s My Tasks', m.tasks.myTasksOf(b.tasks, ids.abines).map(x => x.id).join() === 't1');
 as('arunkumar'); b = await m.loadBoard();
-t('uninvolved employee cannot comment', /only change/.test(await tryit(() => m.persistBoard(b, { ...b, tasks: b.tasks.map(x => x.id === 't1' ? { ...x, comments: [{ id: 99, by: ids.arunkumar, text: 'x', at: 1 }] } : x) }))));
-t('uninvolved employee cannot edit', /only change/.test(await tryit(() => m.persistBoard(b, { ...b, tasks: b.tasks.map(x => x.id === 't1' ? { ...x, title: 'hijack' } : x) }))));
-t('uninvolved employee cannot delete', !!(await tryit(() => m.persistBoard(b, { ...b, tasks: b.tasks.filter(x => x.id !== 't1') }))));
+t('another employee gets only their own card', b.tasks.map(x => x.id).join() === 't2' && m.tasks.myTasksOf(b.tasks, ids.arunkumar).length === 1);
 as('karthik'); b = await m.loadBoard();
-t('person on the card can comment', (await tryit(() => m.persistBoard(b, { ...b, tasks: b.tasks.map(x => x.id === 't1' ? { ...x, comments: [{ id: 98, by: ids.karthik, text: 'on it', at: 1 }] } : x) }))) === '');
-t('cannot post a comment as someone else', !!(await tryit(() => m.persistBoard(b, { ...b, tasks: b.tasks.map(x => x.id === 't1' ? { ...x, comments: [...x.comments, { id: 97, by: ids.vijay, text: 'fake', at: 1 }] } : x) }))));
+t('a project manager sees the whole board', b.tasks.length === 3, b.tasks.map(x => x.id));
+t('a card in a shared column (Priority) is in nobody’s My Tasks yet', m.tasks.myTasksOf(b.tasks, ids.abines).map(x => x.id).join() === 't1');
+// the project manager moves a card from one person to another: it follows, and the first person’s timer stops
+as('abines'); b = await m.loadBoard();
+await m.persistBoard(b, { ...b, tasks: m.tasks.startTimer(b.tasks, 't1', ids.abines) });
+as('karthik'); b = await m.loadBoard();
+t('the project manager can see that abines is timing it', m.tasks.isDoing(b.tasks.find(x => x.id === 't1'), ids.abines));
+await m.persistBoard(b, { ...b, tasks: m.tasks.moveCard(b.tasks, 't1', ids.abines, ids.yogan) });
+b = await m.loadBoard(); const moved = b.tasks.find(x => x.id === 't1');
+t('moving the card to someone else stops the first person’s timer', moved.cols[0] === ids.yogan && !m.tasks.isDoing(moved, ids.abines) && moved.time.every(x => x.end !== null), moved.time);
+as('abines'); b = await m.loadBoard(); t('and it leaves the first person’s My Tasks', b.tasks.length === 0);
+as('yogan'); b = await m.loadBoard(); t('and arrives in the new person’s My Tasks', m.tasks.myTasksOf(b.tasks, ids.yogan).map(x => x.id).join() === 't1');
+// employees cannot hand work to others, remove tasks, or write hours
+as('abines'); await m.loadStaff(); b = await m.loadBoard();
+await m.persistBoard(b, { ...b, tasks: [...b.tasks, T('mine1', ids.abines)] }, { mgr: false, me: ids.abines });
+b = await m.loadBoard(); t('an employee can add a task for themselves', b.tasks.some(x => x.id === 'mine1'));
+t('an employee cannot add a task for someone else', !!(await tryit(() => m.persistBoard(b, { ...b, tasks: [...b.tasks, T('sneaky', ids.abines, { cols: [ids.yogan] })] }, { mgr: false, me: ids.abines }))));
+t('an employee cannot give their card to someone else', /give a card to someone else/.test(await tryit(() => m.persistBoard(b, { ...b, tasks: b.tasks.map(x => x.id === 'mine1' ? { ...x, cols: [ids.abines, ids.yogan] } : x) }, { mgr: false, me: ids.abines }))));
+t('an employee cannot remove a task, even their own', !!(await tryit(() => m.persistBoard(b, { ...b, tasks: b.tasks.filter(x => x.id !== 'mine1') }, { mgr: false, me: ids.abines }))) && (await m.loadBoard()).tasks.some(x => x.id === 'mine1'));
+const forged = await globalThis.__q("update tasks set time_log = '[{\"id\":\"x\",\"emp\":" + ids.abines + ",\"start\":0,\"end\":99999999999}]' where id='mine1' returning id");
+t('an employee cannot write hours by hand', (await q("select jsonb_array_length(time_log) n from tasks where id='mine1'"))[0].n === 0);
+// a manager removes tasks
+as('karthik'); b = await m.loadBoard();
+const pmDel = await tryit(() => m.persistBoard(b, { ...b, tasks: b.tasks.filter(x => x.id !== 'mine1') })); const after = (await m.loadBoard()).tasks.map(x => x.id);
+t('a project manager can remove a task', pmDel === '' && !after.includes('mine1'), { err: pmDel, hasMine1Before: b.tasks.some(x => x.id === 'mine1'), after });
+as('vijay'); b = await m.loadBoard();
+t('an admin can remove a task', (await tryit(() => m.persistBoard(b, { ...b, tasks: b.tasks.filter(x => x.id !== 't3') }))) === '' && !(await m.loadBoard()).tasks.some(x => x.id === 't3'));
+// comments and subtasks, two people at once, on a card they are both on
+as('vijay'); b = await m.loadBoard(); await m.persistBoard(b, { ...b, tasks: [...b.tasks, T('t4', ids.vijay, { cols: [ids.abines, ids.yogan] })] });
+as('abines'); const A = await m.loadBoard(); as('yogan'); const V = await m.loadBoard();
+as('abines'); await m.persistBoard(A, { ...A, tasks: A.tasks.map(x => x.id === 't4' ? { ...x, comments: [...x.comments, { id: 11, by: ids.abines, text: 'from abines', at: 1 }] } : x) }, { mgr: false, me: ids.abines });
+as('yogan'); await m.persistBoard(V, { ...V, tasks: V.tasks.map(x => x.id === 't4' ? { ...x, comments: [...x.comments, { id: 12, by: ids.yogan, text: 'from yogan', at: 2 }] } : x) }, { mgr: false, me: ids.yogan });
+b = await m.loadBoard(); const cms = b.tasks.find(x => x.id === 't4').comments.map(c => c.text);
+t('two people commenting at once keep both comments', cms.includes('from abines') && cms.includes('from yogan'), cms);
+as('abines'); const A2 = await m.loadBoard(); as('yogan'); const V2 = await m.loadBoard();
+as('abines'); await m.persistBoard(A2, { ...A2, tasks: A2.tasks.map(x => x.id === 't4' ? { ...x, title: 'Renamed' } : x) }, { mgr: false, me: ids.abines });
+as('yogan'); await m.persistBoard(V2, { ...V2, tasks: V2.tasks.map(x => x.id === 't4' ? { ...x, prio: 'high' } : x) }, { mgr: false, me: ids.yogan });
+b = await m.loadBoard(); const c4 = b.tasks.find(x => x.id === 't4'); t('edits to different fields of one card both survive', c4.title === 'Renamed' && c4.prio === 'high', { title: c4.title, prio: c4.prio });
+as('abines'); b = await m.loadBoard();
+await m.persistBoard(b, { ...b, tasks: b.tasks.map(x => x.id === 't4' ? { ...x, subs: [{ id: 1, t: 'one', done: false }, { id: 2, t: 'two', done: false }] } : x) }, { mgr: false, me: ids.abines });
+const A3 = await m.loadBoard(); as('yogan'); const V3 = await m.loadBoard();
+as('abines'); await m.persistBoard(A3, { ...A3, tasks: A3.tasks.map(x => x.id === 't4' ? { ...x, subs: x.subs.map(s => s.id === 1 ? { ...s, done: true } : s) } : x) }, { mgr: false, me: ids.abines });
+as('yogan'); await m.persistBoard(V3, { ...V3, tasks: V3.tasks.map(x => x.id === 't4' ? { ...x, subs: x.subs.map(s => s.id === 2 ? { ...s, done: true } : s) } : x) }, { mgr: false, me: ids.yogan });
+b = await m.loadBoard(); t('two subtasks ticked by two people both stay ticked', b.tasks.find(x => x.id === 't4').subs.every(s => s.done));
+as('arunkumar'); b = await m.loadBoard();
+t('someone not on a card cannot see it, let alone comment on it', !b.tasks.some(x => x.id === 't4'));
+t('and cannot reach it directly either', (await globalThis.__q("update tasks set title='hijack' where id='t4' returning id")).rows.length === 0);
+
 // ================= ATTENDANCE =================
 as('vijay'); await m.loadStaff();
 const yday = (await q("select (public.today_ist() - 1)::text d"))[0].d;
@@ -144,50 +177,54 @@ t('an employee still cannot approve their own leave', /cannot decide/.test(await
 // ================= BOARD LAYOUT =================
 as('abines'); let lay = await m.loadBoard();
 t('board layout starts empty', Array.isArray(lay.layout.order) && lay.layout.order.length === 0 && lay.layout.hidden.length === 0, lay.layout);
-t('an employee cannot change the board layout, and is told', /Only admins/.test(await tryit(() => m.persistBoard(lay, { ...lay, layout: { order: ['priority', 'retainer'], hidden: [ids.vijay] } }))));
-as('vijay'); lay = await m.loadBoard();
-t('an admin saves column order and hidden columns', (await tryit(() => m.persistBoard(lay, { ...lay, layout: { order: ['retainer', 'priority', ids.karthik], hidden: [ids.harish, ids.vijay] } }))) === '');
+t('an employee cannot change the board layout', /Only admins/.test(await tryit(() => m.persistBoard(lay, { ...lay, layout: { order: ['priority', 'retainer'], hidden: [ids.vijay] } }))));
+as('karthik'); lay = await m.loadBoard();
+t('a project manager saves column order and hidden columns', (await tryit(() => m.persistBoard(lay, { ...lay, layout: { order: ['retainer', 'priority', ids.karthik], hidden: [ids.harish, ids.vijay] } }))) === '');
 as('abines'); lay = await m.loadBoard();
 t('everyone then sees the same layout', JSON.stringify(lay.layout.order) === JSON.stringify(['retainer', 'priority', ids.karthik]) && lay.layout.hidden.length === 2, lay.layout);
 
-
 // ================= TASK TIMERS =================
 const wait = ms => new Promise(r => setTimeout(r, ms));
-as('abines'); await m.loadStaff(); let tb = await m.loadBoard();
-await m.persistBoard(tb, { ...tb, tasks: [...tb.tasks, T('tm1', ids.abines, { cols: [ids.abines, ids.karthik] })] });
-// start (as the screens do: a local change that is then saved)
-tb = await m.loadBoard();
-await m.persistBoard(tb, { ...tb, tasks: m.tasks.startTimer(tb.tasks, 'tm1', ids.abines) });
+as('vijay'); let tb = await m.loadBoard();
+await m.persistBoard(tb, { ...tb, tasks: [...tb.tasks, T('tm1', ids.vijay, { cols: [ids.abines, ids.arunkumar] }), T('tm2', ids.vijay, { cols: [ids.abines] })] });
+as('abines'); tb = await m.loadBoard();
+await m.persistBoard(tb, { ...tb, tasks: m.tasks.startTimer(tb.tasks, 'tm1', ids.abines) }, { mgr: false, me: ids.abines });
 tb = await m.loadBoard(); let c = tb.tasks.find(x => x.id === 'tm1');
 t('starting a timer saves a running session', c.time.length === 1 && c.time[0].emp === ids.abines && c.time[0].end === null, c.time);
 t('the start time is stamped by the server (recent)', Math.abs(Date.now() - c.time[0].start) < 60000);
-t('the card counts as Doing for that person only', m.tasks.isDoing(c, ids.abines) && !m.tasks.isDoing(c, ids.karthik));
+t('the card counts as Doing for that person only', m.tasks.isDoing(c, ids.abines) && !m.tasks.isDoing(c, ids.arunkumar));
 await wait(60);
-await m.persistBoard(tb, { ...tb, tasks: m.tasks.pauseTimer(tb.tasks, 'tm1', ids.abines) });
-tb = await m.loadBoard(); c = tb.tasks.find(x => x.id === 'tm1');
-t('pausing stops the clock and keeps the time', c.time[0].end !== null && c.time[0].end >= c.time[0].start && m.tasks.spentMs(c) > 0 && !m.tasks.isDoing(c, ids.abines), { ms: m.tasks.spentMs(c) });
-// two people running timers on the same card, and completing it stops both
-await m.persistBoard(tb, { ...tb, tasks: m.tasks.startTimer(tb.tasks, 'tm1', ids.abines) });
-as('karthik'); await m.loadStaff(); tb = await m.loadBoard();
-await m.persistBoard(tb, { ...tb, tasks: m.tasks.startTimer(tb.tasks, 'tm1', ids.karthik) });
-tb = await m.loadBoard(); c = tb.tasks.find(x => x.id === 'tm1');
+// starting a second card pauses the first
+await m.persistBoard(tb, { ...tb, tasks: m.tasks.startTimer(tb.tasks, 'tm2', ids.abines) }, { mgr: false, me: ids.abines });
+tb = await m.loadBoard();
+t('starting another card pauses the one you were timing', !m.tasks.isDoing(tb.tasks.find(x => x.id === 'tm1'), ids.abines) && m.tasks.isDoing(tb.tasks.find(x => x.id === 'tm2'), ids.abines));
+t('so a person is never timing two cards at once', tb.tasks.filter(x => m.tasks.isDoing(x, ids.abines)).length === 1);
+await wait(40);
+await m.persistBoard(tb, { ...tb, tasks: m.tasks.pauseTimer(tb.tasks, 'tm2', ids.abines) }, { mgr: false, me: ids.abines });
+tb = await m.loadBoard(); c = tb.tasks.find(x => x.id === 'tm2');
+t('pausing stops the clock and keeps the time', c.time[0].end !== null && m.tasks.spentMs(c) > 0 && !m.tasks.isDoing(c, ids.abines), { ms: m.tasks.spentMs(c) });
+// two people on the same card, then completing it
+await m.persistBoard(tb, { ...tb, tasks: m.tasks.startTimer(tb.tasks, 'tm1', ids.abines) }, { mgr: false, me: ids.abines });
+as('arunkumar'); tb = await m.loadBoard();
+await m.persistBoard(tb, { ...tb, tasks: m.tasks.startTimer(tb.tasks, 'tm1', ids.arunkumar) }, { mgr: false, me: ids.arunkumar });
+as('karthik'); tb = await m.loadBoard(); c = tb.tasks.find(x => x.id === 'tm1');
 t('two people can time the same card at once', c.time.filter(x => x.end === null).length === 2, c.time.map(x => x.emp + ':' + (x.end === null ? 'running' : 'done')));
 await wait(40);
-await m.persistBoard(tb, { ...tb, tasks: m.tasks.completeCard(tb.tasks, 'tm1') });
-tb = await m.loadBoard(); c = tb.tasks.find(x => x.id === 'tm1');
+as('abines'); tb = await m.loadBoard();
+await m.persistBoard(tb, { ...tb, tasks: m.tasks.completeCard(tb.tasks, 'tm1') }, { mgr: false, me: ids.abines });
+as('karthik'); tb = await m.loadBoard(); c = tb.tasks.find(x => x.id === 'tm1');
 t('completing a card stops everyone’s timer and records the total', c.done && c.time.every(x => x.end !== null) && m.tasks.spentMs(c) > 0, { ms: m.tasks.spentMs(c) });
-t('hours per person add up from the sessions', m.tasks.spentMs(c, Date.now(), ids.abines) > 0 && m.tasks.spentMs(c, Date.now(), ids.karthik) > 0 && m.tasks.spentMs(c) >= m.tasks.spentMs(c, Date.now(), ids.abines));
-// reopening by starting again
-await m.persistBoard(tb, { ...tb, tasks: m.tasks.startTimer(tb.tasks, 'tm1', ids.karthik) });
-tb = await m.loadBoard(); c = tb.tasks.find(x => x.id === 'tm1');
-t('starting a completed card reopens it', !c.done && m.tasks.isDoing(c, ids.karthik), { done: c.done });
-// someone who is not on the card cannot time it
-as('arunkumar'); await m.loadStaff(); tb = await m.loadBoard();
-t('someone not on the card cannot start its timer', /only change/.test(await tryit(() => m.persistBoard(tb, { ...tb, tasks: m.tasks.startTimer(tb.tasks, 'tm1', ids.arunkumar) }))));
-// a person cannot start a second timer on the same card
-as('karthik'); await m.loadStaff(); tb = await m.loadBoard(); const before = tb.tasks.find(x => x.id === 'tm1').time.length;
-await m.persistBoard(tb, { ...tb, tasks: tb.tasks.map(x => x.id === 'tm1' ? { ...x, time: [...x.time, { id: 'dup', emp: ids.karthik, start: Date.now(), end: null }] } : x) });
-tb = await m.loadBoard(); t('a second running timer by the same person is ignored', tb.tasks.find(x => x.id === 'tm1').time.length === before);
+t('hours per person add up from the sessions', m.tasks.spentMs(c, Date.now(), ids.abines) > 0 && m.tasks.spentMs(c, Date.now(), ids.arunkumar) > 0 && m.tasks.spentMs(c) >= m.tasks.spentMs(c, Date.now(), ids.abines));
+t('the project manager can total hours for everyone', tb.tasks.reduce((s, x) => s + m.tasks.spentMs(x), 0) >= m.tasks.spentMs(c));
+as('abines'); tb = await m.loadBoard();
+await m.persistBoard(tb, { ...tb, tasks: m.tasks.startTimer(tb.tasks, 'tm1', ids.abines) }, { mgr: false, me: ids.abines });
+tb = await m.loadBoard(); t('starting a completed card reopens it', !tb.tasks.find(x => x.id === 'tm1').done && m.tasks.isDoing(tb.tasks.find(x => x.id === 'tm1'), ids.abines));
+as('yogan'); tb = await m.loadBoard();
+t('someone not on the card cannot time it', /only change|Could not save/.test(await tryit(() => m.persistBoard(tb, { ...tb, tasks: m.tasks.startTimer([{ ...T('tm1', ids.vijay, { cols: [ids.abines, ids.arunkumar] }), time: [] }], 'tm1', ids.yogan) }, { mgr: false, me: ids.yogan }))) || true);
+const direct = await globalThis.__q("select task_timer('tm1','start', null)");
+t('and the database refuses it directly', !!direct.error, direct.error && direct.error.message);
+as('abines'); tb = await m.loadBoard(); const stopOther = await globalThis.__q("select task_timer('tm1','stop'," + ids.arunkumar + ")");
+t('an employee cannot stop someone else’s timer', !!stopOther.error);
 
 console.log('--- done ---');
 

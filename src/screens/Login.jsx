@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import React from 'react';
 import { html, Icon, Av, Photo } from '../ui.jsx';
-import { EMP, BY, DEMO_PW, isAdminRole } from '../data.js';
+import { EMP, BY, DEMO_PW, isAdminRole, ROLEMAP } from '../data.js';
 import { IS_DEMO } from '../env.js';
 import { authEnabled, signIn, signUp, sendReset, setNewPassword, resolveUser, currentSession, signOutAuth } from '../auth.js';
 
@@ -20,12 +20,13 @@ export function Login({ onLogin }) {
     if (p !== DEMO_PW) return 'That password does not match. Try again.';
     if (e.status === 'Exited') return 'This account is no longer active.';
     if (md === 'admin' && !isAdminRole(e)) return 'This account does not have admin access.';
+    if (md === 'pm' && ROLEMAP[e.n] !== 'Project manager') return 'This account is not a project manager.';
     return e;
   };
   const run = (em, p, md) => {
     const r = check(em, p, md);
     if (typeof r === 'string') { setErr(r); return; }
-    setErr(''); setBusy(true); setTimeout(() => onLogin(r, md === 'admin' ? 'admin' : 'employee'), 650);
+    setErr(''); setBusy(true); setTimeout(() => onLogin(r, md === 'admin' ? 'admin' : md === 'pm' ? 'pm' : 'employee'), 650);
   };
   const demo = (n, md) => { const e = BY[n]; setMode(md); setEmail(e.email); setPw(DEMO_PW); run(e.email, DEMO_PW, md); };
   const submit = ev => {
@@ -72,6 +73,7 @@ export function Login({ onLogin }) {
         </form>
         ${!authEnabled && html`<div className="lg-demo"><h3>Try a demo account</h3>
           <button className="dm" onClick=${() => demo(2, 'admin')} disabled=${busy}><${Av} e=${BY[2]} s=${38}/><span className="row-t"><b>Meera Iyer</b><span>Admin · approves leave</span></span><span className="go"><${Icon} n="arrow" s=${16}/></span></button>
+          <button className="dm" onClick=${() => demo(5, 'pm')} disabled=${busy}><${Av} e=${BY[5]} s=${38}/><span className="row-t"><b>Vikram Nair</b><span>Project manager · runs the board</span></span><span className="go"><${Icon} n="arrow" s=${16}/></span></button>
           <button className="dm" onClick=${() => demo(9, 'employee')} disabled=${busy}><${Av} e=${BY[9]} s=${38}/><span className="row-t"><b>Dev Malhotra</b><span>Employee · applies for leave</span></span><span className="go"><${Icon} n="arrow" s=${16}/></span></button>
           <div className="lg-note">Demo password: ${DEMO_PW}</div></div>`}
         ${authEnabled && html`<div className="lg-alt"><span>New to Maayasthra People?</span><button type="button" className="link" onClick=${() => { setView('signup'); setErr(''); setSent(false); setPw(''); setPw2(''); }}>Create your account</button></div>`}

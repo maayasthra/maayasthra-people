@@ -72,7 +72,7 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
   const [drag, setDrag] = useState(null), [over, setOver] = useState(null), [menu, setMenu] = useState(null), [cmenu, setCmenu] = useState(null), [colDrag, setColDrag] = useState(null), [colOver, setColOver] = useState(null), [colsMenu, setColsMenu] = useState(false), [adding, setAdding] = useState(null), [text, setText] = useState('');
   const [pending, setPending] = useState({}), [lmenu, setLmenu] = useState(false), [newCol, setNewCol] = useState(null), [jmenu, setJmenu] = useState(null);
   const timers = useRef({}), scroller = useRef(null), lref = useRef(null), cref = useRef(null);
-  const canMove = t => role === 'admin' || t.cols.includes(user.n) || t.by === user.n || (t.prev || []).includes(user.n);
+  const canMove = t => role === 'admin' || role === 'pm' || t.cols.includes(user.n) || t.by === user.n || (t.prev || []).includes(user.n);
   useEffect(() => () => Object.values(timers.current).forEach(clearTimeout), []);
   useEffect(() => { if (scroller.current) scroller.current.scrollLeft = 0; }, []);
   useEffect(() => {
@@ -89,7 +89,7 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
   const term = tq.trim().toLowerCase();
   const match = t => !term || t.title.toLowerCase().includes(term);
   const cards = col => tasks.filter(t => match(t) && t.cols.includes(col));
-  const isAdmin = role === 'admin';
+  const isAdmin = role === 'admin' || role === 'pm';
   // Every column, its look, and the saved order. Retainer first, then Priority, then people A to Z, then added columns.
   const everyone = activeEmps().sort((a, b) => a.name.localeCompare(b.name));
   const defs = {};
@@ -187,7 +187,7 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
   const lcount = tf.labels.length;
   return html`<div>
     <div className="pg-h kbh"><div><h1><${HI} n="board" tone="purple"/>Board</h1><p>${openCount} open</p></div>
-      <button className="btn pri new-m" onClick=${() => openTask('new', { col: role === 'admin' ? 'priority' : user.n })}><${Icon} n="plus" s=${16}/> New</button>
+      <button className="btn pri new-m" onClick=${() => openTask('new', { col: 'priority' })}><${Icon} n="plus" s=${16}/> New</button>
       <div className="kbh-r">
         <button className="ibx" title="Jump to a person" aria-label="Jump to a person" onMouseDown=${ev => ev.stopPropagation()} onClick=${ev => { const r = ev.currentTarget.getBoundingClientRect(); setJmenu(jmenu ? null : { x: r.right - 260, y: r.bottom + 8 }); }}><${Icon} n="jump" s=${18}/></button>
         <button className=${'ibx' + (tf.hideEmpty ? ' on' : '')} title=${tf.hideEmpty ? 'Show empty columns' : 'Hide empty columns'} aria-label="Hide empty columns" aria-pressed=${!!tf.hideEmpty} onClick=${() => setTf({ ...tf, hideEmpty: !tf.hideEmpty })}><${Icon} n=${tf.hideEmpty ? 'eyeoff' : 'eye'} s=${18}/></button>
@@ -205,7 +205,7 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
             <div className="lm-l">${ordered.map(k => html`<label className="lm-r" key=${k} htmlFor=${'col-' + k}><input id=${'col-' + k} type="checkbox" checked=${!isHidden(k)} onChange=${() => isHidden(k) ? showCol(k) : hideCol(k)}/>${defs[k].label}</label>`)}</div>
             <p className="lm-n">Tick a column to show it. Drag a column header to change the order.</p></div>`}
         </div>`}
-        <button className="btn pri new-d" onClick=${() => openTask('new', { col: role === 'admin' ? 'priority' : user.n })}><${Icon} n="plus" s=${16}/> New</button>
+        <button className="btn pri new-d" onClick=${() => openTask('new', { col: 'priority' })}><${Icon} n="plus" s=${16}/> New</button>
       </div></div>
     <div className="kb2" ref=${scroller} onDragOver=${edge}>
       ${visible.map(k => renderCol(k, defs[k].kind, defs[k].label, { color: defs[k].color, left: stickyLeft(k) }))}

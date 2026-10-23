@@ -192,9 +192,9 @@ const HIST0 = IS_DEMO ? [
   { id:111, emp:9, type:'Casual leave', from:'2026-06-08', to:'2026-06-09', days:2, reason:'Family trip.', state:'approved', past:true },
   { id:112, emp:9, type:'Casual leave', from:'2026-02-13', to:'2026-02-13', days:1, reason:'Passport appointment.', state:'approved', past:true }
 ] : [];
-const ROLE_NAMES = ['Employee','Admin'];
+const ROLE_NAMES = ['Employee','Project manager','Admin'];
 const ROLEMAP = {};
-EMP.forEach(e => { ROLEMAP[e.n] = e.n <= 2 || e.n === 26 ? 'Admin' : 'Employee'; });
+EMP.forEach(e => { ROLEMAP[e.n] = e.n <= 2 || e.n === 26 ? 'Admin' : e.n === 5 ? 'Project manager' : 'Employee'; });
 // Working hours: admins start at 9:00, everyone else at 10:00, and the day ends at 18:00. Editable per person.
 const defaultStart = role => role === 'Admin' ? '09:00' : '10:00';
 EMP.forEach(e => { e.shiftStart = defaultStart(ROLEMAP[e.n]); });

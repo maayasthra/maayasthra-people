@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { html, Icon, HI } from '../ui.jsx';
 import { useNow } from '../attendance.js';
-import { mkTask, completeCard, reopenCard, startTimer, pauseTimer, isDoing, spentMs, fmtDur, closeSessions } from '../tasks.js';
+import { mkTask, completeCard, reopenCard, startTimer, pauseTimer, isDoing, spentMs, fmtDur, myTasksOf } from '../tasks.js';
 import { TODISO } from '../data.js';
 
 // My Tasks: To do, Doing, Completed. Moving a card to Doing starts its clock. Pausing or completing it stops the clock.
@@ -9,7 +9,7 @@ export function MyTasks({ tasks, setTasks, user, tq, openTask }) {
   const now = useNow(1000);
   const [title, setTitle] = useState(''), [drag, setDrag] = useState(null), [over, setOver] = useState(null), [allDone, setAllDone] = useState(false);
   const term = tq.trim().toLowerCase();
-  const mine = tasks.filter(t => (t.cols.includes(user.n) || (t.done && (t.prev || []).includes(user.n))) && (!term || t.title.toLowerCase().includes(term)));
+  const mine = myTasksOf(tasks, user.n).filter(t => !term || t.title.toLowerCase().includes(term));
   const doing = mine.filter(t => isDoing(t, user.n));
   const todo = mine.filter(t => !t.done && !isDoing(t, user.n));
   const lastEnd = t => Math.max(0, ...(t.time || []).map(s => s.end || 0), t.created || 0);
@@ -17,7 +17,7 @@ export function MyTasks({ tasks, setTasks, user, tq, openTask }) {
   const shownDone = allDone ? done : done.slice(0, 12);
   const loggedToday = tasks.reduce((sum, t) => sum + (t.time || []).reduce((x, s) => s.emp === user.n ? x + Math.max(0, Math.min(s.end == null ? now : s.end, Infinity) - Math.max(s.start, new Date(TODISO + 'T00:00:00').getTime())) : x, 0), 0);
 
-  // The three moves. Starting also pauses nothing else: someone can run more than one card at once.
+  // The three moves. Starting a card pauses the one you were timing, so your hours are never counted twice.
   const toDoing = id => setTasks(ts => startTimer(ts, id, user.n));
   const toTodo = id => setTasks(ts => { const t = ts.find(x => x.id === id); return t && t.done ? reopenCard(ts, id, user.n) : pauseTimer(ts, id, user.n); });
   const toDone = id => setTasks(ts => completeCard(ts, id));

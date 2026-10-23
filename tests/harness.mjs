@@ -49,7 +49,7 @@ async function run(q) {
   const P = v => { params.push(par(v)); return '$' + params.length; };
   const keys = o => Object.keys(o);
   let sql, whereSql = '';
-  const where = () => q.conds.length ? ' where ' + q.conds.map(x => x.op === 'in' ? x.c + '::text = any(' + P(x.v.map(String)) + '::text[])' : x.c + ' ' + x.op + ' ' + P(x.v)).join(' and ') : '';
+  const where = () => q.conds.length ? ' where ' + q.conds.map(x => x.op === 'in' ? x.c + '::text = any(' + P('{' + x.v.map(v => '"' + String(v).replace(/"/g, '\\"') + '"').join(',') + '}') + '::text[])' : x.c + ' ' + x.op + ' ' + P(x.v)).join(' and ') : '';
   if (q.op === 'select') { sql = 'select ' + q.cols + ' from ' + q.t + where() + (q.order ? ' order by ' + q.order : '') + (q.range ? ' limit ' + (q.range[1] - q.range[0] + 1) + ' offset ' + q.range[0] : q.limit ? ' limit ' + q.limit : ''); }
   else if (q.op === 'insert' || q.op === 'upsert') {
     const rows = Array.isArray(q.body) ? q.body : [q.body], ks = keys(rows[0]);

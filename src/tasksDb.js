@@ -43,7 +43,7 @@ const listChanges = (a, b) => {
 
 const denied = 'You can only change cards you created or are on.';
 // The screens change the board in memory. This works out what changed and saves it.
-export async function persistBoard(prev, next) {
+export async function persistBoard(prev, next, opts = {}) {
   const before = new Map(prev.tasks.map(t => [t.id, t])), after = new Map(next.tasks.map(t => [t.id, t]));
   const added = next.tasks.filter(t => !before.has(t.id));
   if (added.length) {
@@ -59,15 +59,18 @@ export async function persistBoard(prev, next) {
     const patch = changedFields(old, t);
     if (Object.keys(patch).length) {
       const { data, error } = await supabase.from('tasks').update(patch).eq('id', t.id).select('id');
-      if (error) throw new Error('Could not save that change. Try again.');
+      if (error) throw new Error(/assign cards/i.test(error.message) ? 'Only admins and project managers can give a card to someone else.' : 'Could not save that change. Try again.');
       if (!data.length) throw new Error(denied);
     }
     // Timers: the server stamps the start and stop times
     const wasOpen = (old.time || []).filter(s => s.end == null), nowOpen = (t.time || []).filter(s => s.end == null);
     const stopped = wasOpen.filter(s => !nowOpen.some(x => x.id === s.id)), started = nowOpen.filter(s => !(old.time || []).some(x => x.id === s.id));
-    for (const [action, list] of [[t.done && !old.done ? 'stop_all' : 'stop', stopped], ['start', started]]) {
-      if (!list.length) continue;
-      const { error } = await supabase.rpc('task_timer', { p_task: t.id, p_action: action });
+    const calls = [];
+    if (stopped.length && t.done && !old.done) calls.push({ p_action: 'stop_all' });
+    else [...new Set(stopped.map(s => s.emp))].forEach(emp => calls.push(emp === opts.me ? { p_action: 'stop' } : { p_action: 'stop', p_emp: emp }));
+    if (started.length) calls.push({ p_action: 'start' });
+    for (const c of calls) {
+      const { error } = await supabase.rpc('task_timer', { p_task: t.id, ...c });
       if (error) throw new Error(/only change/i.test(error.message) ? denied : 'Could not save the timer. Try again.');
     }
     // Subtasks and comments are changed one item at a time on the server.
@@ -80,14 +83,14 @@ export async function persistBoard(prev, next) {
   }
   const ids = next.tasks.map(t => t.id), same = ids.length === prev.tasks.length && prev.tasks.every((t, i) => t.id === ids[i]);
   const cust = JSON.stringify(next.custom) !== JSON.stringify(prev.custom);
-  if (!same || cust) {
+  if ((!same || cust) && opts.mgr !== false) {
     const patch = {}; if (!same) patch.ord = ids; if (cust) patch.columns = next.custom;
     const { data, error } = await supabase.from('task_board').update(patch).eq('id', 1).select('id');
     if (error || !data.length) throw new Error('Could not save the board layout. Try again.');
   }
   // Column order and hidden columns: admins only
   const nextLayout = next.layout || prev.layout;
-  if (nextLayout && JSON.stringify(nextLayout) !== JSON.stringify(prev.layout)) {
+  if (opts.mgr !== false && nextLayout && JSON.stringify(nextLayout) !== JSON.stringify(prev.layout)) {
     const { data, error } = await supabase.from('board_layout').update({ col_order: nextLayout.order, hidden: nextLayout.hidden }).eq('id', 1).select('id');
     if (error || !data.length) throw new Error('Only admins can change which columns show, or their order.');
   }

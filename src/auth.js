@@ -53,7 +53,7 @@ export async function resolveUser(session) {
     catch (x) { return { error: x.message }; }
   }
   if (user.status === 'Exited') return { error: 'This account is no longer active.' };
-  const admin = !!data && data.role === 'Admin';
-  ROLEMAP[user.n] = admin ? 'Admin' : 'Employee';
-  return { user, role: admin ? 'admin' : 'employee' };
+  const dbRole = data && data.role === 'Admin' ? 'Admin' : data && data.role === 'Project manager' ? 'Project manager' : 'Employee';
+  ROLEMAP[user.n] = dbRole;
+  return { user, role: dbRole === 'Admin' ? 'admin' : dbRole === 'Project manager' ? 'pm' : 'employee' };
 }

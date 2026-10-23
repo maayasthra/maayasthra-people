@@ -3,7 +3,7 @@ import { html, Icon, Av } from '../ui.jsx';
 import { Sheet } from './parts.jsx';
 import { BY, activeEmps } from '../data.js';
 import { useNow } from '../attendance.js';
-import { PRIO, LABELS, PINNED, mkTask, colName, completeCard, reopenCard, startTimer, pauseTimer, isDoing, spentMs, fmtDur } from '../tasks.js';
+import { PRIO, LABELS, PINNED, mkTask, colName, completeCard, reopenCard, startTimer, pauseTimer, isDoing, spentMs, fmtDur, stopFor } from '../tasks.js';
 
 const ago = t => { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'Just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' d ago'; };
 
@@ -15,7 +15,8 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close
   const [newSub, setNewSub] = useState(''), [addingSub, setAddingSub] = useState(false), [comment, setComment] = useState(''), [confirm, setConfirm] = useState(false), [err, setErr] = useState('');
   const t = isNew ? draft : existing;
   if (!t) return null;
-  const canEdit = role === 'admin' || isNew || t.cols.includes(user.n) || t.by === user.n || (t.prev || []).includes(user.n);
+  const mgr = role === 'admin' || role === 'pm';
+  const canEdit = mgr || isNew || t.cols.includes(user.n) || t.by === user.n || (t.prev || []).includes(user.n);
   const upd = p => { if (isNew) { setDraft(d => ({ ...d, ...p })); setErr(''); } else setTasks(ts => ts.map(x => x.id === t.id ? { ...x, ...p } : x)); };
   const people = activeEmps().sort((a, b) => a.name.localeCompare(b.name));
   const done = t.subs.filter(s => s.done).length;
@@ -28,9 +29,9 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close
   const toggleDone = () => setTasks(ts => t.done ? reopenCard(ts, t.id, user.n) : completeCard(ts, t.id));
 
   const footer = isNew ? html`<button className="btn ghost" onClick=${close}>Cancel</button><span style=${{ flex: 1 }}></span><button className="btn pri" onClick=${create}>Create card</button>`
-    : canEdit ? (confirm ? html`<span className="sh-c">Delete this card?</span><button className="btn ghost" onClick=${() => setConfirm(false)}>Keep</button><button className="btn danger" onClick=${() => { setTasks(ts => ts.filter(x => x.id !== t.id)); close(); }}>Delete</button>`
+    : mgr ? (confirm ? html`<span className="sh-c">${spentMs(t, now) > 0 ? 'Delete this card and its ' + fmtDur(spentMs(t, now)) + ' of logged time?' : 'Delete this card?'}</span><button className="btn ghost" onClick=${() => setConfirm(false)}>Keep</button><button className="btn danger" onClick=${() => { setTasks(ts => ts.filter(x => x.id !== t.id)); close(); }}>Delete</button>`
       : html`<button className="btn ghost td2-del" onClick=${() => setConfirm(true)}><${Icon} n="trash" s=${15}/> Delete</button><span style=${{ flex: 1 }}></span><button className="btn pri" onClick=${close}>Done</button>`)
-    : html`<span style=${{ flex: 1 }}></span><button className="btn pri" onClick=${close}>Close</button>`;
+    : html`<span style=${{ flex: 1 }}></span><button className="btn pri" onClick=${close}>${canEdit ? 'Done' : 'Close'}</button>`;
 
   return html`<${Sheet} title=${isNew ? 'New card' : 'Card'} onClose=${close} footer=${footer}>
     ${!canEdit && html`<div className="note-row" style=${{ marginBottom: 14 }}><${Icon} n="user" s=${16}/> <span>View only. You are not on this card.</span></div>`}
@@ -43,8 +44,8 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close
     <div className="td2-props">
       <div className="td2-r"><span className="td2-k"><${Icon} n="people" s=${16}/>Assigned to</span>
         <div className="td2-v td2-chips">
-          ${t.cols.map(c => html`<span className="td2-chip" key=${c}>${typeof c === 'number' && BY[c] ? html`<${Av} e=${BY[c]} s=${22}/>` : html`<i className="td2-dot"></i>`}${colName(c, BY, custom)}${canEdit && t.cols.length > 1 && !t.done && html`<button onClick=${() => upd({ cols: t.cols.filter(x => x !== c) })} aria-label=${'Remove ' + colName(c, BY, custom)}><${Icon} n="x" s=${11}/></button>`}</span>`)}
-          ${canEdit && !t.done && html`<label className="td2-add"><${Icon} n="plus" s=${14}/>Add<select value="" onChange=${ev => { const v = ev.target.value; if (v) upd({ cols: [...t.cols, /^\d+$/.test(v) ? Number(v) : v] }); }} aria-label="Add a person or column"><option value="">Add…</option>${addablePins.map(p => html`<option key=${p[0]} value=${p[0]}>${p[1]}</option>`)}${addable.map(e => html`<option key=${e.n} value=${e.n}>${e.name}</option>`)}</select></label>`}
+          ${t.cols.map(c => html`<span className="td2-chip" key=${c}>${typeof c === 'number' && BY[c] ? html`<${Av} e=${BY[c]} s=${22}/>` : html`<i className="td2-dot"></i>`}${colName(c, BY, custom)}${mgr && t.cols.length > 1 && !t.done && html`<button onClick=${() => upd({ cols: t.cols.filter(x => x !== c), time: typeof c === 'number' ? stopFor(t.time, c) : t.time })} aria-label=${'Remove ' + colName(c, BY, custom)}><${Icon} n="x" s=${11}/></button>`}</span>`)}
+          ${mgr && !t.done && html`<label className="td2-add"><${Icon} n="plus" s=${14}/>Add<select value="" onChange=${ev => { const v = ev.target.value; if (v) upd({ cols: [...t.cols, /^\d+$/.test(v) ? Number(v) : v] }); }} aria-label="Add a person or column"><option value="">Add…</option>${addablePins.map(p => html`<option key=${p[0]} value=${p[0]}>${p[1]}</option>`)}${addable.map(e => html`<option key=${e.n} value=${e.n}>${e.name}</option>`)}</select></label>`}
         </div></div>
       <div className="td2-r"><span className="td2-k"><${Icon} n="flag" s=${16}/>Priority</span>
         <div className="td2-v"><div className="seg s3" role="group" aria-label="Priority">${Object.entries(PRIO).map(([k, v]) => html`<button key=${k} disabled=${!canEdit} className=${t.prio === k ? 'on' : ''} onClick=${() => upd({ prio: k })}>${v[0]}</button>`)}</div></div></div>

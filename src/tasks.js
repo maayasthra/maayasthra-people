@@ -76,6 +76,11 @@ const without = (cols, c) => cols.filter(x => x !== c);
 /* ---------- Time spent on a card ---------- */
 // time = [{ id, emp, start, end }] in milliseconds. end is null while a timer is running.
 export const closeSessions = (time, now = Date.now()) => (time || []).map(s => s.end == null ? { ...s, end: Math.max(now, s.start) } : s);
+// Cards that belong in a person's My Tasks: on their column, or finished while they were on it
+export const myTasksOf = (tasks, n) => tasks.filter(t => (t.cols || []).includes(n) || (t.done && (t.prev || []).includes(n)));
+// When a card leaves someone, their timer on it stops
+export const stopFor = (time, n, now = Date.now()) => (time || []).map(s => s.emp === n && s.end == null ? { ...s, end: Math.max(now, s.start) } : s);
+const stopRemoved = (t, nt, now = Date.now()) => nt.done ? nt : { ...nt, time: (t.cols || []).filter(c => typeof c === 'number' && !nt.cols.includes(c)).reduce((time, c) => stopFor(time, c, now), nt.time || t.time || []) };
 export const isDoing = (t, n) => !t.done && (t.time || []).some(s => s.emp === n && s.end == null);
 export const spentMs = (t, now = Date.now(), n) => (t.time || []).reduce((sum, s) => (n == null || s.emp === n) ? sum + Math.max(0, (s.end == null ? now : s.end) - s.start) : sum, 0);
 // Time inside a window (a week, a month), for the hours report
@@ -84,7 +89,8 @@ export const fmtDur = (ms, secs = false) => { const t = Math.floor(Math.max(0, m
 // Start my timer on a card (reopening it if it was completed). Pause stops mine.
 export function startTimer(ts, id, n, now = Date.now()) {
   return ts.map(t => {
-    if (t.id !== id || isDoing(t, n)) return t;
+    if (t.id !== id) return isDoing(t, n) && ts.some(x => x.id === id && !isDoing(x, n)) ? { ...t, time: stopFor(t.time, n, now) } : t;
+    if (isDoing(t, n)) return t;
     const open = t.done ? { ...t, done: false, cols: t.prev && t.prev.length ? t.prev : [n] } : t;
     return { ...open, time: [...(t.time || []), { id: now + '-' + n, emp: n, start: now, end: null }] };
   });
@@ -96,7 +102,7 @@ export function moveCard(ts, id, from, to, beforeId) {
   let nt;
   if (to === DONE) nt = { ...t, done: true, prev: t.cols.filter(c => c !== DONE), cols: [DONE], time: closeSessions(t.time) };
   else if (from === DONE || t.done) nt = { ...t, done: false, cols: [to] };
-  else nt = { ...t, cols: from === to ? t.cols : t.cols.includes(to) ? without(t.cols, from) : t.cols.map(c => c === from ? to : c) };
+  else nt = stopRemoved(t, { ...t, cols: from === to ? t.cols : t.cols.includes(to) ? without(t.cols, from) : t.cols.map(c => c === from ? to : c) });
   const rest = ts.filter(x => x.id !== id), i = beforeId ? rest.findIndex(x => x.id === beforeId) : -1;
   if (i >= 0) rest.splice(i, 0, nt); else rest.push(nt);
   return rest;
@@ -114,7 +120,7 @@ export function duplicateCard(ts, id, to, user) {
   const i = ts.findIndex(x => x.id === id); const out = [...ts]; out.splice(i + 1, 0, c); return out;
 }
 // Delete a card from one column. The task itself goes when no column is left.
-export const deleteCard = (ts, id, col) => ts.flatMap(t => t.id !== id ? [t] : (t.cols.length > 1 && col != null ? [{ ...t, cols: without(t.cols, col) }] : []));
+export const deleteCard = (ts, id, col) => ts.flatMap(t => t.id !== id ? [t] : (t.cols.length > 1 && col != null ? [stopRemoved(t, { ...t, cols: without(t.cols, col) })] : []));
 
 const get = (k, f) => { try { const s = JSON.parse(localStorage.getItem(k)); if (s) return s; } catch (x) {} return f; };
 const put = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (x) {} };

@@ -6,9 +6,11 @@ import { saveHoliday, deleteHoliday, savePolicy } from '../leave.js';
 import { EMP, HOL, TODISO, WD, POLICY, ROLE_NAMES, ROLEMAP, setRole, fmt, pd, plural, searchPeople } from '../data.js';
 
 const PERMS = [
-  ['See the people directory and org chart', [1, 1]], ['Apply for leave and see own balances', [1, 1]], ['Edit own photo and contact details', [1, 1]],
-  ['Approve and decline leave requests', [0, 1]], ['See everyone\'s leave balances and export reports', [0, 1]],
-  ['Add and edit employee records', [0, 1]], ['Post announcements', [0, 1]], ['Manage leave policy, holidays and roles', [0, 1]]
+  ['See the people directory and org chart', [1, 1, 1]], ['Apply for leave and see own balances', [1, 1, 1]], ['Edit own photo and contact details', [1, 1, 1]],
+  ['See and work on their own tasks, with a timer', [1, 1, 1]],
+  ['See the whole Kanban board, Team and Project hours', [0, 1, 1]], ['Assign tasks to people and remove tasks', [0, 1, 1]],
+  ['Approve and decline leave requests', [0, 0, 1]], ['See everyone\'s leave balances and export reports', [0, 0, 1]],
+  ['Add and edit employee records', [0, 0, 1]], ['Post announcements', [0, 0, 1]], ['Manage leave policy, holidays and roles', [0, 0, 1]]
 ];
 
 function Access({ onChange }) {
