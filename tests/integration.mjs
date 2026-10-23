@@ -140,6 +140,16 @@ as('karthik'); await m.loadStaff(); const kreq = { id: 5, emp: ids.karthik, type
 await m.persistLeaves(await m.loadLeaves(), [kreq]); let kl = await m.loadLeaves();
 t('an employee still cannot approve their own leave', /cannot decide/.test(await tryit(() => m.persistLeaves(kl, kl.map(l => ({ ...l, state: l.emp === ids.karthik && l.from === '2027-08-16' ? 'approved' : l.state }))))));
 
+
+// ================= BOARD LAYOUT =================
+as('abines'); let lay = await m.loadBoard();
+t('board layout starts empty', Array.isArray(lay.layout.order) && lay.layout.order.length === 0 && lay.layout.hidden.length === 0, lay.layout);
+t('an employee cannot change the board layout, and is told', /Only admins/.test(await tryit(() => m.persistBoard(lay, { ...lay, layout: { order: ['priority', 'retainer'], hidden: [ids.vijay] } }))));
+as('vijay'); lay = await m.loadBoard();
+t('an admin saves column order and hidden columns', (await tryit(() => m.persistBoard(lay, { ...lay, layout: { order: ['retainer', 'priority', ids.karthik], hidden: [ids.harish, ids.vijay] } }))) === '');
+as('abines'); lay = await m.loadBoard();
+t('everyone then sees the same layout', JSON.stringify(lay.layout.order) === JSON.stringify(['retainer', 'priority', ids.karthik]) && lay.layout.hidden.length === 2, lay.layout);
+
 console.log('--- done ---');
 
 if (process.exitCode) console.log('SOME CHECKS FAILED');

@@ -25,7 +25,9 @@ export async function loadBoard() {
   if (b.error) throw new Error('Could not load the board.');
   const ord = (b.data && b.data.ord) || [], at = new Map(ord.map((id, i) => [id, i]));
   const tasks = rows.map(toTask).sort((x, y) => (at.has(x.id) ? at.get(x.id) : 1e9) - (at.has(y.id) ? at.get(y.id) : 1e9) || x.created - y.created);
-  return { tasks, custom: (b.data && b.data.columns) || [] };
+  const lay = await supabase.from('board_layout').select('*').eq('id', 1).maybeSingle();
+  if (lay.error) throw new Error('Could not load the board.');
+  return { tasks, custom: (b.data && b.data.columns) || [], layout: { order: (lay.data && lay.data.col_order) || [], hidden: (lay.data && lay.data.hidden) || [] } };
 }
 
 
@@ -73,6 +75,12 @@ export async function persistBoard(prev, next) {
     const { data, error } = await supabase.from('task_board').update(patch).eq('id', 1).select('id');
     if (error || !data.length) throw new Error('Could not save the board layout. Try again.');
   }
+  // Column order and hidden columns: admins only
+  const nextLayout = next.layout || prev.layout;
+  if (nextLayout && JSON.stringify(nextLayout) !== JSON.stringify(prev.layout)) {
+    const { data, error } = await supabase.from('board_layout').update({ col_order: nextLayout.order, hidden: nextLayout.hidden }).eq('id', 1).select('id');
+    if (error || !data.length) throw new Error('Only admins can change which columns show, or their order.');
+  }
   const gone = prev.tasks.filter(t => !after.has(t.id)).map(t => t.id);
   if (gone.length) {
     const { data, error } = await supabase.from('tasks').delete().in('id', gone).select('id');
@@ -106,4 +114,4 @@ export function subscribeTables(name, tables, onChange) {
   ch.subscribe();
   return () => { supabase.removeChannel(ch); };
 }
-export const subscribeBoard = onChange => subscribeTables('mp-board', ['tasks', 'task_board', 'announcements'], onChange);
+export const subscribeBoard = onChange => subscribeTables('mp-board', ['tasks', 'task_board', 'announcements', 'board_layout'], onChange);

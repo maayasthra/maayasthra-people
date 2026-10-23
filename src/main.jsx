@@ -25,7 +25,7 @@ import { TaskBoard } from './task/TaskBoard.jsx';
 import { MyTasks } from './task/MyTasks.jsx';
 import { TeamView } from './task/TeamView.jsx';
 import { TaskDetail } from './task/TaskDetail.jsx';
-import { loadTasks, saveTasks, loadCollapsed, saveCollapsed, loadCustom, saveCustom, loadView, saveView } from './tasks.js';
+import { loadTasks, saveTasks, loadCollapsed, saveCollapsed, loadCustom, saveCustom, loadLayout, saveLayout, loadView, saveView } from './tasks.js';
 import { IS_DEMO } from './env.js';
 import './styles.css';
 
@@ -112,9 +112,9 @@ function App() {
   const [tasks, setTasksRaw] = useState(() => IS_DEMO ? loadTasks() : []), [collapsed, setCollapsed] = useState(loadCollapsed);
   const [focus, setFocus] = useState(null);
   const [taskSel, setTaskSel] = useState(null), [tq, setTq] = useState('');
-  const [tf, setTf] = useState(loadView), [custom, setCustomRaw] = useState(() => IS_DEMO ? loadCustom() : []);
+  const [tf, setTf] = useState(loadView), [custom, setCustomRaw] = useState(() => IS_DEMO ? loadCustom() : []), [layout, setLayoutRaw] = useState(() => IS_DEMO ? loadLayout() : { order: [], hidden: [] });
   const board = useRef(null);
-  if (!board.current) board.current = { tasks, custom, saved: { tasks, custom }, timer: 0, flying: false, dirty: false };
+  if (!board.current) board.current = { tasks, custom, layout, saved: { tasks, custom, layout }, timer: 0, flying: false, dirty: false };
   const [navHidden, setNavHidden] = useState(() => { try { return localStorage.getItem('mp-nav') === '1'; } catch (x) { return false; } });
   const bump = () => setVer(v => v + 1);
   useEffect(() => { if (IS_DEMO) saveAtt(att); }, [att]);
@@ -168,7 +168,7 @@ function App() {
   const flush = async () => {
     const b = board.current; if (b.flying) return;
     b.flying = true; b.dirty = false;
-    const snap = { tasks: b.tasks, custom: b.custom };
+    const snap = { tasks: b.tasks, custom: b.custom, layout: b.layout };
     try { await persistBoard(b.saved, snap); b.saved = snap; }
     catch (e) { setSyncErr(e.message || 'Could not save. Try again.'); b.dirty = false; await refreshBoard(true); }
     finally { b.flying = false; if (b.dirty) queueSave(); }
@@ -176,20 +176,22 @@ function App() {
   const queueSave = () => { const b = board.current; b.dirty = true; clearTimeout(b.timer); b.timer = setTimeout(flush, 500); };
   const setTasks = fn => { const b = board.current; b.tasks = typeof fn === 'function' ? fn(b.tasks) : fn; setTasksRaw(b.tasks); if (!IS_DEMO) queueSave(); };
   const setCustom = fn => { const b = board.current; b.custom = typeof fn === 'function' ? fn(b.custom) : fn; setCustomRaw(b.custom); if (!IS_DEMO) queueSave(); };
+  const setLayout = fn => { const b = board.current; b.layout = typeof fn === 'function' ? fn(b.layout) : fn; setLayoutRaw(b.layout); if (!IS_DEMO) queueSave(); };
   const refreshBoard = async force => {
     const b = board.current; if (!force && (b.dirty || b.flying)) return;
     try {
       const f = await loadBoard(), a = await loadAnnouncements();
       if (!force && (b.dirty || b.flying)) return;
       if (JSON.stringify(f.tasks) !== JSON.stringify(b.tasks) || JSON.stringify(f.custom) !== JSON.stringify(b.custom)) { b.tasks = f.tasks; b.custom = f.custom; setTasksRaw(f.tasks); setCustomRaw(f.custom); }
-      b.saved = { tasks: f.tasks, custom: f.custom };
+      if (JSON.stringify(f.layout) !== JSON.stringify(b.layout)) { b.layout = f.layout; setLayoutRaw(f.layout); }
+      b.saved = { tasks: f.tasks, custom: f.custom, layout: f.layout };
       if (JSON.stringify(a) !== JSON.stringify(annRef.current)) applyAnn(a);
     } catch (e) { if (force) setSyncErr(e.message); }
   };
   useEffect(() => {
     if (IS_DEMO) return;
     const b = board.current;
-    if (!auth) { clearTimeout(b.timer); Object.assign(b, { tasks: [], custom: [], saved: { tasks: [], custom: [] }, dirty: false }); setTasksRaw([]); setCustomRaw([]); applyAnn([]); return; }
+    if (!auth) { clearTimeout(b.timer); Object.assign(b, { tasks: [], custom: [], layout: { order: [], hidden: [] }, saved: { tasks: [], custom: [], layout: { order: [], hidden: [] } }, dirty: false }); setTasksRaw([]); setCustomRaw([]); setLayoutRaw({ order: [], hidden: [] }); applyAnn([]); return; }
     refreshBoard(true);
     let t = 0; const poke = () => { clearTimeout(t); t = setTimeout(() => refreshBoard(false), 300); };
     const unsub = subscribeBoard(poke), poll = setInterval(() => refreshBoard(false), 45000), vis = () => { if (!document.hidden) refreshBoard(false); };
@@ -199,6 +201,7 @@ function App() {
   useEffect(() => { if (IS_DEMO) saveTasks(tasks); }, [tasks]);
   useEffect(() => { saveCollapsed(collapsed); }, [collapsed]);
   useEffect(() => { if (IS_DEMO) saveCustom(custom); }, [custom]);
+  useEffect(() => { if (IS_DEMO) saveLayout(layout); }, [layout]);
   useEffect(() => { saveView(tf); }, [tf]);
   useEffect(() => { try { localStorage.setItem('mp-nav', navHidden ? '1' : '0'); } catch (x) {} }, [navHidden]);
 
@@ -227,7 +230,7 @@ function App() {
   const home = html`<${Home} role=${role} user=${user} leaves=${leaves} setLeaves=${setLeaves} ann=${ann} setAnn=${setAnn} att=${att} setAtt=${setAtt} tasks=${tasks} goTask=${goTask} go=${go} openForm=${openForm} open=${open}/>`;
   const taskScreen = nav.view === 'mytasks' ? html`<${MyTasks} tasks=${tasks} setTasks=${setTasks} user=${user} tq=${tq} openTask=${openTask}/>`
     : nav.view === 'team' && role === 'admin' ? html`<${TeamView} tasks=${tasks} onPick=${n => { setTf(f => ({ ...f, dept: 'All' })); setFocus(n); go('board'); }}/>`
-    : html`<${TaskBoard} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} tf=${tf} setTf=${setTf} tq=${tq} openTask=${openTask} focus=${focus} collapsed=${collapsed} setCollapsed=${setCollapsed} custom=${custom} setCustom=${setCustom}/>`;
+    : html`<${TaskBoard} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} tf=${tf} setTf=${setTf} tq=${tq} openTask=${openTask} focus=${focus} collapsed=${collapsed} setCollapsed=${setCollapsed} custom=${custom} setCustom=${setCustom} layout=${layout} setLayout=${setLayout}/>`;
   const screen = app === 'task' ? taskScreen : nav.view === 'home' ? home
     : nav.view === 'people' ? html`<${People} pf=${pf} setPf=${setPf} open=${open} openForm=${openForm} role=${role} ver=${ver}/>`
     : nav.view === 'org' ? html`<${OrgChart} open=${open} user=${user} key=${ver}/>`

@@ -1804,3 +1804,16 @@ button.td2-ck:hover:not(:disabled){border-color:var(--ok);color:var(--ok)}
 .ef2-card .two>.fld,.ef2-card .fld{min-width:0}
 .ef2-card .inp{min-width:0;width:100%;max-width:100%}
 @media (max-width:560px){.ef2-card .two{grid-template-columns:minmax(0,1fr)}}
+
+/* Board columns: order, tint and sticky */
+.kc2.stk{position:sticky;z-index:6;box-shadow:12px 0 22px rgba(0,0,0,.45)}
+.kc2.pin:not(.stk){position:relative}
+.kc2.pin.stk{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 30%,transparent),12px 0 22px rgba(0,0,0,.45)}
+.kc2.norm{background:var(--card)}
+.kc2-hd{cursor:grab}
+.kc2-hd:active{cursor:grabbing}
+.kc2.col-drag{opacity:.4}
+.kc2.ovr-l{box-shadow:inset 4px 0 0 var(--accent)}
+.kc2.ovr-r{box-shadow:inset -4px 0 0 var(--accent)}
+.lm-l{max-height:260px;overflow-y:auto;scrollbar-width:thin}
+@media (max-width:860px){.kc2.stk,.kc2.pin.stk{position:relative}}

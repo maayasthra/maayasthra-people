@@ -7,7 +7,7 @@ import { IS_DEMO } from './env.js';
    and Completed Tasks at the end. A task lists the columns it appears in.
    Until the database exists, tasks are kept in each browser.
    --------------------------------------------------------------------- */
-export const PINNED = [['priority', 'Priority Tasks', '#FF9F0A'], ['retainer', 'Retainer Tasks', '#0A84FF']];
+export const PINNED = [['retainer', 'Retainer Tasks', '#0A84FF'], ['priority', 'Priority Tasks', '#8E8E93']];
 export const DONE = 'done';
 export const PRIO = { high: ['High', '#FF453A'], med: ['Medium', '#FF9F0A'], low: ['Low', '#0A84FF'] };
 export const LABELS = ['Design', 'Motion', 'Development', 'Client', 'Copy', 'Urgent'];
@@ -106,5 +106,7 @@ export const loadCollapsed = () => get('mp-collapsed', {});
 export const saveCollapsed = c => put('mp-collapsed', c);
 export const loadCustom = () => get('mp-cols', []);
 export const saveCustom = c => put('mp-cols', c);
+export const loadLayout = () => ({ order: [], hidden: [], ...get('mp-layout', {}) });
+export const saveLayout = l => put('mp-layout', l);
 export const loadView = () => ({ dept: 'All', hideEmpty: false, labels: [], lfilter: false, ...get('mp-kbview', {}) });
 export const saveView = v => put('mp-kbview', v);
