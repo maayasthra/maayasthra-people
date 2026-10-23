@@ -24,13 +24,14 @@ import { AttendancePage } from './screens/AttendancePage.jsx';
 import { TaskBoard } from './task/TaskBoard.jsx';
 import { MyTasks } from './task/MyTasks.jsx';
 import { TeamView } from './task/TeamView.jsx';
+import { ProjectHours } from './task/ProjectHours.jsx';
 import { TaskDetail } from './task/TaskDetail.jsx';
 import { loadTasks, saveTasks, loadCollapsed, saveCollapsed, loadCustom, saveCustom, loadLayout, saveLayout, loadView, saveView } from './tasks.js';
 import { IS_DEMO } from './env.js';
 import './styles.css';
 
-const ALL = { board: 'Board', mytasks: 'My Tasks', team: 'Team', home: 'Home', people: 'People', org: 'Org chart', calendar: 'Calendar', attendance: 'Attendance', hours: 'My Hours', leaves: 'My Leaves', requests: 'Requests', settings: 'Settings' };
-const SHORT = { mytasks: 'Mine', org: 'Org', leaves: 'Leaves', attendance: 'Hours', hours: 'Hours' };
+const ALL = { board: 'Board', mytasks: 'My Tasks', timer: 'Project hours', team: 'Team', home: 'Home', people: 'People', org: 'Org chart', calendar: 'Calendar', attendance: 'Attendance', hours: 'My Hours', leaves: 'My Leaves', requests: 'Requests', settings: 'Settings' };
+const SHORT = { mytasks: 'Mine', timer: 'Time', org: 'Org', leaves: 'Leaves', attendance: 'Hours', hours: 'Hours' };
 
 const SEED_ANN = IS_DEMO ? [
   { id: 1, kind: 'holiday', title: 'Studio closed for Dussehra', body: 'The studio is closed on 20 October. Normal hours resume the next working day.', date: TODISO, by: 'Meera Iyer' },
@@ -211,7 +212,7 @@ function App() {
   // The live record, so a change to your own details (shift times, name) shows straight away
   const user = (!IS_DEMO && BY[auth.user.n]) || auth.user, role = auth.role;
   const peopleKeys = role === 'admin' ? ['home', 'people', 'org', 'calendar', 'attendance', 'leaves', 'requests', 'settings'] : ['home', 'people', 'org', 'calendar', 'hours', 'leaves'];
-  const keys = app === 'task' ? (role === 'admin' ? ['board', 'mytasks', 'team'] : ['board', 'mytasks']) : peopleKeys;
+  const keys = app === 'task' ? (role === 'admin' ? ['board', 'mytasks', 'timer', 'team'] : ['board', 'mytasks', 'timer']) : peopleKeys;
   const setApp = a => { setAppState(a); setNav({ view: a === 'task' ? 'board' : 'home' }); setTaskSel(null); setSOpen(false); window.scrollTo({ top: 0 }); };
   const openTask = (id, ctx) => setTaskSel({ id, ctx });
   const goTask = id => { setAppState('task'); setNav({ view: 'mytasks' }); setTaskSel(id ? { id } : null); window.scrollTo({ top: 0 }); };
@@ -228,7 +229,8 @@ function App() {
   const pending = role === 'admin' ? leaves.filter(l => !l.past && l.state === 'pending').length : 0;
 
   const home = html`<${Home} role=${role} user=${user} leaves=${leaves} setLeaves=${setLeaves} ann=${ann} setAnn=${setAnn} att=${att} setAtt=${setAtt} tasks=${tasks} goTask=${goTask} go=${go} openForm=${openForm} open=${open}/>`;
-  const taskScreen = nav.view === 'mytasks' ? html`<${MyTasks} tasks=${tasks} setTasks=${setTasks} user=${user} tq=${tq} openTask=${openTask}/>`
+  const taskScreen = nav.view === 'timer' ? html`<${ProjectHours} tasks=${tasks} user=${user} role=${role}/>`
+    : nav.view === 'mytasks' ? html`<${MyTasks} tasks=${tasks} setTasks=${setTasks} user=${user} tq=${tq} openTask=${openTask}/>`
     : nav.view === 'team' && role === 'admin' ? html`<${TeamView} tasks=${tasks} onPick=${n => { setTf(f => ({ ...f, dept: 'All' })); setFocus(n); go('board'); }}/>`
     : html`<${TaskBoard} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} tf=${tf} setTf=${setTf} tq=${tq} openTask=${openTask} focus=${focus} collapsed=${collapsed} setCollapsed=${setCollapsed} custom=${custom} setCustom=${setCustom} layout=${layout} setLayout=${setLayout}/>`;
   const screen = app === 'task' ? taskScreen : nav.view === 'home' ? home

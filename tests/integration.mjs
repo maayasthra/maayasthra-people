@@ -150,6 +150,45 @@ t('an admin saves column order and hidden columns', (await tryit(() => m.persist
 as('abines'); lay = await m.loadBoard();
 t('everyone then sees the same layout', JSON.stringify(lay.layout.order) === JSON.stringify(['retainer', 'priority', ids.karthik]) && lay.layout.hidden.length === 2, lay.layout);
 
+
+// ================= TASK TIMERS =================
+const wait = ms => new Promise(r => setTimeout(r, ms));
+as('abines'); await m.loadStaff(); let tb = await m.loadBoard();
+await m.persistBoard(tb, { ...tb, tasks: [...tb.tasks, T('tm1', ids.abines, { cols: [ids.abines, ids.karthik] })] });
+// start (as the screens do: a local change that is then saved)
+tb = await m.loadBoard();
+await m.persistBoard(tb, { ...tb, tasks: m.tasks.startTimer(tb.tasks, 'tm1', ids.abines) });
+tb = await m.loadBoard(); let c = tb.tasks.find(x => x.id === 'tm1');
+t('starting a timer saves a running session', c.time.length === 1 && c.time[0].emp === ids.abines && c.time[0].end === null, c.time);
+t('the start time is stamped by the server (recent)', Math.abs(Date.now() - c.time[0].start) < 60000);
+t('the card counts as Doing for that person only', m.tasks.isDoing(c, ids.abines) && !m.tasks.isDoing(c, ids.karthik));
+await wait(60);
+await m.persistBoard(tb, { ...tb, tasks: m.tasks.pauseTimer(tb.tasks, 'tm1', ids.abines) });
+tb = await m.loadBoard(); c = tb.tasks.find(x => x.id === 'tm1');
+t('pausing stops the clock and keeps the time', c.time[0].end !== null && c.time[0].end >= c.time[0].start && m.tasks.spentMs(c) > 0 && !m.tasks.isDoing(c, ids.abines), { ms: m.tasks.spentMs(c) });
+// two people running timers on the same card, and completing it stops both
+await m.persistBoard(tb, { ...tb, tasks: m.tasks.startTimer(tb.tasks, 'tm1', ids.abines) });
+as('karthik'); await m.loadStaff(); tb = await m.loadBoard();
+await m.persistBoard(tb, { ...tb, tasks: m.tasks.startTimer(tb.tasks, 'tm1', ids.karthik) });
+tb = await m.loadBoard(); c = tb.tasks.find(x => x.id === 'tm1');
+t('two people can time the same card at once', c.time.filter(x => x.end === null).length === 2, c.time.map(x => x.emp + ':' + (x.end === null ? 'running' : 'done')));
+await wait(40);
+await m.persistBoard(tb, { ...tb, tasks: m.tasks.completeCard(tb.tasks, 'tm1') });
+tb = await m.loadBoard(); c = tb.tasks.find(x => x.id === 'tm1');
+t('completing a card stops everyone’s timer and records the total', c.done && c.time.every(x => x.end !== null) && m.tasks.spentMs(c) > 0, { ms: m.tasks.spentMs(c) });
+t('hours per person add up from the sessions', m.tasks.spentMs(c, Date.now(), ids.abines) > 0 && m.tasks.spentMs(c, Date.now(), ids.karthik) > 0 && m.tasks.spentMs(c) >= m.tasks.spentMs(c, Date.now(), ids.abines));
+// reopening by starting again
+await m.persistBoard(tb, { ...tb, tasks: m.tasks.startTimer(tb.tasks, 'tm1', ids.karthik) });
+tb = await m.loadBoard(); c = tb.tasks.find(x => x.id === 'tm1');
+t('starting a completed card reopens it', !c.done && m.tasks.isDoing(c, ids.karthik), { done: c.done });
+// someone who is not on the card cannot time it
+as('arunkumar'); await m.loadStaff(); tb = await m.loadBoard();
+t('someone not on the card cannot start its timer', /only change/.test(await tryit(() => m.persistBoard(tb, { ...tb, tasks: m.tasks.startTimer(tb.tasks, 'tm1', ids.arunkumar) }))));
+// a person cannot start a second timer on the same card
+as('karthik'); await m.loadStaff(); tb = await m.loadBoard(); const before = tb.tasks.find(x => x.id === 'tm1').time.length;
+await m.persistBoard(tb, { ...tb, tasks: tb.tasks.map(x => x.id === 'tm1' ? { ...x, time: [...x.time, { id: 'dup', emp: ids.karthik, start: Date.now(), end: null }] } : x) });
+tb = await m.loadBoard(); t('a second running timer by the same person is ignored', tb.tasks.find(x => x.id === 'tm1').time.length === before);
+
 console.log('--- done ---');
 
 if (process.exitCode) console.log('SOME CHECKS FAILED');

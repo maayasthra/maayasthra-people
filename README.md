@@ -43,6 +43,8 @@ Run these in the Supabase SQL Editor, in order. Each file can be run again safel
 | `0008_leave_types.sql` | Leave types: Sick, Casual, Emergency |
 | `0009_integrity.sql` | Rules the database itself enforces (leave overlap, balance, notice, last admin, safe comments) |
 | `0010_profile_and_leave.sql` | Employee IDs read M-<number>, admins can decide their own leave, staff changes arrive live |
+| `0011_board_layout.sql` | Board column order and hidden columns, shared, admin-only |
+| `0012_task_timer.sql` | Task timers (server-stamped) for My Tasks and Project hours |
 
 ## Tests
 

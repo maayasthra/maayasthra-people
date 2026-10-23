@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { html, Icon, Av } from '../ui.jsx';
 import { Sheet } from './parts.jsx';
 import { BY, activeEmps } from '../data.js';
-import { PRIO, LABELS, PINNED, mkTask, colName, completeCard, reopenCard } from '../tasks.js';
+import { useNow } from '../attendance.js';
+import { PRIO, LABELS, PINNED, mkTask, colName, completeCard, reopenCard, startTimer, pauseTimer, isDoing, spentMs, fmtDur } from '../tasks.js';
 
 const ago = t => { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'Just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' d ago'; };
 
 export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close }) {
+  const now = useNow(1000);
   const isNew = id === 'new';
   const existing = isNew ? null : tasks.find(t => t.id === id);
   const [draft, setDraft] = useState(() => mkTask({ cols: [ctx && ctx.col != null ? ctx.col : user.n] }, user));
@@ -50,6 +52,10 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close
         <div className="td2-v td2-chips">${LABELS.map(l => html`<button key=${l} disabled=${!canEdit} className=${'chip' + (t.labels.includes(l) ? ' on' : '')} onClick=${() => upd({ labels: t.labels.includes(l) ? t.labels.filter(x => x !== l) : [...t.labels, l] })}>${l}</button>`)}</div></div>
     </div>
 
+    ${!isNew && html`<div className="td2-props td2-tp"><div className="td2-r"><span className="td2-k"><${Icon} n="timer" s=${16}/>Time</span>
+      <div className="td2-v td2-time"><span className=${'td2-tt' + (isDoing(t, user.n) ? ' live' : '')}>${isDoing(t, user.n) && html`<i></i>`}${fmtDur(spentMs(t, now), isDoing(t, user.n))}</span>
+        <small>${t.done ? 'Total time to finish' : (t.time || []).length ? 'Total so far, everyone' : 'Not started'}</small>
+        ${canEdit && !t.done && html`<button className=${'btn sm ' + (isDoing(t, user.n) ? 'ghost' : 'pri')} onClick=${() => setTasks(ts => isDoing(t, user.n) ? pauseTimer(ts, t.id, user.n) : startTimer(ts, t.id, user.n))}>${isDoing(t, user.n) ? 'Pause' : 'Start timer'}</button>`}</div></div></div>`}
     <section className="td2-sec"><label className="td2-h" htmlFor="td-desc"><b>Description</b></label>
       <textarea id="td-desc" className="td2-desc" value=${t.desc} disabled=${!canEdit} placeholder="Add notes, links or details" onChange=${ev => upd({ desc: ev.target.value })}></textarea></section>
 

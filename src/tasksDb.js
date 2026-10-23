@@ -7,7 +7,7 @@ const PAGE = 1000;
 const toTask = r => ({
   id: r.id, title: r.title, client: r.client || '', cols: r.cols || [], prev: r.prev && r.prev.length ? r.prev : undefined, prio: r.prio,
   due: r.due || '', labels: r.labels || [], by: r.by_emp || 0, done: r.done, desc: r.descr || '', subs: r.subs || [], comments: r.comments || [],
-  created: Date.parse(r.created_at) || Date.now()
+  time: r.time_log || [], created: Date.parse(r.created_at) || Date.now()
 });
 const toRow = t => ({
   title: t.title, client: t.client || '', cols: t.cols, prev: t.prev && t.prev.length ? t.prev : null, prio: t.prio, due: t.due || null,
@@ -49,6 +49,8 @@ export async function persistBoard(prev, next) {
   if (added.length) {
     const { error } = await supabase.from('tasks').insert(added.map(t => ({ id: t.id, by_emp: t.by, created_at: new Date(t.created).toISOString(), ...toRow(t) })));
     if (error) throw new Error('Could not save the new card. Try again.');
+    // A card started right after it was created
+    for (const t of added) if ((t.time || []).some(x => x.end == null)) { const r = await supabase.rpc('task_timer', { p_task: t.id, p_action: 'start' }); if (r.error) throw new Error('Could not save the timer. Try again.'); }
   }
   for (const t of next.tasks) {
     const old = before.get(t.id);
@@ -59,6 +61,14 @@ export async function persistBoard(prev, next) {
       const { data, error } = await supabase.from('tasks').update(patch).eq('id', t.id).select('id');
       if (error) throw new Error('Could not save that change. Try again.');
       if (!data.length) throw new Error(denied);
+    }
+    // Timers: the server stamps the start and stop times
+    const wasOpen = (old.time || []).filter(s => s.end == null), nowOpen = (t.time || []).filter(s => s.end == null);
+    const stopped = wasOpen.filter(s => !nowOpen.some(x => x.id === s.id)), started = nowOpen.filter(s => !(old.time || []).some(x => x.id === s.id));
+    for (const [action, list] of [[t.done && !old.done ? 'stop_all' : 'stop', stopped], ['start', started]]) {
+      if (!list.length) continue;
+      const { error } = await supabase.rpc('task_timer', { p_task: t.id, p_action: action });
+      if (error) throw new Error(/only change/i.test(error.message) ? denied : 'Could not save the timer. Try again.');
     }
     // Subtasks and comments are changed one item at a time on the server.
     for (const kind of ['subs', 'comments']) {
