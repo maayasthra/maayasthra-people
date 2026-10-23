@@ -54,6 +54,10 @@ export function AttendancePage({ att, leaves, open }) {
   const sum = k => rows.reduce((t, r) => t + r[k], 0);
   const present = sum('present'), absent = sum('absent'), late = sum('late'), tot = sum('tot');
   const rate = present + absent ? Math.round(present / (present + absent) * 100) : 0;
+  // Today at a glance, whatever period is on screen
+  const todays = people.map(e => dayInfo(att, e, TODISO, now, away)).filter(Boolean);
+  const expected = todays.filter(i => !['off', 'leave', 'na', 'future'].includes(i.state)).length;
+  const inToday = todays.filter(i => i.sessions.length).length, absentToday = todays.filter(i => i.state === 'absent').length;
 
   const exportCSV = () => {
     const head = ['Employee', 'Employee ID', 'Department', 'Date', 'Status', 'First check-in', 'Last check-out', 'Worked (hours)', 'Minutes late', 'Sessions', 'Edited by admin'];
@@ -70,14 +74,14 @@ export function AttendancePage({ att, leaves, open }) {
   const title = tab === 'week' ? fmtDM(weekDays[0]) + ' – ' + fmtDM(weekDays[4]) + ' ' + wk.slice(0, 4) : MONL[mo.m] + ' ' + mo.y;
 
   return html`<div>
-    <div className="pg-h"><div><h1><${HI} n="attendance" tone="green"/>Attendance</h1><p>Sample data</p></div>
+    <div className="pg-h"><div><h1><${HI} n="attendance" tone="green"/>Attendance</h1><p>${people.length} people</p></div>
       <div style=${{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         <div className="seg" style=${{ width: 220, margin: 0 }} role="group" aria-label="Period">${[['overall', 'Month', 'calendar'], ['week', 'Week', 'attendance']].map(([k, l, ic]) => html`<button key=${k} className=${tab === k ? 'on' : ''} onClick=${() => setTab(k)}><${Icon} n=${ic} s=${15}/>${l}</button>`)}</div>
         <button className="btn sec2 sq" title="Download CSV" aria-label="Download CSV" onClick=${exportCSV}><${Icon} n="download" s=${16}/></button></div></div>
     <div className="tiles">
       <${Tile} icon="check" tone="green" label="Attendance rate" value=${rate + '%'} sub=${present + ' of ' + (present + absent)}/>
       <${Tile} icon="people" tone="blue" label="Days present" value=${present} sub=${'avg ' + (present ? hh(tot / present) : '–')}/>
-      <${Tile} icon="x" tone="red" label="Days absent" value=${absent} sub="no check-in"/>
+      <${Tile} icon="x" tone="red" label="Absent today" value=${absentToday} sub=${expected ? inToday + ' of ' + expected + ' checked in' : 'closed today'}/>
       <${Tile} icon="bell" tone="orange" label="Late arrivals" value=${late} sub=${GRACE + ' min grace'}/>
     </div>
     <div className="at-bar">

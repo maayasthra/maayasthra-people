@@ -78,9 +78,10 @@ export async function persistAnnouncements(prev, next, me) {
 }
 
 // Other people's changes arrive as they happen.
-export function subscribeBoard(onChange) {
-  const ch = supabase.channel('mp-board');
-  ['tasks', 'task_board', 'announcements'].forEach(table => ch.on('postgres_changes', { event: '*', schema: 'public', table }, onChange));
+export function subscribeTables(name, tables, onChange) {
+  const ch = supabase.channel(name);
+  tables.forEach(table => ch.on('postgres_changes', { event: '*', schema: 'public', table }, onChange));
   ch.subscribe();
   return () => { supabase.removeChannel(ch); };
 }
+export const subscribeBoard = onChange => subscribeTables('mp-board', ['tasks', 'task_board', 'announcements'], onChange);

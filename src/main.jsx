@@ -4,7 +4,7 @@ import { html, Icon, Av } from './ui.jsx';
 import { LEAVES0, HIST0, TODISO, TOD, DAY, isoOf } from './data.js';
 import { loadLeaves, persistLeaves } from './leave.js';
 import { loadAttendance, mergeAtt, persistAtt } from './attendanceDb.js';
-import { loadBoard, persistBoard, loadAnnouncements, persistAnnouncements, subscribeBoard } from './tasksDb.js';
+import { loadBoard, persistBoard, loadAnnouncements, persistAnnouncements, subscribeBoard, subscribeTables } from './tasksDb.js';
 import { Login, SetPassword } from './screens/Login.jsx';
 import { authEnabled, currentSession, resolveUser, onAuthChange, signOutAuth, isLinkFlow } from './auth.js';
 import { Home } from './screens/Home.jsx';
@@ -68,16 +68,17 @@ function App() {
   const [nav, setNav] = useState({ view: 'home' });
   const [auth, setAuth] = useState(null);
   const [leaves, setLeavesRaw] = useState(() => [...LEAVES0.map(l => ({ ...l, state: 'pending' })), ...HIST0]);
-  const leavesRef = useRef(leaves), [syncErr, setSyncErr] = useState('');
+  const leavesRef = useRef(leaves), [syncErr, setSyncErr] = useState(''), saving = useRef({ leave: 0, att: 0 });
   const applyLeaves = l => { leavesRef.current = l; setLeavesRaw(l); };
   // Screens change the list as before. In the live app each change is saved to the database, then the list is re-read.
   const setLeaves = fn => {
     const prev = leavesRef.current, next = typeof fn === 'function' ? fn(prev) : fn;
     applyLeaves(next);
     if (IS_DEMO) return;
+    saving.current.leave++;
     persistLeaves(prev, next).then(loadLeaves)
       .catch(e => { setSyncErr(e.message || 'Could not save. Try again.'); return loadLeaves(); })
-      .then(l => { if (l) applyLeaves(l); }).catch(() => {});
+      .then(l => { if (l) applyLeaves(l); }).catch(() => {}).finally(() => { saving.current.leave--; });
   };
   const [ann, setAnnRaw] = useState(SEED_ANN);
   const annRef = useRef(ann);
@@ -99,8 +100,9 @@ function App() {
     const prev = attRef.current, next = typeof fn === 'function' ? fn(prev) : fn;
     applyAtt(next);
     if (IS_DEMO) return;
+    saving.current.att++;
     persistAtt(prev, next).then(() => loadAttendance(3)).then(f => applyAtt(mergeAtt(attRef.current, f)))
-      .catch(e => { setSyncErr(e.message || 'Could not save. Try again.'); return loadAttendance(120).then(applyAtt); }).catch(() => {});
+      .catch(e => { setSyncErr(e.message || 'Could not save. Try again.'); return loadAttendance(120).then(applyAtt); }).catch(() => {}).finally(() => { saving.current.att--; });
   };
   const [sOpen, setSOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -121,9 +123,13 @@ function App() {
     let ok = true;
     const fresh = days => loadAttendance(days).then(f => { if (ok) applyAtt(days > 10 ? f : mergeAtt(attRef.current, f)); }).catch(e => { if (ok && days > 10) setSyncErr(e.message); });
     fresh(120);
-    const t = setInterval(() => fresh(3), 60000), vis = () => { if (!document.hidden) fresh(3); };
+    const lv = () => { if (!saving.current.leave) loadLeaves().then(l => { if (ok && !saving.current.leave && JSON.stringify(l) !== JSON.stringify(leavesRef.current)) applyLeaves(l); }).catch(() => {}); };
+    const at = () => { if (!saving.current.att) fresh(3); };
+    let tm = 0; const poke = () => { clearTimeout(tm); tm = setTimeout(() => { at(); lv(); }, 300); };
+    const unsub = subscribeTables('mp-live', ['attendance_days', 'leave_requests'], poke);
+    const t = setInterval(() => { at(); lv(); }, 60000), vis = () => { if (!document.hidden) { at(); lv(); } };
     document.addEventListener('visibilitychange', vis);
-    return () => { ok = false; clearInterval(t); document.removeEventListener('visibilitychange', vis); };
+    return () => { ok = false; unsub(); clearTimeout(tm); clearInterval(t); document.removeEventListener('visibilitychange', vis); };
   }, [auth]);
   useEffect(() => {
     if (IS_DEMO) return;

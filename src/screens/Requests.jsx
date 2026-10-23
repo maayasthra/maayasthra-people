@@ -5,7 +5,6 @@ import { BY, TODISO, pd, fmtDay, plural, range, workDays, awayList, balances } f
 import { typeIcon } from './Home.jsx';
 
 const STATE_C = { approved: '#30D158', declined: '#FF453A' };
-const TYPE_C = { 'Annual leave': '#0A84FF', 'Casual leave': '#FF9F0A', 'Sick leave': '#FF453A' };
 
 export function Requests({ user, leaves: all, setLeaves, open }) {
   const [tab, setTab] = useState('pending');
@@ -16,8 +15,8 @@ export function Requests({ user, leaves: all, setLeaves, open }) {
   const decide = (l, state) => setLeaves(ls => ls.map(x => x.id === l.id ? { ...x, state } : x));
   const list = tab === 'pending' ? waiting : decided;
 
-  const When = ({ l }) => html`<span className="rq3-w">${l.from === l.to ? fmtDay(pd(l.from)) : range(l.from, l.to)}<i></i>${plural(l.days, 'day')}</span>`;
-  const Type = ({ l }) => html`<span className="rq3-t" style=${{ '--c': TYPE_C[l.type] || '#8E8E93' }}><${Icon} n=${typeIcon(l.type)} s=${14}/>${l.type}${l.half ? ' · half day' : ''}</span>`;
+  const When = ({ l }) => html`<span className="rq3-w"><b>${l.from === l.to ? fmtDay(pd(l.from)) : range(l.from, l.to)}</b><i></i><b>${l.half ? 'Half day' : plural(l.days, 'day')}</b></span>`;
+  const Type = ({ l }) => html`<span className="rq3-t"><${Icon} n=${typeIcon(l.type)} s=${15}/>${l.type}</span>`;
 
   const Card = ({ l }) => {
     const e = BY[l.emp], pend = l.state === 'pending';
@@ -28,7 +27,7 @@ export function Requests({ user, leaves: all, setLeaves, open }) {
       <button className="rq3-av" onClick=${() => open(e.n)} aria-label=${'Open ' + e.name}><${Av} e=${e} s=${46}/></button>
       <div className="rq3-m">
         <div className="rq3-n"><b>${e.name}</b><span>${e.dept}</span></div>
-        <div className="rq3-d"><${Type} l=${l}/><${When} l=${l}/></div>
+        <div className="rq3-d"><${When} l=${l}/><${Type} l=${l}/></div>
         ${pend && l.reason && html`<p className="rq3-r">${l.reason}</p>`}
         ${pend && html`<div className="rq3-i">
           ${bal && html`<span><${Icon} n="check" s=${13}/>${Math.max(bal.left - l.days, 0)} of ${bal.total} ${l.type.toLowerCase().replace(' leave', '')} days left after this</span>`}
@@ -36,7 +35,7 @@ export function Requests({ user, leaves: all, setLeaves, open }) {
           ${hol.length > 0 && html`<span><${Icon} n="calendar" s=${13}/>Skips ${hol.join(', ')}</span>`}</div>`}
       </div>
       <div className="rq3-a">${pend ? html`<button className="btn pri sm" onClick=${() => decide(l, 'approved')}><${Icon} n="check" s=${15}/> Approve</button><button className="btn ghost sm" onClick=${() => decide(l, 'declined')}>Decline</button>`
-        : html`<span className="pill" style=${{ '--c': STATE_C[l.state] }}><i></i>${l.state === 'approved' ? 'Approved' : 'Declined'}</span><button className="link" onClick=${() => decide(l, 'pending')}>Undo</button>`}</div>
+        : html`<span className="rq3-st" style=${{ '--c': STATE_C[l.state] }}><i></i>${l.state === 'approved' ? 'Approved' : 'Declined'}</span><button className="rq3-u" onClick=${() => decide(l, 'pending')}>Undo</button>`}</div>
     </article>`;
   };
 
