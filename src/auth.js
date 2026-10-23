@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { EMP, ROLEMAP } from './data.js';
 import { loadStaff, saveEmployee } from './staff.js';
+import { loadLeaveConfig } from './leave.js';
 
 /* Real sign-in through Supabase Auth. With no keys in .env.local the app stays in demo mode. */
 const url = import.meta.env.VITE_SUPABASE_URL, key = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -42,7 +43,7 @@ export async function resolveUser(session) {
   const { data, error } = await supabase.from('profiles').select('role, active').eq('id', session.user.id).maybeSingle();
   if (error) return { error: 'Could not load your account. Try again.' };
   if (data && data.active === false) return { error: 'This account is turned off. Ask an admin.' };
-  try { await loadStaff(); } catch (x) { return { error: x.message }; }
+  try { await loadStaff(); await loadLeaveConfig(); } catch (x) { return { error: x.message }; }
   let user = EMP.find(e => e.email === email);
   if (!user) {
     // An admin who is not in the staff list yet gets a starter record so they are never locked out. Everyone else waits for an admin to add them.

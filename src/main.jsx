@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { html, Icon, Av } from './ui.jsx';
 import { LEAVES0, HIST0, TODISO, TOD, DAY, isoOf } from './data.js';
+import { loadLeaves, persistLeaves } from './leave.js';
 import { Login, SetPassword } from './screens/Login.jsx';
 import { authEnabled, currentSession, resolveUser, onAuthChange, signOutAuth, isLinkFlow } from './auth.js';
 import { Home } from './screens/Home.jsx';
@@ -64,7 +65,18 @@ function TopRight({ user, role, open, openForm, signOut }) {
 function App() {
   const [nav, setNav] = useState({ view: 'home' });
   const [auth, setAuth] = useState(null);
-  const [leaves, setLeaves] = useState(() => [...LEAVES0.map(l => ({ ...l, state: 'pending' })), ...HIST0]);
+  const [leaves, setLeavesRaw] = useState(() => [...LEAVES0.map(l => ({ ...l, state: 'pending' })), ...HIST0]);
+  const leavesRef = useRef(leaves), [syncErr, setSyncErr] = useState('');
+  const applyLeaves = l => { leavesRef.current = l; setLeavesRaw(l); };
+  // Screens change the list as before. In the live app each change is saved to the database, then the list is re-read.
+  const setLeaves = fn => {
+    const prev = leavesRef.current, next = typeof fn === 'function' ? fn(prev) : fn;
+    applyLeaves(next);
+    if (IS_DEMO) return;
+    persistLeaves(prev, next).then(loadLeaves)
+      .catch(e => { setSyncErr(e.message || 'Could not save. Try again.'); return loadLeaves(); })
+      .then(l => { if (l) applyLeaves(l); }).catch(() => {});
+  };
   const [ann, setAnn] = useState(SEED_ANN);
   const [pf, setPf] = useState({ q: '', dept: 'All', city: 'All', sort: 'name', former: false });
   const [ver, setVer] = useState(0);
@@ -80,6 +92,13 @@ function App() {
   const [navHidden, setNavHidden] = useState(() => { try { return localStorage.getItem('mp-nav') === '1'; } catch (x) { return false; } });
   const bump = () => setVer(v => v + 1);
   useEffect(() => { saveAtt(att); }, [att]);
+  useEffect(() => {
+    if (IS_DEMO) return;
+    if (!auth) { applyLeaves([]); return; }
+    let ok = true;
+    loadLeaves().then(l => { if (ok) applyLeaves(l); }).catch(e => { if (ok) setSyncErr(e.message); });
+    return () => { ok = false; };
+  }, [auth]);
   // Restore a saved session on load, and follow sign-outs from other tabs
   useEffect(() => {
     if (!authEnabled) return;
@@ -153,6 +172,7 @@ function App() {
         <${TopRight} user=${user} role=${role} open=${open} openForm=${openForm} signOut=${signOut}/></header>
       <div className="ck-m"><${CheckWidget} user=${user} att=${att} setAtt=${setAtt}/></div>
       <main className="main" key=${app + nav.view + (nav.id || '')}>${screen}</main>
+      ${syncErr && html`<div className="sync-err" role="alert"><span>${syncErr}</span><button onClick=${() => setSyncErr('')} aria-label="Dismiss">Dismiss</button></div>`}
     </div>
     ${taskSel && html`<${TaskDetail} key=${taskSel.id} id=${taskSel.id} ctx=${taskSel.ctx} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} leaves=${leaves} custom=${custom} close=${() => setTaskSel(null)}/>`}
     <nav className="bnav" style=${{ gridTemplateColumns: 'repeat(' + mob.length + ', 1fr)' }} aria-label="Main">${mob.map(k => k === 'more'

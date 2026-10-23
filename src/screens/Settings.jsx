@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { html, Icon, Av, Switch, HI } from '../ui.jsx';
 import { IS_DEMO } from '../env.js';
 import { saveRole } from '../staff.js';
+import { saveHoliday, deleteHoliday, savePolicy } from '../leave.js';
 import { EMP, HOL, TODISO, WD, POLICY, ROLE_NAMES, ROLEMAP, setRole, fmt, pd, plural, searchPeople } from '../data.js';
 
 const PERMS = [
@@ -36,8 +37,14 @@ function Access({ onChange }) {
 }
 
 function Policy({ onChange }) {
-  const [saved, setSaved] = useState(false);
-  const touch = () => { setSaved(true); onChange(); };
+  const [saved, setSaved] = useState(false), [perr, setPerr] = useState('');
+  // In the live app the rules are saved a moment after the last change.
+  const touch = () => {
+    setSaved(!IS_DEMO ? false : true); onChange();
+    if (IS_DEMO) return;
+    clearTimeout(touch.t); setPerr('');
+    touch.t = setTimeout(() => savePolicy().then(() => setSaved(true)).catch(x => setPerr(x.message)), 600);
+  };
   const num = (ev, max) => Math.max(0, Math.min(max, Number(ev.target.value) || 0));
   return html`<div className="st-w">
     <h2 className="st-h">Yearly days</h2>
@@ -46,21 +53,29 @@ function Policy({ onChange }) {
       <div className="sr"><span><b>Notice</b><span className="d">Working days ahead. Not for sick leave.</span></span><span className="sr-c"><input id="notice" className="inp" type="number" min="0" max="30" value=${POLICY.notice} aria-label="Minimum notice in days" onChange=${ev => { POLICY.notice = num(ev, 30); touch(); }}/><span style=${{ color: 'var(--muted)', fontSize: 13 }}>days</span></span></div>
       <div className="sr"><span><b>Half days</b></span><span className="sr-c"><${Switch} on=${POLICY.half} set=${v => { POLICY.half = v; touch(); }} label="Allow half-day leave"/></span></div>
       <div className="sr"><span><b>Note required</b></span><span className="sr-c"><${Switch} on=${POLICY.note} set=${v => { POLICY.note = v; touch(); }} label="Require a note"/></span></div></div>
-    <div style=${{ marginTop: 24, minHeight: 24 }}>${saved && html`<span className="saved"><${Icon} n="check" s=${16}/> Saved</span>`}</div>
+    <div style=${{ marginTop: 24, minHeight: 24 }}>${perr ? html`<span className="lg-err" style=${{ margin: 0 }}>${perr}</span>` : saved && html`<span className="saved"><${Icon} n="check" s=${16}/> Saved</span>`}</div>
   </div>`;
 }
 
 function Holidays({ onChange }) {
-  const [d, setD] = useState(''); const [n, setN] = useState('');
+  const [d, setD] = useState(''); const [n, setN] = useState(''); const [herr, setHerr] = useState('');
   const keys = Object.keys(HOL).sort();
-  const add = ev => { ev.preventDefault(); if (!d || !n.trim()) return; HOL[d] = n.trim(); setD(''); setN(''); onChange(); };
-  const del = k => { delete HOL[k]; onChange(); };
+  const add = ev => {
+    ev.preventDefault(); if (!d || !n.trim()) return;
+    const day = d, name = n.trim(), old = HOL[day]; HOL[day] = name; setD(''); setN(''); setHerr(''); onChange();
+    if (!IS_DEMO) saveHoliday(day, name).catch(x => { if (old) HOL[day] = old; else delete HOL[day]; setHerr(x.message); onChange(); });
+  };
+  const del = k => {
+    const old = HOL[k]; delete HOL[k]; setHerr(''); onChange();
+    if (!IS_DEMO) deleteHoliday(k).catch(x => { HOL[k] = old; setHerr(x.message); onChange(); });
+  };
   return html`<div className="st-w">
     <h2 className="st-h">Holidays · ${keys.length}</h2>
     <form className="hol-add" onSubmit=${add}>
       <div className="fld"><label htmlFor="hol-d">Date</label><input id="hol-d" className="inp" type="date" value=${d} onChange=${ev => setD(ev.target.value)}/></div>
       <div className="fld"><label htmlFor="hol-n">Name</label><input id="hol-n" className="inp" value=${n} onChange=${ev => setN(ev.target.value)} placeholder="Name"/></div>
       <button className="btn pri" type="submit" disabled=${!d || !n.trim()}><${Icon} n="plus" s=${16}/> Add</button></form>
+    ${herr && html`<div className="lg-err" role="alert">${herr}</div>`}
     ${keys.map(k => html`<div className=${'hol-r' + (k < TODISO ? ' past' : '')} key=${k}><time>${fmt(k)}</time><span className="nm">${HOL[k]}</span><span className="wk">${WD[new Date(pd(k)).getUTCDay()]}</span>
       <button className="link" onClick=${() => del(k)} aria-label=${'Remove ' + HOL[k]}>Remove</button></div>`)}
   </div>`;
