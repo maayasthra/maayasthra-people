@@ -54,12 +54,14 @@ export function Login({ onLogin }) {
   return html`<div className="lg-wrap">
     <section className="lg-art">
       <div className="brand" style=${{ padding: 0 }}><span className="mark"></span><span className="brand-t"><b>Maayasthra</b><span>People</span></span></div>
-      <div className="lg-copy"><h1>Everyone at Maayasthra, in one place.</h1></div>
-      <div><div className="lg-mos" aria-hidden="true">${IS_DEMO && art.map(n => html`<div key=${n}><${Photo} e=${BY[n]}/></div>`)}</div><div className="lg-url" style=${{ marginTop: 28 }}>people.maayasthra.com</div></div>
+      <div className="lg-copy"><h1>Everyone at Maayasthra, in one place.</h1><p>Your team, your time off, your hours and your tasks. Sign in with your work email.</p></div>
+      <div>${IS_DEMO ? html`<div className="lg-mos" aria-hidden="true">${art.map(n => html`<div key=${n}><${Photo} e=${BY[n]}/></div>`)}</div>`
+        : html`<ul className="lg-feat">${[['people', 'Team directory', 'Find anyone, see who reports to whom'], ['leaves', 'Leave', 'Apply, get approved, see balances'], ['hours', 'Hours', 'Check in and out, track your day'], ['board', 'Tasks', 'One board for everything in flight']].map(([ic, t, d]) => html`<li key=${t}><span><${Icon} n=${ic} s=${18}/></span><div><b>${t}</b><small>${d}</small></div></li>`)}</ul>`}
+        <div className="lg-url">people.maayasthra.com</div></div>
     </section>
     <section className="lg-form"><div className="lg-box">
       ${view === 'signin' ? html`<${React.Fragment}>
-        <h2>Sign in</h2>
+        <h2>Sign in</h2>${authEnabled && html`<p>Welcome back. Use your work email.</p>`}
         ${!authEnabled && html`<div className="seg" role="group" aria-label="Sign in as"><button type="button" className=${mode === 'employee' ? 'on' : ''} onClick=${() => { setMode('employee'); setErr(''); }}>Employee</button><button type="button" className=${mode === 'admin' ? 'on' : ''} onClick=${() => { setMode('admin'); setErr(''); }}>Admin</button></div>`}
         <form onSubmit=${submit} noValidate>
           <div className="fld"><label htmlFor="login-email">Work email</label><input id="login-email" className="inp" type="email" autoComplete="username" placeholder="name@maayasthra.com" value=${email} onChange=${ev => setEmail(ev.target.value)}/></div>
@@ -72,7 +74,7 @@ export function Login({ onLogin }) {
           <button className="dm" onClick=${() => demo(2, 'admin')} disabled=${busy}><${Av} e=${BY[2]} s=${38}/><span className="row-t"><b>Meera Iyer</b><span>Admin · approves leave</span></span><span className="go"><${Icon} n="arrow" s=${16}/></span></button>
           <button className="dm" onClick=${() => demo(9, 'employee')} disabled=${busy}><${Av} e=${BY[9]} s=${38}/><span className="row-t"><b>Dev Malhotra</b><span>Employee · applies for leave</span></span><span className="go"><${Icon} n="arrow" s=${16}/></span></button>
           <div className="lg-note">Demo password: ${DEMO_PW}</div></div>`}
-        ${authEnabled && html`<div className="lg-row" style=${{ justifyContent: 'center', marginTop: 18 }}><span style=${{ color: 'var(--muted)', marginRight: 6 }}>New here?</span><button type="button" className="link" onClick=${() => { setView('signup'); setErr(''); setSent(false); setPw(''); setPw2(''); }}>Create your account</button></div>`}
+        ${authEnabled && html`<div className="lg-alt"><span>New to Maayasthra People?</span><button type="button" className="link" onClick=${() => { setView('signup'); setErr(''); setSent(false); setPw(''); setPw2(''); }}>Create your account</button></div>`}
       <//>` : view === 'signup' ? html`<${React.Fragment}>
         <button className="back" onClick=${() => { setView('signin'); setErr(''); setPw(''); setPw2(''); }}><${Icon} n="back" s=${16}/> Back to sign in</button>
         <h2>Create your account</h2><p>Use your work email. We will send a link to confirm it.</p>
