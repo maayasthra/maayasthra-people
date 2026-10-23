@@ -970,33 +970,6 @@ button.ovc:hover{filter:brightness(1.18)}
 @media (max-width:860px){.ov-w{padding:4px 12px 10px}.ov{min-width:700px}.ov.wide{min-width:620px}}
 
 /* ---------- org chart: team cards ---------- */
-.oc2-top{display:flex;flex-direction:column;align-items:center;margin-top:30px}
-.oc2-lead{display:flex;flex-direction:column;align-items:center;gap:2px;padding:20px 40px;border-radius:22px;background:var(--card);text-align:center;transition:background .15s}
-.oc2-lead:hover{background:var(--card-hi)}
-.oc2-lead.me{box-shadow:0 0 0 2px var(--accent)}
-.oc2-lead .av{margin-bottom:8px}
-.oc2-lead b{font-size:19px;font-weight:700;letter-spacing:-.02em}
-.oc2-lead span{font-size:14px;color:var(--muted)}
-.oc2-lead small{font-size:12.5px;color:var(--faint);margin-top:4px}
-.oc2-line{width:1px;height:30px;background:var(--line-hi)}
-.oc2-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;align-items:start}
-.oc2-c{background:var(--card);border-radius:20px;padding:16px 16px 12px;min-width:0}
-.oc2-c>header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:8px}
-.oc2-sh{padding:6px 8px 12px!important}
-.oc2-sh b{font-size:15px;font-weight:600}
-.oc2-sh span{font-size:13px;color:var(--muted)}
-.oc2-n{flex:none;text-align:right;font-size:22px;font-weight:700;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
-.oc2-n small{display:block;font-size:11.5px;font-weight:500;color:var(--muted);letter-spacing:0;margin-top:3px}
-.oc2-p{display:flex;align-items:center;gap:12px;width:100%;padding:7px 8px;border-radius:12px;min-width:0;text-align:left;transition:background .15s}
-.oc2-p:hover{background:rgba(255,255,255,.07)}
-.oc2-p .row-t b{font-size:14.5px;font-weight:500}
-.oc2-p .row-t span{font-size:12.5px;white-space:normal}
-.oc2-p.me{background:var(--blue-tint);box-shadow:inset 0 0 0 1.5px var(--accent)}
-.oc2-p.hit{background:rgba(255,214,10,.14)}
-.oc2-c>header .oc2-p{padding:0;width:auto;flex:1}
-.oc2-c>header .oc2-p .row-t b{font-size:16px;font-weight:600}
-.oc2-l{list-style:none;margin:0;padding:0}
-.oc2-l .oc2-l{margin-left:22px;padding-left:12px;border-left:1px solid var(--line-hi)}
 
 /* ---------- Maayasthra Task: Kanban ---------- */
 .brand-w{position:relative}
@@ -1467,3 +1440,55 @@ textarea.td-title{resize:none;overflow:hidden;line-height:1.25;display:block;fon
   .lg-form{padding:32px max(20px,env(safe-area-inset-right,0px)) 56px max(20px,env(safe-area-inset-left,0px))}
   .lg-box h2{font-size:28px}
 }
+
+/* Org chart */
+.oc3{display:grid;gap:44px;margin-top:36px}
+.oc3-s{width:280px;margin:0}
+.oc3-lead{display:flex;align-items:center;gap:16px;width:100%;max-width:560px;padding:16px 22px 16px 16px;border-radius:20px;background:var(--card);border:1px solid var(--line);text-align:left;transition:background .15s}
+.oc3-lead:hover{background:var(--card-hi)}
+.oc3-lead.me{box-shadow:0 0 0 2px var(--accent)}
+.oc3-lead .row-t{flex:1;min-width:0}
+.oc3-lead .row-t b{font-size:18px;font-weight:650;letter-spacing:-.02em}
+.oc3-n{flex:none;display:flex;flex-direction:column;align-items:flex-end;font-size:20px;font-weight:650;line-height:1;font-variant-numeric:tabular-nums}
+.oc3-n small{margin-top:4px;font-size:11.5px;font-weight:500;color:var(--muted)}
+.oc3-kids{position:relative;margin:0 0 0 38px;padding:26px 0 0 40px;border-left:2px solid var(--line-hi)}
+.oc3-t{position:relative;margin-bottom:16px}
+.oc3-t::before{content:"";position:absolute;left:-40px;top:36px;width:34px;border-top:2px solid var(--line-hi)}
+.oc3-t:last-child{margin-bottom:0}
+.oc3-t:last-child::after{content:"";position:absolute;left:-42px;top:35px;bottom:-1px;width:4px;background:var(--bg)}
+.oc3-c{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:12px 18px 14px}
+.oc3-c>header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:12px;margin-bottom:8px;border-bottom:1px solid var(--line)}
+.oc3-sh b{font-size:14px;font-weight:600;color:var(--muted)}
+.oc3-sh span{font-size:13px;color:var(--faint)}
+.oc3-p{display:flex;align-items:center;gap:12px;min-width:0;max-width:100%;padding:6px 8px;border-radius:12px;text-align:left}
+.oc3-p:hover{background:var(--fill)}
+.oc3-p.me{background:var(--blue-tint)}
+.oc3-p.hit{box-shadow:0 0 0 1.5px var(--accent)}
+.oc3-p .row-t{min-width:0}
+.oc3-p .row-t b,.oc3-p .row-t span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.oc3-p em{flex:none;font-style:normal;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--accent);color:#fff}
+.oc3-m{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:2px 16px;align-items:start}
+.oc3-sub{list-style:none;margin:2px 0 4px 26px;padding:0 0 0 14px;border-left:1.5px solid var(--line-hi)}
+@media (max-width:860px){
+  .pg-h:has(.oc3-s){flex-wrap:wrap;gap:16px}
+  .oc3-s{flex:1 1 100%;width:100%;max-width:none}
+  .oc3-kids{margin-left:16px;padding-left:22px}
+  .oc3-t::before{left:-22px;width:18px}
+  .oc3-t:last-child::after{left:-24px}
+  .oc3-c{padding:10px 12px 12px}
+  .oc3-m{grid-template-columns:minmax(0,1fr)}
+  .oc3-lead{padding:14px}
+}
+
+/* Panels fit their content. A long list scrolls inside the panel, an empty one stays slim. */
+.pn{height:auto;min-height:176px}
+.pn-b{max-height:306px}
+.pn-e{padding:20px 0 12px}
+.pn-ei{margin-bottom:6px}
+@media (max-width:1180px) and (min-width:861px){
+  .eq3>:last-child:nth-child(odd){grid-column:1/-1}
+}
+
+.pg-h{align-items:center}
+.mt-add{max-width:none}
+.none{padding:44px 16px}
