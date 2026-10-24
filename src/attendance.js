@@ -12,10 +12,14 @@ const LUNCH_START = 13 * 60, LUNCH_END = 14 * 60;
 export const LOCS = { office: 'Office', home: 'Home' };
 
 const hmMins = hm => { const [h, m] = hm.split(':').map(Number); return h * 60 + m; };
-export const dayKey = (t = Date.now()) => { const d = new Date(t); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
-const dayStart = iso => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d).getTime(); };
+// Everything runs on India time, like the server, whatever time zone the browser is in
+export const IST = 19800000;
+const ist = t => new Date(t + IST);
+export const minuteOfDay = t => { const d = ist(t); return d.getUTCHours() * 60 + d.getUTCMinutes() + d.getUTCSeconds() / 60; };
+export const dayKey = (t = Date.now()) => { const d = ist(t); return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0'); };
+export const dayStart = iso => { const [y, m, d] = iso.split('-').map(Number); return Date.UTC(y, m - 1, d) - IST; };
 const minsOf = (t, iso) => (t - dayStart(iso)) / 60000;
-export const toHM = t => { const d = new Date(t); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+export const toHM = t => { const d = ist(t); return String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0'); };
 export const toTs = (iso, hm) => dayStart(iso) + hmMins(hm) * 60000;
 export const addDays = (iso, n) => isoOf(pd(iso) + n * DAY);
 export const weekStart = iso => { const w = new Date(pd(iso)).getUTCDay(); return addDays(iso, -((w + 6) % 7)); };
@@ -99,22 +103,22 @@ export function dayInfo(att, e, iso, now, away) {
 /* ---------- formatting ---------- */
 export const hms = ms => { const t = Math.max(0, Math.floor(ms / 1000)); return [Math.floor(t / 3600), Math.floor(t / 60) % 60, t % 60].map(v => String(v).padStart(2, '0')).join(':'); };
 export const hm = ms => { const m = Math.floor(Math.max(0, ms) / 60000); return Math.floor(m / 60) + 'h ' + String(m % 60).padStart(2, '0') + 'm'; };
-export const clock = t => new Date(t).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }).toUpperCase();
+export const clock = t => new Date(t).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit', hour12: true }).toUpperCase();
 
 // Lunch is 1 to 2 pm. Inside the last hour before it, count down in minutes.
 export function lunchInfo(now) {
-  const d = new Date(now), m = d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
+  const m = minuteOfDay(now);
   if (m >= LUNCH_START && m < LUNCH_END) return { state: 'on', text: 'Lunch break is on · ends in ' + Math.ceil(LUNCH_END - m) + ' min' };
   if (m < LUNCH_START && LUNCH_START - m <= 60) return { state: 'soon', text: 'Lunch break in ' + Math.ceil(LUNCH_START - m) + ' min' };
   if (m < LUNCH_START) return { state: 'later', text: 'Lunch 1:00 – 2:00 PM' };
   return { state: 'over', text: '' };
 }
 export const startDelta = (sessions, shiftStart, iso = dayKey()) => sessions.length ? Math.round(minsOf(sessions[0].in, iso) - hmMins(shiftStart)) : null;
-export const shiftEndsIn = (now, shiftEnd) => { const d = new Date(now); return hmMins(shiftEnd) - (d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60); };
+export const shiftEndsIn = (now, shiftEnd) => hmMins(shiftEnd) - minuteOfDay(now);
 
 // Once a person's working hours are over, checking in is closed for the day and an open session stops at the shift end.
 export const shiftEnded = (now, shiftEnd) => shiftEndsIn(now, shiftEnd) <= 0;
-export const shiftEndAt = shiftEnd => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime() + hmMins(shiftEnd) * 60000; };
+export const shiftEndAt = shiftEnd => dayStart(dayKey()) + hmMins(shiftEnd) * 60000;
 
 export function useNow(ms = 1000) {
   const [now, setNow] = useState(Date.now());

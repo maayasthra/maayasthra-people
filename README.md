@@ -48,6 +48,7 @@ Run these in the Supabase SQL Editor, in order. Each file can be run again safel
 | `0013_project_manager.sql` | Project manager role; employees see only their own tasks; only admins and project managers assign and remove tasks; one running timer per person |
 | `0014_checkout_stops_timers.sql` | Checking out ends the person's task timers; a timer left running overnight is closed at that day's shift end |
 | `0015_review_fixes.sql` | Closes a card-assignment loophole, stricter leave decisions (no double-booking, cancelled stays cancelled), server-clocked check-out, India-date cancellation |
+| `0016_stale_timers.sql` | A timer left running overnight ends at that day's shift end whenever anyone opens the board or presses a timer; timers stop when someone is marked Exited |
 
 ## Tests
 

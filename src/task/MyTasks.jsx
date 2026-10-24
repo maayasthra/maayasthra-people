@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { html, Icon, HI } from '../ui.jsx';
-import { useNow } from '../attendance.js';
+import { useNow, dayStart } from '../attendance.js';
 import { mkTask, completeCard, reopenCard, startTimer, pauseTimer, isDoing, spentMs, fmtDur, myTasksOf } from '../tasks.js';
 import { TODISO } from '../data.js';
 
@@ -15,7 +15,7 @@ export function MyTasks({ tasks, setTasks, user, tq, openTask }) {
   const lastEnd = t => Math.max(0, ...(t.time || []).map(s => s.end || 0), t.created || 0);
   const done = mine.filter(t => t.done).sort((a, b) => lastEnd(b) - lastEnd(a));
   const shownDone = allDone ? done : done.slice(0, 12);
-  const loggedToday = tasks.reduce((sum, t) => sum + (t.time || []).reduce((x, s) => s.emp === user.n ? x + Math.max(0, Math.min(s.end == null ? now : s.end, Infinity) - Math.max(s.start, new Date(TODISO + 'T00:00:00').getTime())) : x, 0), 0);
+  const loggedToday = tasks.reduce((sum, t) => sum + (t.time || []).reduce((x, s) => s.emp === user.n ? x + Math.max(0, Math.min(s.end == null ? now : s.end, Infinity) - Math.max(s.start, dayStart(TODISO))) : x, 0), 0);
 
   // The three moves. Starting a card pauses the one you were timing, so your hours are never counted twice.
   const toDoing = id => setTasks(ts => startTimer(ts, id, user.n));

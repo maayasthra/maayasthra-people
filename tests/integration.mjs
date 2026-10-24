@@ -251,6 +251,16 @@ as('yogan'); await m.loadStaff(); m.att.setMe(ids.yogan); let yo = {}; await m.p
 tb = await m.loadBoard(); const st = tb.tasks.find(x => x.id === 'st1').time[0];
 t('a timer left running overnight is closed at the previous shift end', st.end === endMs, { end: st.end, expected: endMs });
 
+// 0016: a stale timer is closed by anyone opening the board, and by pressing a timer, without the owner checking in
+await db.exec("begin; select set_config('mp.timer','on',true); update tasks set time_log = '" + JSON.stringify([{ id: 'old2', emp: ids.vandhana, start: startMs, end: null }]) + "'::jsonb where id='st1'; commit;");
+as('vijay'); tb = await m.loadBoard();
+const st2 = tb.tasks.find(x => x.id === 'st1').time[0];
+t('a stale timer is closed when anyone opens the board, even if the owner never checked in', st2.end !== null && st2.end < Date.now() - 3600e3 && st2.end >= startMs, { end: st2.end });
+await db.exec("begin; select set_config('mp.timer','on',true); update tasks set time_log = '" + JSON.stringify([{ id: 'old3', emp: ids.vandhana, start: startMs, end: null }]) + "'::jsonb where id='st1'; commit;");
+await q("select public.task_timer('st1','stop_all')").catch(() => {});
+tb = await m.loadBoard();
+t('pressing a timer closes a leftover one at its own day’s end, not now', tb.tasks.find(x => x.id === 'st1').time[0].end < Date.now() - 3600e3);
+
 console.log('--- done ---');
 
 if (process.exitCode) console.log('SOME CHECKS FAILED');

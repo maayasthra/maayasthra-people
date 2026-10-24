@@ -15,6 +15,7 @@ const toRow = t => ({
 });
 
 export async function loadBoard() {
+  await supabase.rpc('close_stale_timers_all').then(() => {}, () => {}); // timers left from an earlier day end at that day's shift end
   const rows = [];
   for (let start = 0; ; start += PAGE) {
     const { data, error } = await supabase.from('tasks').select('*').order('created_at').order('id').range(start, start + PAGE - 1);

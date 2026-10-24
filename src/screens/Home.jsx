@@ -4,7 +4,7 @@ import { downloadLeaveReport } from '../report.js';
 import { DueChip } from '../task/parts.jsx';
 import { isOpen } from '../tasks.js';
 import { SessionList, useDay, dayNote } from '../Attendance.jsx';
-import { hm, lunchInfo, shiftEnded, checkIn, checkOut, dayInfo, useNow, clock } from '../attendance.js';
+import { hm, lunchInfo, shiftEnded, checkIn, checkOut, dayInfo, useNow, clock, minuteOfDay } from '../attendance.js';
 import {
   TOD, DAY, WDL, MONL, pd, fmtDM, fmtDay, rel, plural, range, addMonths, isoOf, TODISO, HOL, BY,
   balances, awayList, isAway, activeEmps, fmtTime, nextOcc, EMP
@@ -158,7 +158,7 @@ function YourDay({ user, att, setAtt, onOut }) {
 
 /* ---------- Home ---------- */
 export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, onOut, tasks, goTask, go, openForm, open }) {
-  const h = new Date().getHours(), t = new Date(TOD);
+  const h = Math.floor(minuteOfDay(Date.now()) / 60), t = new Date(TOD);
   const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
   const mine = leaves.filter(l => l.emp === user.n);
   const queue = leaves.filter(l => !l.past && BY[l.emp]);

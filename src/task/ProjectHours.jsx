@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { html, Icon, Av, Tile, HI } from '../ui.jsx';
-import { useNow } from '../attendance.js';
+import { useNow, dayStart, dayKey, weekStart } from '../attendance.js';
 import { activeEmps, plural } from '../data.js';
 import { spentIn, isDoing, fmtDur } from '../tasks.js';
 
 // Project hours: time logged on cards, added up for each person. Admins see everyone, employees see themselves.
-const startOf = (kind, now) => { const d = new Date(now); d.setHours(0, 0, 0, 0); if (kind === 'week') d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); if (kind === 'month') d.setDate(1); return kind === 'all' ? 0 : d.getTime(); };
+const startOf = (kind, now) => { if (kind === 'all') return 0; const iso = dayKey(now); return dayStart(kind === 'week' ? weekStart(iso) : iso.slice(0, 8) + '01'); };
 
 export function ProjectHours({ tasks, user, role }) {
   const now = useNow(1000);

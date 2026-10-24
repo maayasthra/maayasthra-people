@@ -1,7 +1,7 @@
 import { IS_DEMO } from './env.js';
-/* Dates are live: today in the viewer's timezone */
-const _now = new Date();
-const TOD = Date.UTC(_now.getFullYear(), _now.getMonth(), _now.getDate()), DAY = 864e5;
+/* Dates are live, and always in India time (the server keeps days in India time, wherever the browser is) */
+const _now = new Date(Date.now() + 19800000);
+const TOD = Date.UTC(_now.getUTCFullYear(), _now.getUTCMonth(), _now.getUTCDate()), DAY = 864e5;
 const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const WD = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const WDL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
