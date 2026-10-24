@@ -39,7 +39,7 @@ function ApprovalsCarousel({ queue, setLeaves, open, user }) {
   return html`<${Panel} title="Leave approvals" sub=${n ? n + ' waiting' : 'All clear'} right=${arrows}>
     ${n === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="check" s=${22}/></span><b>All clear</b></div>` :
       html`<div className="car" ref=${track} onScroll=${onScroll}>${pending.map(l => { const e = BY[l.emp]; return html`<div className="slide" key=${l.id}>
-        <div className="ap-h"><button onClick=${() => open(e.n)}><${Av} e=${e} s=${44}/></button>
+        <div className="ap-h"><button onClick=${() => open(e.n)} aria-label=${'Open ' + e.name}><${Av} e=${e} s=${44}/></button>
           <span><b>${e.name}${e.n === user.n ? html` <em className="rq3-you">You</em>` : ''}</b><span>${e.role}</span></span></div>
         <div className="rq3-d"><span className="rq3-w"><b>${l.from === l.to ? fmtDay(pd(l.from)) : range(l.from, l.to)}</b><i></i><b>${l.half ? 'Half day' : plural(l.days, 'day')}</b></span><span className="rq3-t"><${Icon} n=${typeIcon(l.type)} s=${15}/>${l.type}</span></div>
         ${l.reason && html`<p className="rq3-r">${l.reason}</p>`}

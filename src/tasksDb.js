@@ -17,7 +17,7 @@ const toRow = t => ({
 export async function loadBoard() {
   const rows = [];
   for (let start = 0; ; start += PAGE) {
-    const { data, error } = await supabase.from('tasks').select('*').order('created_at').range(start, start + PAGE - 1);
+    const { data, error } = await supabase.from('tasks').select('*').order('created_at').order('id').range(start, start + PAGE - 1);
     if (error) throw new Error('Could not load the board.');
     rows.push(...data); if (data.length < PAGE) break;
   }

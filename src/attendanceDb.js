@@ -8,7 +8,7 @@ const PAGE = 1000;
 export async function loadAttendance(days = 120) {
   const from = addDays(dayKey(), -days), today = dayKey(), att = {};
   for (let start = 0; ; start += PAGE) {
-    const { data, error } = await supabase.from('attendance_days').select('*').gte('day', from).order('day').range(start, start + PAGE - 1);
+    const { data, error } = await supabase.from('attendance_days').select('*').gte('day', from).order('day').order('employee_id').range(start, start + PAGE - 1);
     if (error) throw new Error('Could not load attendance.');
     data.forEach(r => {
       const e = BY[r.employee_id]; let sessions = r.sessions || [];

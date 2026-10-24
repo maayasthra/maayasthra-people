@@ -26,12 +26,14 @@ import { MyTasks } from './task/MyTasks.jsx';
 import { TeamView } from './task/TeamView.jsx';
 import { ProjectHours } from './task/ProjectHours.jsx';
 import { CheckoutWarning } from './task/CheckoutWarning.jsx';
+import { About } from './screens/About.jsx';
+import { VERSION } from './about.js';
 import { TaskDetail } from './task/TaskDetail.jsx';
 import { isDoing, stopFor, loadTasks, saveTasks, loadCollapsed, saveCollapsed, loadCustom, saveCustom, loadLayout, saveLayout, loadView, saveView } from './tasks.js';
 import { IS_DEMO } from './env.js';
 import './styles.css';
 
-const ALL = { board: 'Board', mytasks: 'My Tasks', timer: 'Project hours', team: 'Team', home: 'Home', people: 'People', org: 'Org chart', calendar: 'Calendar', attendance: 'Attendance', hours: 'My Hours', leaves: 'My Leaves', requests: 'Requests', settings: 'Settings' };
+const ALL = { about: 'About', board: 'Board', mytasks: 'My Tasks', timer: 'Project hours', team: 'Team', home: 'Home', people: 'People', org: 'Org chart', calendar: 'Calendar', attendance: 'Attendance', hours: 'My Hours', leaves: 'My Leaves', requests: 'Requests', settings: 'Settings' };
 const SHORT = { mytasks: 'Mine', timer: 'Time', org: 'Org', leaves: 'Leaves', attendance: 'Hours', hours: 'Hours' };
 
 const SEED_ANN = IS_DEMO ? [
@@ -46,7 +48,7 @@ function AppSwitch({ app, setApp }) {
 }
 const Brand = () => html`<div className="brand"><span className="mark"></span><span className="brand-t"><b>Maayasthra</b><span>Workspace</span></span></div>`;
 
-function TopRight({ user, role, open, openForm, signOut }) {
+function TopRight({ user, role, open, openForm, signOut, goAbout, isNew }) {
   const [menu, setMenu] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
@@ -63,6 +65,7 @@ function TopRight({ user, role, open, openForm, signOut }) {
       <div className="menu-h"><b>${user.name}</b><span>${user.email}</span></div>
       <button role="menuitem" onClick=${() => { setMenu(false); open(user.n); }}><${Icon} n="user" s=${16}/> View profile</button>
       <button role="menuitem" onClick=${() => { setMenu(false); openForm(user.n); }}><${Icon} n="edit" s=${16}/> Edit profile</button>
+      <button role="menuitem" onClick=${() => { setMenu(false); goAbout(); }}><${Icon} n="info" s=${16}/> About · v${VERSION}${isNew && html`<em className="new-p">New</em>`}</button>
       <button role="menuitem" className="menu-o" onClick=${() => { setMenu(false); signOut(); }}><${Icon} n="logout" s=${16}/> Sign out</button></div>`}
   </div>`;
 }
@@ -84,6 +87,8 @@ function App() {
       .then(l => { if (l) applyLeaves(l); }).catch(() => {}).finally(() => { saving.current.leave--; });
   };
   const [outAsk, setOutAsk] = useState(false);
+  const [seenVer, setSeenVer] = useState(() => { try { return localStorage.getItem('mp-seen-version'); } catch (x) { return null; } });
+  useEffect(() => { if (nav.view === 'about' && seenVer !== VERSION) { try { localStorage.setItem('mp-seen-version', VERSION); } catch (x) {} setSeenVer(VERSION); } }, [nav.view]);
   const [ann, setAnnRaw] = useState(SEED_ANN);
   const annRef = useRef(ann);
   const applyAnn = a => { annRef.current = a; setAnnRaw(a); };
@@ -218,6 +223,7 @@ function App() {
   const peopleKeys = role === 'admin' ? ['home', 'people', 'org', 'calendar', 'attendance', 'leaves', 'requests', 'settings'] : ['home', 'people', 'org', 'calendar', 'hours', 'leaves'];
   // Admins and project managers get the whole task app. Everyone else gets only their own tasks.
   const isMgr = role === 'admin' || role === 'pm';
+  const seenNow = seenVer === VERSION || nav.view === 'about';
   // Checking out ends the day's task timers. If any are running, show them first.
   const running = tasks.filter(t => isDoing(t, user.n));
   const stopMyTimers = at => setTasks(ts => ts.map(t => isDoing(t, user.n) ? { ...t, time: stopFor(t.time, user.n, at) } : t));
@@ -245,7 +251,7 @@ function App() {
     : nav.view === 'mytasks' || !isMgr ? html`<${MyTasks} tasks=${tasks} setTasks=${setTasks} user=${user} tq=${tq} openTask=${openTask}/>`
     : nav.view === 'team' && isMgr ? html`<${TeamView} tasks=${tasks} onPick=${n => { setTf(f => ({ ...f, dept: 'All' })); setFocus(n); go('board'); }}/>`
     : html`<${TaskBoard} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} tf=${tf} setTf=${setTf} tq=${tq} openTask=${openTask} focus=${focus} collapsed=${collapsed} setCollapsed=${setCollapsed} custom=${custom} setCustom=${setCustom} layout=${layout} setLayout=${setLayout}/>`;
-  const screen = app === 'task' ? taskScreen : nav.view === 'home' ? home
+  const screen = nav.view === 'about' ? html`<${About}/>` : app === 'task' ? taskScreen : nav.view === 'home' ? home
     : nav.view === 'people' ? html`<${People} pf=${pf} setPf=${setPf} open=${open} openForm=${openForm} role=${role} ver=${ver}/>`
     : nav.view === 'org' ? html`<${OrgChart} open=${open} user=${user} key=${ver}/>`
     : nav.view === 'profile' ? html`<${Profile} key=${nav.id + '-' + ver + (nav.tab || '')} id=${nav.id} tab=${nav.tab} from=${nav.from} back=${back} open=${open} openForm=${openForm} user=${user} role=${role} leaves=${leaves} att=${att} setAtt=${setAtt} ver=${ver}/>`
@@ -264,13 +270,14 @@ function App() {
       <${AppSwitch} app=${app} setApp=${setApp}/>
       <nav className="nav" aria-label="Main">${keys.map(k => html`<button key=${k} className=${'nav-b' + (active === k ? ' on' : '')} onClick=${() => go(k)} aria-current=${active === k ? 'page' : undefined}>
         <${Icon} n=${k}/>${ALL[k]}${k === 'requests' && pending > 0 && html`<span className="cnt">${pending}</span>`}</button>`)}</nav>
+      <button className=${'side-about' + (active === 'about' ? ' on' : '')} onClick=${() => go('about')} aria-current=${active === 'about' ? 'page' : undefined}><${Icon} n="info" s=${17}/><span>About</span><small>v${VERSION}</small>${!seenNow && html`<em className="new-p">New</em>`}</button>
     </aside>
     <div className="col">
       <header className="hdr"><button className="ib nav-t" onClick=${() => setNavHidden(h => !h)} aria-label=${navHidden ? 'Show the navigation bar' : 'Hide the navigation bar'} title=${navHidden ? 'Show the navigation bar' : 'Hide the navigation bar'}><${Icon} n="sidebar" s=${18}/></button><div className="hdr-b"><${AppSwitch} app=${app} setApp=${setApp}/></div>
         <div className=${'hs' + (sOpen ? ' open' : '')}>${app === 'task' ? html`<div className="qs"><${Icon} n="search"/><input id="quick-search" className="qs-in" value=${tq} placeholder="Search tasks" onChange=${ev => setTq(ev.target.value)} aria-label="Search tasks"/></div>` : html`<${QuickSearch} open=${id => { setSOpen(false); open(id); }}/>`}</div>
         <button className="ib hs-b" onClick=${() => { setSOpen(o => !o); setTimeout(() => { const el = document.getElementById('quick-search'); if (el) el.focus(); }, 30); }} aria-label="Search"><${Icon} n="search" s=${17}/></button>
         <div className="ck-d"><${CheckWidget} user=${user} att=${att} setAtt=${setAtt} onOut=${requestOut} onAutoOut=${autoOut}/></div>
-        <${TopRight} user=${user} role=${role} open=${open} openForm=${openForm} signOut=${signOut}/></header>
+        <${TopRight} user=${user} role=${role} open=${open} openForm=${openForm} signOut=${signOut} goAbout=${() => go('about')} isNew=${!seenNow}/></header>
       <div className="ck-m"><${CheckWidget} user=${user} att=${att} setAtt=${setAtt} onOut=${requestOut} onAutoOut=${autoOut}/></div>
       <main className="main" key=${app + nav.view + (nav.id || '')}>${screen}</main>
       ${syncErr && html`<div className="sync-err" role="alert"><span>${syncErr}</span><button onClick=${() => setSyncErr('')} aria-label="Dismiss">Dismiss</button></div>`}

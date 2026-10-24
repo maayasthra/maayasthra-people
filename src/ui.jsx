@@ -19,6 +19,7 @@ export function downloadCSV(name, rows) {
 /* ---------- Icons ---------- */
 const IC = {
   home:['M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z'],
+  info:['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z','M12 11v5.5','M12 7.6v.2'],
   people:['M16 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 18.5V20','M10 12a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z','M20 20v-1.5a3.5 3.5 0 0 0-2.5-3.35','M15.5 5.2a3.5 3.5 0 0 1 0 6.6'],
   calendar:['M4 6.5h16V20H4z','M4 10.5h16','M8 3.5v4','M16 3.5v4'],
   leaves:['M5 19c0-8 5-14 14-14 0 9-6 14-14 14z','M5 19 13 11'],
@@ -75,6 +76,7 @@ const SKIN = ['#F2CDAA','#E4B38C','#C98E62','#A9703F','#8B5A36','#6C422A'];
 const HAIR = ['#17110D','#2A1C13','#3D2A1A','#5A3F28','#1C1C20','#7B7B82'];
 const BGS = [['#2E3858','#141A2E'],['#4D2C1B','#1F120B'],['#2D3E3E','#121B1C'],['#3D2E49','#1A1222'],['#43392B','#1C1810'],['#303E2D','#131A12'],['#402C35','#1B1115'],['#2C3242','#12151C']];
 const TOPS = ['#0E3594','#2B3140','#E8E4DC','#FF9F0A','#1E5E52','#3C2F4D','#47506A','#7A2E3A'];
+let portraitId = 0;
 export function Portrait({ e }) {
   if (e.photo) return html`<img src=${e.photo} alt=${'Photo of ' + e.name} style=${{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}/>`;
   const n = e.n, skin = SKIN[(n*5)%6], hc = HAIR[(n*7 + (n>20?1:0))%6], b = (n*3)%8, top = TOPS[(n*5+2)%8];
@@ -88,9 +90,10 @@ export function Portrait({ e }) {
     : style === 'crop' ? html`<path d="M33 52C34 36 66 36 67 52C62 44 38 44 33 52Z" fill=${hc} opacity=".92"/>`
     : style === 'curly' ? html`<g fill=${hc}><circle cx="40" cy="41" r="8"/><circle cx="52" cy="37" r="9"/><circle cx="62" cy="42" r="8"/></g>`
     : html`<path d="M32 56C31 33 69 33 68 56C62 44 54 41 50 41C46 41 38 44 32 56Z" fill=${hc}/>`;
+  const gid = 'pg' + (++portraitId);
   return html`<svg viewBox="0 0 100 125" preserveAspectRatio="xMidYMid slice" role="img" aria-label=${'Portrait of ' + e.name}>
-    <defs><linearGradient id=${'bg' + b} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor=${BGS[b][0]}/><stop offset="1" stopColor=${BGS[b][1]}/></linearGradient></defs>
-    <rect width="100" height="125" fill=${'url(#bg' + b + ')'}/>
+    <defs><linearGradient id=${gid} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor=${BGS[b][0]}/><stop offset="1" stopColor=${BGS[b][1]}/></linearGradient></defs>
+    <rect width="100" height="125" fill=${'url(#' + gid + ')'}/>
     <circle cx="50" cy="48" r="52" fill="#fff" opacity=".04"/>
     ${back}
     <path d="M8 125C8 100 26 90 50 90C74 90 92 100 92 125Z" fill=${top}/>
