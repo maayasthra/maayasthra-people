@@ -261,6 +261,15 @@ await q("select public.task_timer('st1','stop_all')").catch(() => {});
 tb = await m.loadBoard();
 t('pressing a timer closes a leftover one at its own day’s end, not now', tb.tasks.find(x => x.id === 'st1').time[0].end < Date.now() - 3600e3);
 
+// A stale edit form only writes what it changed
+as('sanjay'); await m.loadStaff();
+const stale = { ...m.data.BY[ids.abines], access: m.data.ROLEMAP[ids.abines] };
+await m.saveEmployee({ ...stale, status: 'Contract' }, stale);                       // admin B changes the status
+await m.saveEmployee({ ...stale, city: 'Madurai', phone: '99999 11111' }, stale);    // admin A's form (opened before) changes the city and phone
+await m.loadStaff();
+const aft = m.data.BY[ids.abines];
+t('a stale edit form does not undo a change made meanwhile', aft.status === 'Contract' && aft.city === 'Madurai' && aft.phone === '99999 11111', { status: aft.status, city: aft.city });
+
 console.log('--- done ---');
 
 if (process.exitCode) console.log('SOME CHECKS FAILED');

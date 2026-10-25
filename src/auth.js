@@ -41,9 +41,9 @@ const titleCase = w => w.charAt(0).toUpperCase() + w.slice(1);
 export async function resolveUser(session) {
   const email = (session.user.email || '').toLowerCase();
   const { data, error } = await supabase.from('profiles').select('role, active').eq('id', session.user.id).maybeSingle();
-  if (error) return { error: 'Could not load your account. Try again.' };
+  if (error) return { error: 'Could not load your account. Check your connection and try again.', retry: true };
   if (data && data.active === false) return { error: 'This account is turned off. Ask an admin.' };
-  try { await loadStaff(); await loadLeaveConfig(); } catch (x) { return { error: x.message }; }
+  try { await loadStaff(); await loadLeaveConfig(); } catch (x) { return { error: x.message + ' Check your connection and try again.', retry: true }; }
   let user = EMP.find(e => e.email === email);
   if (!user) {
     // An admin who is not in the staff list yet gets a starter record so they are never locked out. Everyone else waits for an admin to add them.

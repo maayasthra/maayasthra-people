@@ -1935,3 +1935,5 @@ button:focus:not(:focus-visible){outline:none}
   .ib::after,.kt-dots::after,.kt-c::after,.kt-open::after,.mt3-t::after{content:"";position:absolute;inset:-8px}
   .kt-open,.mt3-t{padding:6px}
 }
+.boot{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;text-align:center;padding:24px}
+.boot-t{color:var(--muted);max-width:320px}

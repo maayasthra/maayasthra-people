@@ -13,6 +13,7 @@ export function EmployeeForm({ id, role, user, done, bump }) {
   const isAdmin = role === 'admin', self = !!e && e.n === user.n;
   const [f, setF] = useState(() => e ? { ...e } : { name: '', email: '', role: '', dept: '', city: '', mgr: 0, status: 'Full-time', join: TODISO, dob: '', g: 'f', phone: '', emergency: '', emergencyPhone: '', bio: '', photo: '', shiftStart: '10:00', shiftEnd: '18:00' });
   const [access, setAccess] = useState(e ? ROLEMAP[e.n] : 'Employee');
+  const [base0] = useState(() => e ? { ...e, access: ROLEMAP[e.n] } : undefined); // what the form opened with, so only real changes are saved
   const [err, setErr] = useState(''), [busy, setBusy] = useState(false);
   const set = p => { setF(o => ({ ...o, ...p })); setErr(''); };
   if (e && !isAdmin && !self) return html`<div className="none"><b>You can only edit your own profile</b></div>`;
@@ -50,7 +51,7 @@ export function EmployeeForm({ id, role, user, done, bump }) {
     const core = { shiftStart: f.shiftStart, shiftEnd: f.shiftEnd, name: f.name.trim(), role: f.role.trim(), dept: f.dept.trim(), city: f.city.trim() || 'Chennai', mgr: Number(f.mgr) || 0, status: f.status, join: f.join, dob: f.dob, g: f.g };
     if (IS_DEMO) { const saved = e ? updateEmployee(e.n, { ...core, ...contact }) : addEmployee({ ...core, ...contact }); ROLEMAP[saved.n] = access; bump(); done(saved.n); return; }
     setBusy(true);
-    try { const saved = await saveEmployee({ ...core, ...contact, n: e ? e.n : 0, email, access }); bump(); done(saved.n); } catch (x) { setErr(x.message); setBusy(false); }
+    try { const saved = await saveEmployee({ ...core, ...contact, n: e ? e.n : 0, email, access }, base0); bump(); done(saved.n); } catch (x) { setErr(x.message); setBusy(false); }
   };
 
   const preview = { n: e ? e.n : 99, g: f.g, name: f.name || 'New person', photo: f.photo };

@@ -20,6 +20,7 @@ export async function loadStaff() {
     supabase.from('employee_private').select('*')
   ]);
   if (a.error) throw new Error('Could not load the staff list.');
+  if (b.error) throw new Error('Could not load the staff list.');
   const priv = {}; (b.data || []).forEach(p => { priv[p.employee_id] = p; });
   EMP.splice(0, EMP.length, ...a.data.map(r => toApp(r, priv[r.id])));
   Object.keys(BY).forEach(k => delete BY[k]); Object.keys(ROLEMAP).forEach(k => delete ROLEMAP[k]);
@@ -27,26 +28,39 @@ export async function loadStaff() {
   DEPTS.splice(0, DEPTS.length, ...[...new Set(EMP.map(e => e.dept).filter(Boolean))].sort());
 }
 
-const upsertPrivate = async (id, e) => {
-  const { error } = await supabase.from('employee_private').upsert({ employee_id: id, phone: e.phone || '', emergency_name: e.emergency || '', emergency_phone: e.emergencyPhone || '' });
+const upsertPrivate = async (id, e, base) => {
+  // Only the contact fields that changed are written, so a private-details list that failed to load can never blank them
+  const f = { phone: ['phone', 'phone'], emergency_name: ['emergency', 'emergency'], emergency_phone: ['emergencyPhone', 'emergencyPhone'] };
+  const row = { employee_id: id };
+  Object.entries(f).forEach(([col, [k]]) => { if (!base || (e[k] || '') !== (base[k] || '')) row[col] = e[k] || ''; });
+  const { error } = await supabase.from('employee_private').upsert(row);
   if (error) throw new Error('Could not save contact details.');
 };
 const NOT_ALLOWED = 'Only admins can change that.';
 const nice = m => /duplicate key/i.test(m) ? 'That work email is already in the staff list.' : /at least one admin/i.test(m) ? 'There must be at least one admin.' : 'Could not save. Check your connection and try again.';
 
 // Admin: add or change a person. Returns the saved record.
-export async function saveEmployee(e) {
+// When editing, pass the record the form was opened with: only the fields that were actually changed are written,
+// so someone else's change to a different field (a new photo, a status) is not undone by a stale form.
+export async function saveEmployee(e, base) {
   let id = e.n;
   if (id) {
-    const { data, error } = await supabase.from('employees').update({ ...toRow(e), bio: e.bio || '', photo: e.photo || '' }).eq('id', id).select('id');
-    if (error) throw new Error(nice(error.message));
-    if (!data.length) throw new Error(NOT_ALLOWED);
+    const next = { ...toRow(e), bio: e.bio || '', photo: e.photo || '' };
+    const was = base ? { ...toRow(base), bio: base.bio || '', photo: base.photo || '' } : null;
+    const patch = was ? Object.fromEntries(Object.entries(next).filter(([k, v]) => v !== was[k])) : next;
+    if (Object.keys(patch).length) {
+      const { data, error } = await supabase.from('employees').update(patch).eq('id', id).select('id');
+      if (error) throw new Error(nice(error.message));
+      if (!data.length) throw new Error(NOT_ALLOWED);
+    }
+    const pk = ['phone', 'emergency', 'emergencyPhone'];
+    if (base && !pk.some(k => (e[k] || '') !== (base[k] || ''))) { await loadStaff(); return BY[id]; }
   } else {
     const { data, error } = await supabase.from('employees').insert({ ...toRow(e), bio: e.bio || '', photo: e.photo || '' }).select('id').single();
     if (error) throw new Error(nice(error.message));
     id = data.id;
   }
-  await upsertPrivate(id, e);
+  await upsertPrivate(id, e, base);
   await loadStaff();
   return BY[id];
 }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { html, Icon, Av } from './ui.jsx';
-import { LEAVES0, HIST0, TODISO, TOD, DAY, isoOf, BY } from './data.js';
+import { LEAVES0, HIST0, TODISO, TOD, DAY, isoOf, BY, ROLEMAP } from './data.js';
 import { loadLeaves, persistLeaves } from './leave.js';
 import { loadAttendance, mergeAtt, persistAtt } from './attendanceDb.js';
 import { loadBoard, persistBoard, loadAnnouncements, persistAnnouncements, subscribeBoard, subscribeTables } from './tasksDb.js';
@@ -87,6 +87,7 @@ function App() {
       .then(l => { if (l) applyLeaves(l); }).catch(() => {}).finally(() => { saving.current.leave--; });
   };
   const [outAsk, setOutAsk] = useState(false);
+  const [bootErr, setBootErr] = useState('');
   const [seenVer, setSeenVer] = useState(() => { try { return localStorage.getItem('mp-seen-version'); } catch (x) { return null; } });
   useEffect(() => { if (nav.view === 'about' && seenVer !== VERSION) { try { localStorage.setItem('mp-seen-version', VERSION); } catch (x) {} setSeenVer(VERSION); } }, [nav.view]);
   const [ann, setAnnRaw] = useState(SEED_ANN);
@@ -145,7 +146,15 @@ function App() {
     const at = () => { if (!saving.current.att) fresh(3); };
     let tm = 0; const poke = () => { clearTimeout(tm); tm = setTimeout(() => { at(); lv(); }, 300); };
     // The staff list (photos, names, new people, roles) is refreshed whenever anyone changes it, and every few minutes as a backup.
-    let sm = 0, lastStaff = Date.now(); const staffNow = () => { lastStaff = Date.now(); loadStaff().then(() => { if (ok) bump(); }).catch(() => {}); };
+    let sm = 0, lastStaff = Date.now(); const staffNow = () => { lastStaff = Date.now(); loadStaff().then(() => {
+      if (!ok) return;
+      // Follow changes to this person's own access or status without a reload
+      const mine = BY[auth.user.n];
+      if (!mine || mine.status === 'Exited') { signOutAuth(); setAuth(null); return; }
+      const dbRole = ROLEMAP[auth.user.n], role = dbRole === 'Admin' ? 'admin' : dbRole === 'Project manager' ? 'pm' : 'employee';
+      if (role !== auth.role) { setAuth({ user: mine, role }); setNav({ view: 'home' }); setTaskSel(null); }
+      bump();
+    }).catch(() => {}); };
     const unsubStaff = subscribeTables('mp-staff', ['employees'], () => { clearTimeout(sm); sm = setTimeout(staffNow, 400); });
     const staffTick = setInterval(staffNow, 300000);
     const unsub = subscribeTables('mp-live', ['attendance_days', 'leave_requests'], poke);
@@ -167,7 +176,7 @@ function App() {
     (async () => {
       if (!isLinkFlow()) {
         const sess = await currentSession();
-        if (sess && live) { const r = await resolveUser(sess); if (r.user && live) { setMe(r.user.n); setAuth({ user: r.user, role: r.role }); } else if (r.error) signOutAuth(); }
+        if (sess && live) { const r = await resolveUser(sess); if (r.user && live) { setMe(r.user.n); setAuth({ user: r.user, role: r.role }); } else if (r.retry && live) setBootErr(r.error); else if (r.error) signOutAuth(); }
       }
       if (live) setBooting(false);
     })();
@@ -216,6 +225,7 @@ function App() {
   useEffect(() => { try { localStorage.setItem('mp-nav', navHidden ? '1' : '0'); } catch (x) {} }, [navHidden]);
 
   if (booting) return html`<div className="boot"><span className="mark"></span></div>`;
+  if (bootErr && !auth) return html`<div className="boot"><span className="mark"></span><p className="boot-t">${bootErr}</p><button className="btn sec2" onClick=${() => location.reload()}>Try again</button></div>`;
   if (!auth && linkFlow) return html`<${SetPassword} onDone=${(user, role) => { setMe(user.n); setLinkFlow(false); setNav({ view: 'home' }); setAuth({ user, role }); }}/>`;
   if (!auth) return html`<${Login} onLogin=${(user, role) => { setMe(user.n); setNav({ view: 'home' }); setAuth({ user, role }); window.scrollTo({ top: 0 }); }}/>`;
   // The live record, so a change to your own details (shift times, name) shows straight away
