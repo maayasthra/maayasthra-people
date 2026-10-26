@@ -33,7 +33,7 @@ export const mergeAtt = (prev, fresh) => {
   return out;
 };
 
-const KNOWN = /working hours have ended|already checked in|not checked in|not valid|another admin|cannot be before|future day/i;
+const KNOWN = /EOD report|working hours have ended|already checked in|not checked in|not valid|another admin|cannot be before|future day/i;
 const fail = (error, fallback) => { throw new Error(KNOWN.test(error.message) ? error.message : fallback); };
 
 // The screens change att in memory. This works out what happened and saves it.

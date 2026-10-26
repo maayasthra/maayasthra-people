@@ -1937,3 +1937,71 @@ button:focus:not(:focus-visible){outline:none}
 }
 .boot{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;text-align:center;padding:24px}
 .boot-t{color:var(--muted);max-width:320px}
+
+/* ---------- Board: use the width ---------- */
+@media (min-width:861px){
+  .app.wide .main{padding-left:20px;padding-right:20px}
+  .app.wide .hdr{padding-left:20px;padding-right:20px}
+  .app.wide .side{padding-right:12px}
+  .app.wide{grid-template-columns:216px minmax(0,1fr)}
+  .app.wide .kb2{height:calc(100vh - 250px)}
+}
+/* Only Retainer carries colour: its cards take a quiet blue tint */
+.kc2.pin .kt{background:color-mix(in srgb,var(--c) 13%,var(--card-hi));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 22%,transparent)}
+.kc2.pin .kt:hover{background:color-mix(in srgb,var(--c) 19%,var(--card-hi))}
+.kc2.pin .kt.isdone{opacity:.8}
+
+/* ---------- EOD report dialog ---------- */
+.dlg.eod{width:min(860px,calc(100vw - 32px));padding:24px 24px 20px}
+.eod-h{display:flex;gap:14px;align-items:flex-start;margin-bottom:14px}
+.eod-h .dlg-i{margin:0;flex:none}
+.eod-h p{margin:4px 0 0}
+.eod-t{display:flex;flex-direction:column;gap:10px}
+.eod-hd,.eod-r{display:grid;grid-template-columns:minmax(150px,1.1fr) minmax(200px,2fr) 96px 30px;gap:10px;align-items:start}
+.eod-hd{font-size:11.5px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);padding:0 2px}
+.eod-g{display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:16px;background:var(--fill)}
+.eod .inp{height:40px;font-size:14px;padding:8px 12px;min-width:0;width:100%}
+.eod textarea.inp{height:auto;min-height:40px;resize:vertical;line-height:1.35}
+.eod-h-in{text-align:right;font-variant-numeric:tabular-nums}
+.eod-sum{align-self:center;text-align:right;padding-right:12px;font-weight:650;font-variant-numeric:tabular-nums}
+.eod-sub{padding-left:18px;position:relative}
+.eod-sub::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:2px;border-radius:2px;background:var(--line-hi)}
+.eod-add{display:flex;gap:16px;padding-left:2px}
+.eod-l{font-size:13px;font-weight:500;color:var(--blue-soft)}
+.eod-l:hover{text-decoration:underline}
+.eod-new{margin-top:12px}
+.eod-f{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:14px;padding:12px 4px 0;border-top:1px solid var(--line);font-size:14px;color:var(--muted)}
+.eod-f b{color:var(--text);font-size:17px;font-weight:650;font-variant-numeric:tabular-nums}
+.eod-warn{color:var(--orange)}
+.eod-e{margin-top:12px;padding:10px 14px;border-radius:12px;background:rgba(255,69,58,.14);color:#FF8A80;font-size:14px}
+.dlg.eod .dlg-a{margin-top:16px}
+@media (max-width:700px){
+  .eod-hd{display:none}
+  .eod-r{grid-template-columns:1fr 84px 30px}
+  .eod-r>:nth-child(1){grid-column:1 / 4}
+  .eod-r>:nth-child(2){grid-column:1 / 2}
+  .eod-r>:nth-child(3){grid-column:2 / 3}
+  .eod-r>:nth-child(4){grid-column:3 / 4}
+  .dlg.eod{padding:20px 16px 16px;max-height:calc(100svh - 24px)}
+}
+
+/* ---------- EOD reports page ---------- */
+.er-nav{display:flex;align-items:center;gap:10px;margin-top:22px;flex-wrap:wrap}
+.er-nav b{min-width:150px;text-align:center;font-size:15px;font-weight:600}
+.er-nav .ib:disabled{opacity:.35;pointer-events:none}
+.er-d{padding:6px 18px 16px;border-top:1px solid var(--line)}
+.er-day{font-size:13px;font-weight:600;color:var(--muted);margin:14px 0 6px}
+.er-t{display:flex;flex-direction:column}
+.er-hd,.er-r{display:grid;grid-template-columns:minmax(140px,1.1fr) minmax(160px,2fr) 84px;gap:14px;padding:9px 2px;align-items:start}
+.er-hd{font-size:11.5px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.er-r{border-top:1px solid var(--line);font-size:14px}
+.er-r span{color:var(--muted);overflow-wrap:anywhere;white-space:pre-wrap}
+.er-r b{font-weight:600;overflow-wrap:anywhere}
+.er-s{padding-left:18px}
+.er-s>span:first-child{color:var(--text)}
+.er-h{text-align:right;font-variant-numeric:tabular-nums;color:var(--text)!important;font-weight:600}
+.er-miss{padding:16px 18px;border-radius:20px;border:1px dashed var(--line-hi)}
+.er-miss h3{font-size:12px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:10px}
+.er-miss>div{display:flex;flex-wrap:wrap;gap:8px}
+.er-chip{display:inline-flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;border-radius:999px;background:var(--fill);font-size:13.5px}
+@media (max-width:640px){.er-hd{display:none}.er-r{grid-template-columns:1fr 70px}.er-r>span:nth-child(2){grid-column:1 / 3;order:3}.er-d{padding:6px 12px 14px}}

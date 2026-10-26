@@ -7,7 +7,7 @@ import { IS_DEMO } from './env.js';
    and Completed Tasks at the end. A task lists the columns it appears in.
    Until the database exists, tasks are kept in each browser.
    --------------------------------------------------------------------- */
-export const PINNED = [['retainer', 'Retainer Tasks', '#0A84FF'], ['priority', 'Priority Tasks', '#8E8E93'], ['pending', 'Pending Tasks', '#FF9F0A']];
+export const PINNED = [['pending', 'Pending Tasks', '#8E8E93'], ['retainer', 'Retainer Tasks', '#0A84FF'], ['priority', 'Priority Tasks', '#8E8E93']];
 export const DONE = 'done';
 export const PRIO = { high: ['High', '#FF453A'], med: ['Medium', '#FF9F0A'], low: ['Low', '#0A84FF'] };
 export const LABELS = ['Design', 'Motion', 'Development', 'Client', 'Copy', 'Urgent'];

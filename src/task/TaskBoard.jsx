@@ -93,12 +93,12 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
   // Every column, its look, and the saved order. Retainer first, then Priority, then people A to Z, then added columns.
   const everyone = activeEmps().sort((a, b) => a.name.localeCompare(b.name));
   const defs = {};
-  PINNED.forEach(p => { defs[p[0]] = { kind: p[0] === 'retainer' || p[0] === 'pending' ? 'pin' : 'norm', label: p[1], color: p[2] }; });
+  PINNED.forEach(p => { defs[p[0]] = { kind: p[0] === 'retainer' ? 'pin' : 'norm', label: p[1], color: p[2] }; });
   everyone.forEach(e => { defs[e.n] = { kind: 'person', label: e.name }; });
   custom.forEach(c => { defs[c.id] = { kind: 'cust', label: c.name }; });
   const baseKeys = [...PINNED.map(p => p[0]), ...everyone.map(e => e.n), ...custom.map(c => c.id)];
   const savedOrder = (layout && layout.order) || [], hiddenKeys = (layout && layout.hidden) || [];
-  const rank = k => { const i = savedOrder.indexOf(k); return i >= 0 ? i : k === 'pending' && savedOrder.includes('priority') ? savedOrder.indexOf('priority') + 0.5 : 1e6 + baseKeys.indexOf(k); };
+  const rank = k => { const i = savedOrder.indexOf(k); return i >= 0 ? i : k === 'pending' ? -1 : 1e6 + baseKeys.indexOf(k); };
   const ordered = [...baseKeys].sort((a, b) => rank(a) - rank(b));
   const isHidden = k => hiddenKeys.includes(k);
   const visible = ordered.filter(k => !isHidden(k) && !(tf.hideEmpty && defs[k].kind === 'person' && !cards(k).length));

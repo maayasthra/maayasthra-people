@@ -36,7 +36,7 @@ function builder(t) {
   const api = {
     select: (c) => { q.cols = c || '*'; if (q.op !== 'select') q.ret = true; return api; },
     insert: b => { q.op = 'insert'; q.body = b; return api; }, update: b => { q.op = 'update'; q.body = b; return api; }, upsert: b => { q.op = 'upsert'; q.body = b; return api; }, delete: () => { q.op = 'delete'; return api; },
-    eq: (c, v) => add(c, '=', v), neq: (c, v) => add(c, '<>', v), gte: (c, v) => add(c, '>=', v),
+    eq: (c, v) => add(c, '=', v), neq: (c, v) => add(c, '<>', v), gte: (c, v) => add(c, '>=', v), lte: (c, v) => add(c, '<=', v),
     in: (c, vs) => add(c, 'in', vs),
     order: (c, o) => { q.order = c + (o && o.ascending === false ? ' desc' : ''); return api; }, range: (a, b) => { q.range = [a, b]; return api; }, limit: n => { q.limit = n; return api; },
     single: () => { q.single = true; return api; }, maybeSingle: () => { q.maybe = true; return api; },
@@ -71,11 +71,13 @@ export const supabase = {
 export const authEnabled = true;`;
 const mock = { name: 'mock', setup(b) {
   b.onResolve({ filter: /^\.\/auth\.js$/ }, () => ({ path: 'auth-mock', namespace: 'm' }));
+  b.onResolve({ filter: /^\.\/env\.js$/ }, () => ({ path: 'env-mock', namespace: 'm' }));
+  b.onLoad({ filter: /env-mock/, namespace: 'm' }, () => ({ contents: 'export const IS_DEMO = false;', loader: 'js' }));
   b.onLoad({ filter: /auth-mock/, namespace: 'm' }, () => ({ contents: shimSrc, loader: 'js' }));
 }};
 export async function load() {
   const OUT = path.join(HERE, '.build'); fs.mkdirSync(OUT, { recursive: true });
-  await build({ stdin: { contents: "export * from '" + P + "/src/staff.js'; export * from '" + P + "/src/leave.js'; export * from '" + P + "/src/tasksDb.js'; export * from '" + P + "/src/attendanceDb.js'; export * as att from '" + P + "/src/attendance.js'; export * as data from '" + P + "/src/data.js'; export * as tasks from '" + P + "/src/tasks.js';", resolveDir: P + '/src', loader: 'js' }, bundle: true, format: 'esm', outfile: OUT + '/app.mjs', plugins: [mock], logLevel: 'error', define: { 'import.meta.env': '{}' }, external: ['react'] });
+  await build({ stdin: { contents: "export * from '" + P + "/src/staff.js'; export * from '" + P + "/src/leave.js'; export * from '" + P + "/src/tasksDb.js'; export * from '" + P + "/src/attendanceDb.js'; export * from '" + P + "/src/eodDb.js'; export * as att from '" + P + "/src/attendance.js'; export * as data from '" + P + "/src/data.js'; export * as tasks from '" + P + "/src/tasks.js';", resolveDir: P + '/src', loader: 'js' }, bundle: true, format: 'esm', outfile: OUT + '/app.mjs', plugins: [mock], logLevel: 'error', define: { 'import.meta.env': '{}' }, external: ['react'] });
   fs.writeFileSync(OUT + '/react.mjs', 'export const useState=()=>[0,()=>{}]; export const useEffect=()=>{};');
   fs.writeFileSync(OUT + '/app.mjs', fs.readFileSync(OUT + '/app.mjs', 'utf8').replace(/from "react"/g, 'from "./react.mjs"'));
   return await import(OUT + '/app.mjs?' + Date.now());

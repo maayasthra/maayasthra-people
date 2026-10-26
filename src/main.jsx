@@ -18,14 +18,15 @@ import { Requests } from './screens/Requests.jsx';
 import { Settings } from './screens/Settings.jsx';
 import { QuickSearch } from './QuickSearch.jsx';
 import { CheckWidget } from './Attendance.jsx';
-import { loadAtt, saveAtt, setMe, checkOut, dayKey as dayKeyNow } from './attendance.js';
+import { loadAtt, saveAtt, setMe, checkOut, dayKey as dayKeyNow, sessionsOf, isIn, workedMs } from './attendance.js';
 import { MyHours } from './screens/Hours.jsx';
 import { AttendancePage } from './screens/AttendancePage.jsx';
 import { TaskBoard } from './task/TaskBoard.jsx';
 import { MyTasks } from './task/MyTasks.jsx';
 import { TeamView } from './task/TeamView.jsx';
-import { ProjectHours } from './task/ProjectHours.jsx';
-import { CheckoutWarning } from './task/CheckoutWarning.jsx';
+import { EodReports } from './task/EodReports.jsx';
+import { EodDialog } from './task/EodDialog.jsx';
+import { submitEod } from './eodDb.js';
 import { About } from './screens/About.jsx';
 import { VERSION } from './about.js';
 import { TaskDetail } from './task/TaskDetail.jsx';
@@ -33,8 +34,8 @@ import { isDoing, stopFor, loadTasks, saveTasks, loadCollapsed, saveCollapsed, l
 import { IS_DEMO } from './env.js';
 import './styles.css';
 
-const ALL = { about: 'About', board: 'Board', mytasks: 'My Tasks', timer: 'Project hours', team: 'Team', home: 'Home', people: 'People', org: 'Org chart', calendar: 'Calendar', attendance: 'Attendance', hours: 'My Hours', leaves: 'My Leaves', requests: 'Requests', settings: 'Settings' };
-const SHORT = { mytasks: 'Mine', timer: 'Time', org: 'Org', leaves: 'Leaves', attendance: 'Hours', hours: 'Hours' };
+const ALL = { about: 'About', board: 'Board', mytasks: 'My Tasks', eod: 'EOD reports', team: 'Team', home: 'Home', people: 'People', org: 'Org chart', calendar: 'Calendar', attendance: 'Attendance', hours: 'My Hours', leaves: 'My Leaves', requests: 'Requests', settings: 'Settings' };
+const SHORT = { mytasks: 'Mine', eod: 'EOD', org: 'Org', leaves: 'Leaves', attendance: 'Hours', hours: 'Hours' };
 
 const SEED_ANN = IS_DEMO ? [
   { id: 1, kind: 'holiday', title: 'Studio closed for Dussehra', body: 'The studio is closed on 20 October. Normal hours resume the next working day.', date: TODISO, by: 'Meera Iyer' },
@@ -86,7 +87,7 @@ function App() {
       .catch(e => { setSyncErr(e.message || 'Could not save. Try again.'); return loadLeaves(); })
       .then(l => { if (l) applyLeaves(l); }).catch(() => {}).finally(() => { saving.current.leave--; });
   };
-  const [outAsk, setOutAsk] = useState(false);
+  const [eodAsk, setEodAsk] = useState(null), [eodTick, setEodTick] = useState(0);
   const [bootErr, setBootErr] = useState('');
   const [seenVer, setSeenVer] = useState(() => { try { return localStorage.getItem('mp-seen-version'); } catch (x) { return null; } });
   useEffect(() => { if (nav.view === 'about' && seenVer !== VERSION) { try { localStorage.setItem('mp-seen-version', VERSION); } catch (x) {} setSeenVer(VERSION); } }, [nav.view]);
@@ -234,12 +235,15 @@ function App() {
   // Admins and project managers get the whole task app. Everyone else gets only their own tasks.
   const isMgr = role === 'admin' || role === 'pm';
   const seenNow = seenVer === VERSION || nav.view === 'about';
-  // Checking out ends the day's task timers. If any are running, show them first.
-  const running = tasks.filter(t => isDoing(t, user.n));
+  // Nobody checks out without sending the day's report. Anything marked as in progress goes back to the to-do list at check-out.
   const stopMyTimers = at => setTasks(ts => ts.map(t => isDoing(t, user.n) ? { ...t, time: stopFor(t.time, user.n, at) } : t));
-  const requestOut = () => { if (running.length) setOutAsk(true); else setAtt(a => checkOut(a, user.n)); };
-  const confirmOut = () => { setOutAsk(false); setAtt(a => checkOut(a, user.n)); stopMyTimers(Date.now()); };
-  const keys = app === 'task' ? (isMgr ? ['board', 'mytasks', 'timer', 'team'] : ['mytasks']) : peopleKeys;
+  const requestOut = () => setEodAsk('out');
+  const sendEod = async rows => {
+    await submitEod(rows, user.n);
+    if (eodAsk === 'out') { setAtt(a => checkOut(a, user.n)); stopMyTimers(Date.now()); }
+    setEodAsk(null); setEodTick(t => t + 1);
+  };
+  const keys = app === 'task' ? (isMgr ? ['board', 'mytasks', 'eod', 'team'] : ['mytasks', 'eod']) : peopleKeys;
   const setApp = a => { setAppState(a); setNav({ view: a === 'task' ? (isMgr ? 'board' : 'mytasks') : 'home' }); setTaskSel(null); setSOpen(false); window.scrollTo({ top: 0 }); };
   const openTask = (id, ctx) => setTaskSel({ id, ctx });
   const goTask = id => { setAppState('task'); setNav({ view: 'mytasks' }); setTaskSel(id ? { id } : null); window.scrollTo({ top: 0 }); };
@@ -256,7 +260,7 @@ function App() {
   const pending = role === 'admin' ? leaves.filter(l => !l.past && l.state === 'pending').length : 0;
 
   const home = html`<${Home} role=${role} user=${user} leaves=${leaves} setLeaves=${setLeaves} ann=${ann} setAnn=${setAnn} att=${att} setAtt=${setAtt} onOut=${requestOut} tasks=${tasks} goTask=${goTask} go=${go} openForm=${openForm} open=${open}/>`;
-  const taskScreen = nav.view === 'timer' && isMgr ? html`<${ProjectHours} tasks=${tasks} user=${user} role=${role}/>`
+  const taskScreen = nav.view === 'eod' ? html`<${EodReports} user=${user} role=${role} tick=${eodTick} checkedIn=${isIn(sessionsOf(att, user.n))} att=${att} onEditToday=${() => setEodAsk('save')}/>`
     : nav.view === 'mytasks' || !isMgr ? html`<${MyTasks} tasks=${tasks} setTasks=${setTasks} user=${user} tq=${tq} openTask=${openTask}/>`
     : nav.view === 'team' && isMgr ? html`<${TeamView} tasks=${tasks} onPick=${n => { setTf(f => ({ ...f, dept: 'All' })); setFocus(n); go('board'); }}/>`
     : html`<${TaskBoard} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} tf=${tf} setTf=${setTf} tq=${tq} openTask=${openTask} focus=${focus} collapsed=${collapsed} setCollapsed=${setCollapsed} custom=${custom} setCustom=${setCustom} layout=${layout} setLayout=${setLayout}/>`;
@@ -274,7 +278,7 @@ function App() {
     : home;
 
   const brand = html`<${Brand}/>`;
-  return html`<div className=${'app' + (navHidden ? ' no-side' : '')}>
+  return html`<div className=${'app' + (navHidden ? ' no-side' : '') + (app === 'task' && nav.view === 'board' ? ' wide' : '')}>
     <aside className="side">${brand}
       <${AppSwitch} app=${app} setApp=${setApp}/>
       <nav className="nav" aria-label="Main">${keys.map(k => html`<button key=${k} className=${'nav-b' + (active === k ? ' on' : '')} onClick=${() => go(k)} aria-current=${active === k ? 'page' : undefined}>
@@ -291,7 +295,7 @@ function App() {
       <main className="main" key=${app + nav.view + (nav.id || '')}>${screen}</main>
       ${syncErr && html`<div className="sync-err" role="alert"><span>${syncErr}</span><button onClick=${() => setSyncErr('')} aria-label="Dismiss">Dismiss</button></div>`}
     </div>
-    ${outAsk && html`<${CheckoutWarning} running=${running} me=${user.n} onConfirm=${confirmOut} onCancel=${() => setOutAsk(false)}/>`}
+    ${eodAsk && html`<${EodDialog} user=${user} tasks=${tasks} worked=${workedMs(sessionsOf(att, user.n), Date.now())} mode=${eodAsk} onSend=${sendEod} onCancel=${() => setEodAsk(null)}/>`}
     ${taskSel && html`<${TaskDetail} key=${taskSel.id} id=${taskSel.id} ctx=${taskSel.ctx} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} leaves=${leaves} custom=${custom} close=${() => setTaskSel(null)}/>`}
     <nav className="bnav" style=${{ gridTemplateColumns: 'repeat(' + mob.length + ', 1fr)' }} aria-label="Main">${mob.map(k => k === 'more'
       ? html`<button key=${k} className=${more.includes(active) || moreOpen ? 'on' : ''} onClick=${() => setMoreOpen(o => !o)} aria-expanded=${moreOpen}><${Icon} n="dots" s=${22}/>More</button>`

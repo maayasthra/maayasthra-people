@@ -1,8 +1,15 @@
 /* What this build is, and what changed in each release. Update CHANGELOG (newest first) and the version in package.json when you ship. */
-export const VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.5.1';
+export const VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.6.0';
 export const BUILT = typeof __BUILD_DATE__ !== 'undefined' ? new Date(__BUILD_DATE__) : new Date();
 
 export const CHANGELOG = [
+  { version: '1.6.0', date: '26 Oct 2026', title: 'End-of-day reports', items: [
+    'Checking out now asks for an end-of-day report: what you worked on, with hours, and subtasks under each project',
+    'EOD reports replaces Project hours. Everyone sees their own days; admins and project managers see everyone, by day, week or month',
+    'Task timing is gone from My Tasks and the card drawer. Doing now just marks what you are on, and resets when you check out',
+    'Board columns are Pending Tasks, Retainer Tasks, then Priority Tasks. Only Retainer is coloured, and its cards have a soft blue tint',
+    'The board uses more of the screen'
+  ] },
   { version: '1.5.1', date: '26 Oct 2026', title: 'No automatic check-out', items: [
     'You now stay checked in until you check out yourself; nothing ends your day at the shift end',
     'Check-in is open at any hour',
@@ -58,13 +65,13 @@ export const MODULES = [
   ['people', 'People', 'The directory, org chart and calendar for everyone at Maayasthra.'],
   ['leaves', 'Leave', 'Apply for Sick, Casual or Emergency leave and see who decided.'],
   ['clock', 'Attendance', 'Check in and out, see your hours and your team’s month at a glance.'],
-  ['board', 'Tasks', 'The board, and My Tasks with a timer for every card.'],
-  ['timer', 'Project hours', 'Time logged on tasks, added up for each person.'],
+  ['board', 'Tasks', 'The board, and My Tasks with To do, Doing and Completed.'],
+  ['eod', 'EOD reports', 'A short report when you check out, and everyone’s reports for managers.'],
   ['megaphone', 'Announcements', 'Studio notices on everyone’s Home page.']
 ];
 
 export const ROLES = [
   ['Employee', 'Your own profile, leave, hours and your own tasks.'],
-  ['Project manager', 'Everything an employee has, plus the whole board, Team and Project hours. Assigns and removes tasks.'],
+  ['Project manager', 'Everything an employee has, plus the whole board, Team and everyone’s EOD reports. Assigns and removes tasks.'],
   ['Admin', 'Everything, including people, leave approvals and settings.']
 ];
