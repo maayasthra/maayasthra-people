@@ -114,11 +114,7 @@ export function lunchInfo(now) {
   return { state: 'over', text: '' };
 }
 export const startDelta = (sessions, shiftStart, iso = dayKey()) => sessions.length ? Math.round(minsOf(sessions[0].in, iso) - hmMins(shiftStart)) : null;
-export const shiftEndsIn = (now, shiftEnd) => hmMins(shiftEnd) - minuteOfDay(now);
 
-// Once a person's working hours are over, checking in is closed for the day and an open session stops at the shift end.
-export const shiftEnded = (now, shiftEnd) => shiftEndsIn(now, shiftEnd) <= 0;
-export const shiftEndAt = shiftEnd => dayStart(dayKey()) + hmMins(shiftEnd) * 60000;
 
 export function useNow(ms = 1000) {
   const [now, setNow] = useState(Date.now());

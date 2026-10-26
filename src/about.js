@@ -1,8 +1,15 @@
 /* What this build is, and what changed in each release. Update CHANGELOG (newest first) and the version in package.json when you ship. */
-export const VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.5.0';
+export const VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.5.1';
 export const BUILT = typeof __BUILD_DATE__ !== 'undefined' ? new Date(__BUILD_DATE__) : new Date();
 
 export const CHANGELOG = [
+  { version: '1.5.1', date: '26 Oct 2026', title: 'No automatic check-out', items: [
+    'You now stay checked in until you check out yourself; nothing ends your day at the shift end',
+    'Check-in is open at any hour',
+    'Timers and times follow India time, wherever you are',
+    'A timer left running overnight no longer adds extra hours',
+    'Your role or access updates on screen as soon as an admin changes it'
+  ] },
   { version: '1.5.0', date: '24 Oct 2026', title: 'Project managers, task timers and hours', items: [
     'New Project manager role: runs the whole board, Team and Project hours, and assigns and removes tasks',
     'My Tasks now has To do, Doing and Completed, with a live timer on every task',

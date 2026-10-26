@@ -239,7 +239,6 @@ function App() {
   const stopMyTimers = at => setTasks(ts => ts.map(t => isDoing(t, user.n) ? { ...t, time: stopFor(t.time, user.n, at) } : t));
   const requestOut = () => { if (running.length) setOutAsk(true); else setAtt(a => checkOut(a, user.n)); };
   const confirmOut = () => { setOutAsk(false); setAtt(a => checkOut(a, user.n)); stopMyTimers(Date.now()); };
-  const autoOut = at => { setAtt(a => checkOut(a, user.n, at)); stopMyTimers(at); };
   const keys = app === 'task' ? (isMgr ? ['board', 'mytasks', 'timer', 'team'] : ['mytasks']) : peopleKeys;
   const setApp = a => { setAppState(a); setNav({ view: a === 'task' ? (isMgr ? 'board' : 'mytasks') : 'home' }); setTaskSel(null); setSOpen(false); window.scrollTo({ top: 0 }); };
   const openTask = (id, ctx) => setTaskSel({ id, ctx });
@@ -286,9 +285,9 @@ function App() {
       <header className="hdr"><button className="ib nav-t" onClick=${() => setNavHidden(h => !h)} aria-label=${navHidden ? 'Show the navigation bar' : 'Hide the navigation bar'} title=${navHidden ? 'Show the navigation bar' : 'Hide the navigation bar'}><${Icon} n="sidebar" s=${18}/></button><div className="hdr-b"><${AppSwitch} app=${app} setApp=${setApp}/></div>
         <div className=${'hs' + (sOpen ? ' open' : '')}>${app === 'task' ? html`<div className="qs"><${Icon} n="search"/><input id="quick-search" className="qs-in" value=${tq} placeholder="Search tasks" onChange=${ev => setTq(ev.target.value)} aria-label="Search tasks"/></div>` : html`<${QuickSearch} open=${id => { setSOpen(false); open(id); }}/>`}</div>
         <button className="ib hs-b" onClick=${() => { setSOpen(o => !o); setTimeout(() => { const el = document.getElementById('quick-search'); if (el) el.focus(); }, 30); }} aria-label="Search"><${Icon} n="search" s=${17}/></button>
-        <div className="ck-d"><${CheckWidget} user=${user} att=${att} setAtt=${setAtt} onOut=${requestOut} onAutoOut=${autoOut}/></div>
+        <div className="ck-d"><${CheckWidget} user=${user} att=${att} setAtt=${setAtt} onOut=${requestOut}/></div>
         <${TopRight} user=${user} role=${role} open=${open} openForm=${openForm} signOut=${signOut} goAbout=${() => go('about')} isNew=${!seenNow}/></header>
-      <div className="ck-m"><${CheckWidget} user=${user} att=${att} setAtt=${setAtt} onOut=${requestOut} onAutoOut=${autoOut}/></div>
+      <div className="ck-m"><${CheckWidget} user=${user} att=${att} setAtt=${setAtt} onOut=${requestOut}/></div>
       <main className="main" key=${app + nav.view + (nav.id || '')}>${screen}</main>
       ${syncErr && html`<div className="sync-err" role="alert"><span>${syncErr}</span><button onClick=${() => setSyncErr('')} aria-label="Dismiss">Dismiss</button></div>`}
     </div>
