@@ -7,7 +7,7 @@ import { IS_DEMO } from './env.js';
    and Completed Tasks at the end. A task lists the columns it appears in.
    Until the database exists, tasks are kept in each browser.
    --------------------------------------------------------------------- */
-export const PINNED = [['retainer', 'Retainer Tasks', '#0A84FF'], ['priority', 'Priority Tasks', '#8E8E93'], ['priority2', 'Priority Tasks', '#FF9F0A']];
+export const PINNED = [['retainer', 'Retainer Tasks', '#0A84FF'], ['priority', 'Priority Tasks', '#8E8E93'], ['pending', 'Pending Tasks', '#FF9F0A']];
 export const DONE = 'done';
 export const PRIO = { high: ['High', '#FF453A'], med: ['Medium', '#FF9F0A'], low: ['Low', '#0A84FF'] };
 export const LABELS = ['Design', 'Motion', 'Development', 'Client', 'Copy', 'Urgent'];
@@ -67,7 +67,7 @@ export const isOpen = t => !t.done;
 export const dueState = (due, done) => done ? 'done' : !due ? 'none' : due < TODISO ? 'over' : due === TODISO ? 'today' : due <= isoOf(TOD + 7 * DAY) ? 'soon' : 'later';
 export const newId = () => 't' + Date.now().toString(36) + Math.floor(Math.random() * 1000);
 export const mkTask = (o, user) => ({ id: newId(), title: '', client: '', cols: [], prio: 'med', due: '', labels: [], by: user.n, done: false, desc: '', subs: [], comments: [], time: [], created: Date.now(), ...o });
-export const colName = (c, BY, custom = []) => c === 'priority' || c === 'priority2' ? 'Priority Tasks' : c === 'retainer' ? 'Retainer Tasks' : c === DONE ? 'Completed Tasks' : typeof c === 'string' ? ((custom.find(x => x.id === c) || {}).name || '') : (BY[c] ? BY[c].name : '');
+export const colName = (c, BY, custom = []) => c === 'priority' ? 'Priority Tasks' : c === 'pending' ? 'Pending Tasks' : c === 'retainer' ? 'Retainer Tasks' : c === DONE ? 'Completed Tasks' : typeof c === 'string' ? ((custom.find(x => x.id === c) || {}).name || '') : (BY[c] ? BY[c].name : '');
 // Removing a custom column sends its cards back to Priority Tasks.
 export const dropColumn = (ts, id) => ts.map(t => !t.cols.includes(id) ? t : { ...t, cols: [...new Set(t.cols.map(c => c === id ? 'priority' : c))] });
 
