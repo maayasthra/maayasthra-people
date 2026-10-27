@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { html, Icon } from './ui.jsx';
 import { fmtTime } from './data.js';
+import { checkInSound } from './alerts.js';
 import { sessionsOf, isIn, workedMs, hms, hm, clock, lunchInfo, startDelta, checkIn, checkOut, useNow } from './attendance.js';
 
 export function SessionList({ sessions, now }) {
@@ -31,7 +32,7 @@ export function CheckWidget({ user, att, setAtt, onOut }) {
     : live ? 'Shift ends ' + fmtTime(user.shiftEnd)
     : sessions.length ? 'Checked out ' + clock(sessions[sessions.length - 1].out) : fmtTime(user.shiftStart) + ' – ' + fmtTime(user.shiftEnd);
   const main = live ? hms(worked) : sessions.length ? hm(worked) + ' worked' : 'Not checked in';
-  const act = () => live ? onOut() : setAtt(a => checkIn(a, user.n));
+  const act = () => { if (live) onOut(); else { checkInSound(); setAtt(a => checkIn(a, user.n)); } };
   return html`<div className="ck" ref=${ref}>
     <button className="ck-t" onClick=${() => setPop(p => !p)} aria-expanded=${pop} aria-label="Today's check-ins">
       <span className=${'ck-dot' + (live ? ' on' : '')}></span>

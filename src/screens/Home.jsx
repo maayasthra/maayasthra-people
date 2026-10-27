@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { html, Icon, Av, Tile, first } from '../ui.jsx';
 import { downloadLeaveReport } from '../report.js';
 import { DueChip } from '../task/parts.jsx';
+import { checkInSound, useAcks } from '../alerts.js';
 import { isOpen } from '../tasks.js';
 import { SessionList, useDay, dayNote } from '../Attendance.jsx';
 import { hm, lunchInfo, checkIn, checkOut, dayInfo, useNow, clock, minuteOfDay } from '../attendance.js';
@@ -86,14 +87,39 @@ const KINDS = {
   celebrate: { label: 'Celebration', icon: 'star', c: '#30D158' }
 };
 
+const when = t => new Date(t).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true }).replace(/ (am|pm)$/i, m => m.toUpperCase());
+
+// Admins: who has pressed "Got it" on an announcement, and who has not yet
+function AckBar({ a, acks }) {
+  const [open, setOpen] = useState(false), [tab, setTab] = useState('pending');
+  const list = acks[String(a.id)] || [];
+  const mine = e => a.byId ? e.n === a.byId : e.name === a.by;
+  const everyone = activeEmps().filter(e => !mine(e));
+  const done = list.map(x => ({ e: BY[x.emp], at: x.at })).filter(x => x.e && !mine(x.e)).sort((p, q) => q.at - p.at);
+  const doneIds = new Set(done.map(x => x.e.n)), pending = everyone.filter(e => !doneIds.has(e.n));
+  const pct = everyone.length ? Math.round(done.length / everyone.length * 100) : 0;
+  return html`<div className="ack">
+    <button className="ack-b" onClick=${() => setOpen(o => !o)} aria-expanded=${open} title="See who has acknowledged this">
+      <span className="ack-bar"><i style=${{ width: pct + '%' }}></i></span>
+      <span className="ack-t"><b>${done.length}</b> of ${everyone.length} acknowledged${pending.length > 0 ? ' · ' + pending.length + ' waiting' : ' · everyone'}</span><${Icon} n=${open ? 'chevL' : 'next'} s=${14}/></button>
+    ${open && html`<div className="ack-d">
+      <div className="ack-seg" role="group" aria-label="Show"><button className=${tab === 'pending' ? 'on' : ''} onClick=${() => setTab('pending')}>Not yet (${pending.length})</button><button className=${tab === 'done' ? 'on' : ''} onClick=${() => setTab('done')}>Acknowledged (${done.length})</button></div>
+      <div className="ack-l">${tab === 'pending'
+        ? (pending.length ? pending.map(e => html`<div className="ack-r" key=${e.n}><${Av} e=${e} s=${28}/><span><b>${e.name}</b><small>${e.role}</small></span></div>`) : html`<div className="ack-n">Everyone has acknowledged this.</div>`)
+        : (done.length ? done.map(x => html`<div className="ack-r" key=${x.e.n}><${Av} e=${x.e} s=${28}/><span><b>${x.e.name}</b><small>${x.e.role}</small></span><em>${when(x.at)}</em></div>`) : html`<div className="ack-n">No one has acknowledged this yet.</div>`)}</div>
+    </div>`}
+  </div>`;
+}
+
 function AnnList({ ann, setAnn, canPost }) {
+  const acks = useAcks(canPost);
   return html`<div className="anl">
     ${ann.length === 0 ? html`<div className="empty" style=${{ textAlign: 'left' }}>No announcements right now.</div>` :
       ann.map(a => { const kd = KINDS[a.kind] || KINDS.general; return html`<article className="an" key=${a.id}>
         <span className="an-i" style=${{ '--c': kd.c }}><${Icon} n=${kd.icon} s=${22}/></span>
         <div className="an-b">
           <div className="an-h"><b>${a.title}</b>${canPost && html`<button className="link" onClick=${() => setAnn(x => x.filter(y => y.id !== a.id))} aria-label=${'Remove ' + a.title}>Remove</button>`}</div>
-          ${a.body && html`<p>${a.body}</p>`}<small>${kd.label} · ${a.by} · ${fmtDM(a.date)}</small></div></article>`; })}
+          ${a.body && html`<p>${a.body}</p>`}<small>${kd.label} · ${a.by} · ${fmtDM(a.date)}</small>${canPost && html`<${AckBar} a=${a} acks=${acks}/>`}</div></article>`; })}
   </div>`;
 }
 
@@ -152,7 +178,7 @@ function YourDay({ user, att, setAtt, onOut }) {
     <div className=${'dy-l' + (lunch.state === 'on' ? ' on' : '')}><${Icon} n="cup" s=${16}/> ${lunch.state === 'over' ? 'Lunch was 1:00 – 2:00 PM' : lunch.text}</div>
     <${SessionList} sessions=${sessions} now=${now}/>
     <div className="dy-f"><span>${dayNote(sessions, user)}</span>
-      <button className=${'btn sm ' + (live ? 'ghost' : 'pri')} onClick=${() => live ? onOut() : setAtt(a => checkIn(a, user.n))}>${live ? 'Check out' : sessions.length ? 'Check in again' : 'Check in'}</button></div>
+      <button className=${'btn sm ' + (live ? 'ghost' : 'pri')} onClick=${() => { if (live) onOut(); else { checkInSound(); setAtt(a => checkIn(a, user.n)); } }}>${live ? 'Check out' : sessions.length ? 'Check in again' : 'Check in'}</button></div>
   <//>`;
 }
 

@@ -314,6 +314,7 @@ const mr = await m.supabase.rpc('mark_announcement_read', { p_id: aid }); t('an 
 t('the mark is saved', ((await m.supabase.from('announcement_reads').select('announcement_id')).data || []).some(r => String(r.announcement_id) === String(aid)));
 const wr = await m.supabase.from('announcement_reads').insert({ announcement_id: aid, employee_id: ids.karthik }); t('nobody can write a read mark for someone else directly', !!wr.error);
 as('karthik'); await m.loadStaff(); t('people only see their own read marks', ((await m.supabase.from('announcement_reads').select('announcement_id')).data || []).length === 0);
+as('vijay'); await m.loadStaff(); const allr = (await m.supabase.from('announcement_reads').select('announcement_id, employee_id, read_at')).data || []; t('an admin can see who has acknowledged an announcement', allr.some(r => r.employee_id === ids.abines && String(r.announcement_id) === String(aid)), allr.length);
 
 console.log('--- done ---');
 

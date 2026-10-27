@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from './auth.js';
+import { subscribeTables } from './tasksDb.js';
 import { IS_DEMO } from './env.js';
 import { HOL, pd } from './data.js';
 import { dayKey, addDays, minuteOfDay } from './attendance.js';
 
 /* Announcement alerts. A new announcement pops up for everyone who is on shift, with a chime, until they close it.
-   If the page is in the background, a system notification is shown as well and the chime repeats now and then.
+   Until they press Got it the chime repeats every minute (and a system notification too when the page is in the background).
    This needs the browser to be open: a page that has been closed cannot play a sound. */
-const WINDOW_DAYS = 3, REPEAT_MS = 30000, MAX_REPEATS = 8;
+const WINDOW_DAYS = 3, REPEAT_MS = 60000;
 const hmMins = hm => { const [h, m] = String(hm || '0:0').split(':').map(Number); return h * 60 + m; };
 
 // On shift: a working day (not a weekend or holiday), between the person's start and end time, India time
@@ -47,29 +48,29 @@ export function askNotify() { return typeof Notification === 'undefined' ? Promi
 function systemNotify(a) {
   if (notifyState() !== 'granted') return;
   try {
-    const n = new Notification(a.title, { body: (a.body || 'New announcement').slice(0, 180), tag: 'ann-' + a.id, requireInteraction: true, icon: '/apple-touch-icon.png' });
+    const n = new Notification(a.title, { body: (a.body || 'New announcement').slice(0, 180), tag: 'ann-' + a.id, renotify: true, requireInteraction: true, icon: '/apple-touch-icon.png' });
     n.onclick = () => { window.focus(); n.close(); };
   } catch (x) { /* some browsers only allow notifications from a service worker */ }
 }
 
 /* ---------- which announcements are unread ---------- */
 const DKEY = 'mp-ann-read';
-const demoReads = () => { try { return JSON.parse(localStorage.getItem(DKEY) || '{}'); } catch (x) { return {}; } };
+const demoReads = () => { try { const d = JSON.parse(localStorage.getItem(DKEY) || '{}'); Object.keys(d).forEach(k => { if (Array.isArray(d[k])) d[k] = Object.fromEntries(d[k].map(id => [id, Date.now()])); }); return d; } catch (x) { return {}; } };
 async function loadReads(me) {
-  if (IS_DEMO) return new Set(demoReads()[me] || []);
+  if (IS_DEMO) return new Set(Object.keys(demoReads()[me] || {}));
   const { data, error } = await supabase.from('announcement_reads').select('announcement_id');
   if (error) throw new Error('reads');
   return new Set(data.map(r => String(r.announcement_id)));
 }
 async function markRead(me, id) {
-  if (IS_DEMO) { const d = demoReads(); d[me] = [...new Set([...(d[me] || []), String(id)])]; try { localStorage.setItem(DKEY, JSON.stringify(d)); } catch (x) {} return; }
+  if (IS_DEMO) { const d = demoReads(); d[me] = { ...(d[me] || {}), [String(id)]: Date.now() }; try { localStorage.setItem(DKEY, JSON.stringify(d)); } catch (x) {} return; }
   await supabase.rpc('mark_announcement_read', { p_id: id });
 }
 
 export function useAnnouncementAlerts(auth, ann) {
   const me = auth ? auth.user.n : 0;
   const [reads, setReads] = useState(null), [tick, setTick] = useState(0), [perm, setPerm] = useState(notifyState());
-  const chimed = useRef(new Set()), repeats = useRef({});
+  const chimed = useRef(new Set());
 
   useEffect(() => unlockAudio(), []);
   useEffect(() => { if (!me) { setReads(null); return; } let live = true; loadReads(me).then(r => { if (live) setReads(r); }).catch(() => { if (live) setReads(new Set()); }); return () => { live = false; }; }, [me]);
@@ -81,15 +82,13 @@ export function useAnnouncementAlerts(auth, ann) {
   const live = auth && unread.length > 0 && onShift(auth.user);
   const current = live ? unread[unread.length - 1] : null;  // the oldest unread first; ann is newest first
 
-  // Chime (and a system notification when the page is not in front) once for each new alert, then now and then while it is unread and the page is in the background
+  // Chime (and a system notification when the page is not in front) once for each new alert, then again every minute until it is acknowledged
   useEffect(() => {
     if (!live) return;
     unread.forEach(a => { if (!chimed.current.has(a.id)) { chimed.current.add(a.id); chime(); if (document.hidden) systemNotify(a); } });
     const t = setInterval(() => {
-      if (!document.hidden) return;
       const a = unread[unread.length - 1]; if (!a) return;
-      repeats.current[a.id] = (repeats.current[a.id] || 0) + 1;
-      if (repeats.current[a.id] <= MAX_REPEATS) { chime(); if (repeats.current[a.id] % 3 === 0) systemNotify(a); }
+      chime(); if (document.hidden) systemNotify(a);
     }, REPEAT_MS);
     return () => clearInterval(t);
   }, [live, unread.map(a => a.id).join(',')]);
@@ -104,3 +103,40 @@ export function useAnnouncementAlerts(auth, ann) {
   const dismiss = id => { setReads(r => new Set([...(r || []), String(id)])); markRead(me, id).catch(() => {}); };
   return { current, count: unread.length, dismiss, perm, askPerm: () => askNotify().then(setPerm), tick };
 }
+
+/* ---------- who has acknowledged what (admins) ---------- */
+// { [announcementId]: [{ emp, at }] }
+export async function loadAcks() {
+  const by = {};
+  if (IS_DEMO) { const d = demoReads(); Object.keys(d).forEach(emp => Object.entries(d[emp]).forEach(([id, at]) => { (by[id] = by[id] || []).push({ emp: Number(emp), at }); })); return by; }
+  const { data, error } = await supabase.from('announcement_reads').select('announcement_id, employee_id, read_at').order('read_at');
+  if (error) throw new Error('Could not load who has read these.');
+  data.forEach(r => { (by[String(r.announcement_id)] = by[String(r.announcement_id)] || []).push({ emp: r.employee_id, at: Date.parse(r.read_at) || 0 }); });
+  return by;
+}
+export function useAcks(enabled) {
+  const [acks, setAcks] = useState({}), [rev, setRev] = useState(0);
+  useEffect(() => {
+    if (!enabled) return; let live = true;
+    loadAcks().then(a => { if (live) setAcks(a); }).catch(() => {});
+    return () => { live = false; };
+  }, [enabled, rev]);
+  useEffect(() => {
+    if (!enabled) return;
+    const t = setInterval(() => setRev(v => v + 1), 20000), onStore = () => setRev(v => v + 1);
+    window.addEventListener('storage', onStore);
+    let unsub = null; if (!IS_DEMO) unsub = subscribeTables('mp-acks', ['announcement_reads'], () => setRev(v => v + 1));
+    return () => { clearInterval(t); window.removeEventListener('storage', onStore); if (unsub) unsub(); };
+  }, [enabled]);
+  return acks;
+}
+
+/* ---------- short sounds for checking in and out ---------- */
+const tone = (c, f, t0, dur, vol = 0.28, type = 'sine') => { const o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur); o.connect(g); g.connect(c.destination); o.start(t0); o.stop(t0 + dur + 0.05); };
+function sfx(notes) {
+  const c = audio(); if (!c) return;
+  const go = () => { const t0 = c.currentTime + 0.01; notes.forEach(([f, d, dur]) => tone(c, f, t0 + d, dur)); };
+  if (c.state === 'suspended') c.resume().then(go).catch(() => {}); else go();
+}
+export const checkInSound = () => sfx([[659.3, 0, 0.22], [987.8, 0.11, 0.38]]);                 // up: a bright two-note rise
+export const checkOutSound = () => sfx([[783.99, 0, 0.22], [587.33, 0.13, 0.22], [440, 0.26, 0.42]]); // down: a calm three-note fall

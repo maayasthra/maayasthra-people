@@ -33,7 +33,7 @@ import { Members } from './screens/Members.jsx';
 import { ChangePassword } from './screens/ChangePassword.jsx';
 import { VERSION } from './about.js';
 import { useUpdateAvailable } from './updates.js';
-import { useAnnouncementAlerts } from './alerts.js';
+import { useAnnouncementAlerts, checkOutSound } from './alerts.js';
 import { AnnouncementAlert } from './AnnouncementAlert.jsx';
 import { TaskDetail } from './task/TaskDetail.jsx';
 import { isDoing, stopFor, loadTasks, saveTasks, loadCollapsed, saveCollapsed, loadCustom, saveCustom, loadLayout, saveLayout, loadView, saveView } from './tasks.js';
@@ -264,7 +264,7 @@ function App() {
   const requestOut = () => setEodAsk('out');
   const sendEod = async rows => {
     await submitEod(rows, user.n);
-    if (eodAsk === 'out') { setAtt(a => checkOut(a, user.n)); stopMyTimers(Date.now()); }
+    if (eodAsk === 'out') { setAtt(a => checkOut(a, user.n)); stopMyTimers(Date.now()); checkOutSound(); }
     setEodAsk(null); setEodTick(t => t + 1);
   };
   const keys = app === 'task' ? (isMgr ? ['board', 'mytasks', 'eod', 'team'] : ['mytasks', 'eod']) : peopleKeys;
