@@ -39,18 +39,8 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close
     </div>
     ${err && html`<div className="lg-err" role="alert">${err}</div>`}
 
-    <div className="td2-props">
-      <div className="td2-r"><span className="td2-k"><${Icon} n="people" s=${16}/>Assigned to</span>
-        <div className="td2-v td2-chips">
-          ${t.cols.map(c => html`<span className="td2-chip" key=${c}>${typeof c === 'number' && BY[c] ? html`<${Av} e=${BY[c]} s=${22}/>` : html`<i className="td2-dot"></i>`}${colName(c, BY, custom)}${mgr && t.cols.length > 1 && !t.done && html`<button onClick=${() => upd({ cols: t.cols.filter(x => x !== c), time: typeof c === 'number' ? stopFor(t.time, c) : t.time })} aria-label=${'Remove ' + colName(c, BY, custom)}><${Icon} n="x" s=${11}/></button>`}</span>`)}
-          ${mgr && !t.done && html`<label className="td2-add"><${Icon} n="plus" s=${14}/>Add<select value="" onChange=${ev => { const v = ev.target.value; if (v) upd({ cols: [...t.cols, /^\d+$/.test(v) ? Number(v) : v] }); }} aria-label="Add a person or column"><option value="">Add…</option>${addablePins.map(p => html`<option key=${p[0]} value=${p[0]}>${p[1]}</option>`)}${addable.map(e => html`<option key=${e.n} value=${e.n}>${e.name}</option>`)}</select></label>`}
-        </div></div>
-      <div className="td2-r"><span className="td2-k"><${Icon} n="flag" s=${16}/>Priority</span>
-        <div className="td2-v"><div className="seg s3" role="group" aria-label="Priority">${Object.entries(PRIO).map(([k, v]) => html`<button key=${k} disabled=${!canEdit} className=${t.prio === k ? 'on' : ''} onClick=${() => upd({ prio: k })}>${v[0]}</button>`)}</div></div></div>
-      <div className="td2-r"><span className="td2-k"><${Icon} n="tag" s=${16}/>Labels</span>
-        <div className="td2-v td2-chips">${LABELS.map(l => html`<button key=${l} disabled=${!canEdit} className=${'chip' + (t.labels.includes(l) ? ' on' : '')} onClick=${() => upd({ labels: t.labels.includes(l) ? t.labels.filter(x => x !== l) : [...t.labels, l] })}>${l}</button>`)}</div></div>
-    </div>
-
+    <div className="td2-grid">
+    <div className="td2-main">
     <section className="td2-sec"><label className="td2-h" htmlFor="td-desc"><b>Description</b></label>
       <textarea id="td-desc" className="td2-desc" value=${t.desc} disabled=${!canEdit} placeholder="Add notes, links or details" onChange=${ev => upd({ desc: ev.target.value })}></textarea></section>
 
@@ -69,6 +59,20 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close
       </div>
     </section>
 
+    </div>
+    <div className="td2-side">
+    <div className="td2-props">
+      <div className="td2-r"><span className="td2-k"><${Icon} n="people" s=${16}/>Assigned to</span>
+        <div className="td2-v td2-chips">
+          ${t.cols.map(c => html`<span className="td2-chip" key=${c}>${typeof c === 'number' && BY[c] ? html`<${Av} e=${BY[c]} s=${22}/>` : html`<i className="td2-dot"></i>`}${colName(c, BY, custom)}${mgr && t.cols.length > 1 && !t.done && html`<button onClick=${() => upd({ cols: t.cols.filter(x => x !== c), time: typeof c === 'number' ? stopFor(t.time, c) : t.time })} aria-label=${'Remove ' + colName(c, BY, custom)}><${Icon} n="x" s=${11}/></button>`}</span>`)}
+          ${mgr && !t.done && html`<label className="td2-add"><${Icon} n="plus" s=${14}/>Add<select value="" onChange=${ev => { const v = ev.target.value; if (v) upd({ cols: [...t.cols, /^\d+$/.test(v) ? Number(v) : v] }); }} aria-label="Add a person or column"><option value="">Add…</option>${addablePins.map(p => html`<option key=${p[0]} value=${p[0]}>${p[1]}</option>`)}${addable.map(e => html`<option key=${e.n} value=${e.n}>${e.name}</option>`)}</select></label>`}
+        </div></div>
+      <div className="td2-r"><span className="td2-k"><${Icon} n="flag" s=${16}/>Priority</span>
+        <div className="td2-v"><div className="seg s3" role="group" aria-label="Priority">${Object.entries(PRIO).map(([k, v]) => html`<button key=${k} disabled=${!canEdit} className=${t.prio === k ? 'on' : ''} onClick=${() => upd({ prio: k })}>${v[0]}</button>`)}</div></div></div>
+      <div className="td2-r"><span className="td2-k"><${Icon} n="tag" s=${16}/>Labels</span>
+        <div className="td2-v td2-chips">${LABELS.map(l => html`<button key=${l} disabled=${!canEdit} className=${'chip' + (t.labels.includes(l) ? ' on' : '')} onClick=${() => upd({ labels: t.labels.includes(l) ? t.labels.filter(x => x !== l) : [...t.labels, l] })}>${l}</button>`)}</div></div>
+    </div>
+
     ${!isNew && html`<section className="td2-sec">
       <div className="td2-h"><b>Comments</b>${t.comments.length > 0 && html`<span className="td2-n">${t.comments.length}</span>`}</div>
       ${t.comments.map(c => BY[c.by] && html`<div className="td2-c" key=${c.id}><${Av} e=${BY[c.by]} s=${32}/><div><div className="td2-cn"><b>${BY[c.by].name}</b><small>${ago(c.at)}</small></div><p>${c.text}</p></div></div>`)}
@@ -76,5 +80,7 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close
       ${canEdit && html`<div className="td2-comp"><input value=${comment} placeholder="Write a comment" aria-label="New comment" onChange=${ev => setComment(ev.target.value)} onKeyDown=${ev => { if (ev.key === 'Enter') addComment(); }}/>
         <button className="td2-send" disabled=${!comment.trim()} onClick=${addComment} aria-label="Post comment" title="Post"><${Icon} n="arrow" s=${16}/></button></div>`}
     </section>`}
+    </div>
+    </div>
   <//>`;
 }

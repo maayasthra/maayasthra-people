@@ -2280,3 +2280,31 @@ button:focus:not(:focus-visible){outline:none}
 .kgrp.col-into{box-shadow:inset 0 0 0 2px var(--accent)}
 .kgrp.col-drag{opacity:.55}
 .ack-r>*:first-child{flex:none}
+
+/* ---- Card: a centred pop-up ---- */
+.sh-bg{background:rgba(0,0,0,.6)}
+.sh{top:50%;left:50%;right:auto;bottom:auto;transform:translate(-50%,-50%);width:min(940px,calc(100vw - 48px));height:auto;max-height:min(88vh,820px);border-radius:26px;border:1px solid var(--line);box-shadow:0 40px 120px rgba(0,0,0,.65);animation:cardpop .22s cubic-bezier(.2,.8,.2,1) both;padding-top:0;overflow:hidden}
+@keyframes cardpop{from{opacity:0;transform:translate(-50%,-48%) scale(.97)}to{opacity:1;transform:translate(-50%,-50%)}}
+.sh-h{padding:16px 24px 14px 28px}
+.sh-h .ib{width:40px;height:40px}
+.sh-b{padding:22px 28px 28px}
+.sh-f{padding:14px 28px}
+.td2-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:32px;margin-top:20px;align-items:start}
+.td2-main .td2-sec:first-child{margin-top:0}
+.td2-side{padding:6px 18px 18px;border-radius:20px;background:rgba(255,255,255,.035);border:1px solid var(--line)}
+.td2-side .td2-props{margin-top:0;border-top:0}
+.td2-side .td2-r{grid-template-columns:minmax(0,1fr);gap:10px;align-items:start;padding:16px 0}
+.td2-side .td2-r:last-child{border-bottom:0}
+.td2-side .td2-k{font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
+.td2-side .td2-sec{margin-top:8px;padding-top:18px;border-top:1px solid var(--line)}
+.td2-desc{min-height:130px}
+.td2-sub{min-height:46px}
+.td2-r .seg button,.td2-r .chip,.td2-chip,.td2-add{min-height:36px}
+.td2-r .seg{width:100%}
+.td2-r .seg button{flex:1}
+@media (max-width:860px){
+  .sh{top:auto;left:0;bottom:0;transform:none;width:100%;max-height:92vh;border-radius:24px 24px 0 0;animation:cardup .26s cubic-bezier(.2,.8,.2,1) both}
+  @keyframes cardup{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+  .sh-b{padding:18px 18px 24px}.sh-h,.sh-f{padding-left:18px;padding-right:18px}
+  .td2-grid{grid-template-columns:minmax(0,1fr);gap:22px}
+}
