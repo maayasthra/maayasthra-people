@@ -70,6 +70,7 @@ function JumpMenu({ m, cols: all, jump, close }) {
 }
 
 export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask, focus, collapsed, setCollapsed, custom, setCustom, layout, setLayout, groups, setGroups }) {
+  const [gDrag, setGDrag] = useState(null), [gOver, setGOver] = useState(null);
   const [gdlg, setGdlg] = useState(false);  // false, or the id of the department to show ('' = none in particular)
   const toggleG = id => setCollapsed(c => ({ ...c, ['g:' + id]: !c['g:' + id] }));
   const [drag, setDrag] = useState(null), [over, setOver] = useState(null), [menu, setMenu] = useState(null), [cmenu, setCmenu] = useState(null), [colDrag, setColDrag] = useState(null), [colOver, setColOver] = useState(null), [colsMenu, setColsMenu] = useState(false), [adding, setAdding] = useState(null), [text, setText] = useState('');
@@ -109,7 +110,10 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
   // Groups are set up by hand (admins only). Each group's columns sit together under its heading.
   const gOf = k => defs[k] && (defs[k].kind === 'person' || defs[k].kind === 'cust') ? groups.find(g => g.members.includes(k)) : null;
   const segs = [], seenG = new Set();
-  visible.forEach(k => { const g = gOf(k); if (!g) { segs.push({ cols: [k] }); return; } if (seenG.has(g.id)) return; seenG.add(g.id); segs.push({ g, cols: visible.filter(x => gOf(x) === g) }); });
+  const groupableKey = k => defs[k] && (defs[k].kind === 'person' || defs[k].kind === 'cust');
+  visible.filter(k => !groupableKey(k)).forEach(k => segs.push({ cols: [k] }));                       // pinned columns first
+  groups.forEach(g => { const cols = visible.filter(k => gOf(k) === g); if (cols.length) segs.push({ g, cols }); });  // then the departments, in the order set up for them
+  visible.filter(k => groupableKey(k) && !gOf(k)).forEach(k => segs.push({ cols: [k] }));               // then columns that are in no department
   const groupable = ordered.filter(k => defs[k].kind === 'person' || defs[k].kind === 'cust').map(k => ({ key: k, label: defs[k].label, sub: defs[k].kind === 'person' ? (BY[k] || {}).role || '' : 'Custom column' }));
   // The first columns stay in view while the board scrolls sideways, as long as they are Retainer and Priority
   const lead = []; for (const k of visible) { if (k === 'retainer' || k === 'priority' || k === 'pending') lead.push(k); else break; }
@@ -120,6 +124,25 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
     setLayout(l => { const order = ordered.filter(k => k !== key), i = order.indexOf(target); order.splice(i < 0 ? order.length : i + (after ? 1 : 0), 0, key); return { ...l, order }; });
   };
   const shiftCol = (key, dir) => { const t = visible[visible.indexOf(key) + dir]; if (t !== undefined) moveCol(key, t, dir > 0); };
+  // Departments: drag a department by its heading to put it somewhere else, or drag a column onto a department to move it in
+  const gOverEv = (ev, g) => {
+    if (role !== 'admin') return;
+    if (gDrag && gDrag !== g.id) { ev.preventDefault(); const r = ev.currentTarget.getBoundingClientRect(); setGOver({ id: g.id, after: ev.clientX > r.left + r.width / 2 }); }
+    else if (colDrag != null && !ev.target.closest('.kc2') && groupableKey(colDrag)) { ev.preventDefault(); setGOver({ id: g.id, into: true }); }
+  };
+  const gDropEv = (ev, g) => {
+    if (role !== 'admin') return;
+    if (gDrag && gDrag !== g.id) {
+      ev.preventDefault(); const after = gOver && gOver.after, id = gDrag;
+      setGroups(gs => { const rest = gs.filter(x => x.id !== id), mv = gs.find(x => x.id === id), i = rest.findIndex(x => x.id === g.id); if (!mv || i < 0) return gs; rest.splice(i + (after ? 1 : 0), 0, mv); return rest; });
+      setGDrag(null); setGOver(null);
+    } else if (colDrag != null && !ev.target.closest('.kc2') && groupableKey(colDrag)) {
+      ev.preventDefault(); const key = colDrag;
+      setGroups(gs => gs.map(x => ({ ...x, members: x.members.filter(m => m !== key) })).map(x => x.id === g.id ? { ...x, members: [...x.members, key] } : x));
+      setColDrag(null); setColOver(null); setGOver(null);
+    }
+  };
+  const gCls = (g, shut) => 'kgrp' + (shut ? ' shut' : '') + (gOver && gOver.id === g.id ? (gOver.into ? ' col-into' : gOver.after ? ' ovr-r' : ' ovr-l') : '') + (gDrag === g.id ? ' col-drag' : '');
   const hideCol = key => setLayout(l => ({ ...l, hidden: [...new Set([...(l.hidden || []), key])] }));
   const showCol = key => setLayout(l => ({ ...l, hidden: (l.hidden || []).filter(k => k !== key) }));
   const openCount = tasks.filter(t => !t.done).length;
@@ -140,7 +163,7 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
   };
   const onDrop = (ev, col) => {
     ev.preventDefault();
-    if (colDrag != null) { if (colOver && colOver.key === col) moveCol(colDrag, col, colOver.after); setColDrag(null); setColOver(null); return; }
+    if (colDrag != null) { if (colOver && colOver.key === col) moveCol(colDrag, col, colOver.after); if (role === 'admin' && groupableKey(colDrag) && groupableKey(col)) { const from = gOf(colDrag), to = gOf(col), key = colDrag; if ((from && from.id) !== (to && to.id)) setGroups(gs => gs.map(x => ({ ...x, members: x.members.filter(m => m !== key) })).map(x => to && x.id === to.id ? { ...x, members: [...x.members, key] } : x)); } setColDrag(null); setColOver(null); return; }
     if (drag) setTasks(ts => moveCard(ts, drag.id, drag.col, col, over && over.col === col ? over.before : null)); setDrag(null); setOver(null); };
   // Scroll sideways on its own while a card is dragged near either edge
   const edge = ev => { const s = scroller.current; if ((!drag && colDrag == null) || !s) return; const r = s.getBoundingClientRect(); if (ev.clientX < r.left + 90) s.scrollLeft -= 26; else if (ev.clientX > r.right - 90) s.scrollLeft += 26; };
@@ -218,8 +241,8 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
       </div></div>
     <div className="kb2" ref=${scroller} onDragOver=${edge}>
       ${segs.map(s => s.g ? (collapsed['g:' + s.g.id]
-        ? html`<section className="kgrp shut" key=${'g' + s.g.id} style=${{ '--c': s.g.color }}><button className="kgrp-s" onClick=${() => toggleG(s.g.id)} aria-expanded="false" aria-label=${'Open ' + (s.g.name || 'department')} title="Open this department"><${Icon} n="next" s=${14}/>${s.g.icon && html`<span className="kgrp-i">${s.g.icon}</span>`}<span className="kgrp-v">${s.g.name || 'Untitled department'}</span><span className="kc-n">${s.cols.length}</span></button></section>`
-        : html`<section className="kgrp" key=${'g' + s.g.id} style=${{ '--c': s.g.color }}><header className="kgrp-h"><button className="kgrp-t" onClick=${() => toggleG(s.g.id)} aria-expanded="true" title="Close this department">${s.g.icon && html`<span className="kgrp-i">${s.g.icon}</span>`}<b>${s.g.name || 'Untitled department'}</b><small>${s.cols.length} ${s.cols.length === 1 ? 'column' : 'columns'}</small></button>${role === 'admin' && html`<button className="ib" onClick=${() => setGdlg(s.g.id)} aria-label=${'Edit ' + (s.g.name || 'this department')} title="Edit this department"><${Icon} n="edit" s=${14}/></button>`}<button className="ib" onClick=${() => toggleG(s.g.id)} aria-label=${'Close ' + (s.g.name || 'this department')} title="Close this department"><${Icon} n="chevL" s=${14}/></button></header><div className="kgrp-c">${s.cols.map(k => renderCol(k, defs[k].kind, defs[k].label, { color: defs[k].color, left: stickyLeft(k) }))}</div></section>`)
+        ? html`<section className=${gCls(s.g, true)} key=${'g' + s.g.id} style=${{ '--c': s.g.color }} onDragOver=${ev => gOverEv(ev, s.g)} onDrop=${ev => gDropEv(ev, s.g)} onDragLeave=${ev => { if (!ev.currentTarget.contains(ev.relatedTarget)) setGOver(null); }}><button className="kgrp-s" onClick=${() => toggleG(s.g.id)} aria-expanded="false" aria-label=${'Open ' + (s.g.name || 'department')} title="Open this department"><${Icon} n="next" s=${14}/>${s.g.icon && html`<span className="kgrp-i">${s.g.icon}</span>`}<span className="kgrp-v">${s.g.name || 'Untitled department'}</span><span className="kc-n">${s.cols.length}</span></button></section>`
+        : html`<section className=${gCls(s.g, false)} key=${'g' + s.g.id} style=${{ '--c': s.g.color }} onDragOver=${ev => gOverEv(ev, s.g)} onDrop=${ev => gDropEv(ev, s.g)} onDragLeave=${ev => { if (!ev.currentTarget.contains(ev.relatedTarget)) setGOver(null); }}><header className=${'kgrp-h' + (role === 'admin' ? ' kgrp-hd' : '')} draggable=${role === 'admin'} title=${role === 'admin' ? 'Drag to move this department' : undefined} onDragStart=${role === 'admin' ? (ev => { if (ev.target !== ev.currentTarget) return; setGDrag(s.g.id); ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', 'g:' + s.g.id); }) : undefined} onDragEnd=${() => { setGDrag(null); setGOver(null); }}><button className="kgrp-t" onClick=${() => toggleG(s.g.id)} aria-expanded="true" title="Close this department">${s.g.icon && html`<span className="kgrp-i">${s.g.icon}</span>`}<b>${s.g.name || 'Untitled department'}</b><small>${s.cols.length} ${s.cols.length === 1 ? 'column' : 'columns'}</small></button>${role === 'admin' && html`<button className="ib" onClick=${() => setGdlg(s.g.id)} aria-label=${'Edit ' + (s.g.name || 'this department')} title="Edit this department"><${Icon} n="edit" s=${14}/></button>`}<button className="ib" onClick=${() => toggleG(s.g.id)} aria-label=${'Close ' + (s.g.name || 'this department')} title="Close this department"><${Icon} n="chevL" s=${14}/></button></header><div className="kgrp-c">${s.cols.map(k => renderCol(k, defs[k].kind, defs[k].label, { color: defs[k].color, left: stickyLeft(k) }))}</div></section>`)
         : renderCol(s.cols[0], defs[s.cols[0]].kind, defs[s.cols[0]].label, { color: defs[s.cols[0]].color, left: stickyLeft(s.cols[0]) }))}
       ${renderCol(DONE, 'doneCol', 'Completed Tasks')}
       <div className="kc2 addcol">${newCol == null ? html`<button className="addcol-b" title="Add a column" aria-label="Add a column" onClick=${() => setNewCol('')}><${Icon} n="plus" s=${18}/></button>`

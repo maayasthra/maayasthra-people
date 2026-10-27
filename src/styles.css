@@ -2238,7 +2238,8 @@ button:focus:not(:focus-visible){outline:none}
 .ack-seg button.on{background:var(--card-hi);color:var(--text)}
 .ack-l{margin-top:8px;max-height:260px;overflow-y:auto}
 .ack-r{display:flex;align-items:center;gap:10px;padding:6px 4px}
-.ack-r span{min-width:0;flex:1;display:flex;flex-direction:column}
+.ack-r>.av,.ack-r>span:first-child{flex:none}
+.ack-tx{min-width:0;flex:1;display:flex;flex-direction:column}
 .ack-r b{font-size:13.5px;font-weight:550;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ack-r small{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ack-r em{font-style:normal;font-size:12px;color:var(--muted);flex:none;font-variant-numeric:tabular-nums}
@@ -2272,3 +2273,10 @@ button:focus:not(:focus-visible){outline:none}
 .ack{margin-top:14px}
 .ack-b{box-sizing:border-box}
 .an-pg .anl{gap:0}
+
+.kgrp-hd{cursor:grab}
+.kgrp.ovr-l{box-shadow:inset 4px 0 0 var(--accent),inset 0 0 0 1px color-mix(in srgb,var(--c) 32%,transparent)}
+.kgrp.ovr-r{box-shadow:inset -4px 0 0 var(--accent),inset 0 0 0 1px color-mix(in srgb,var(--c) 32%,transparent)}
+.kgrp.col-into{box-shadow:inset 0 0 0 2px var(--accent)}
+.kgrp.col-drag{opacity:.55}
+.ack-r>*:first-child{flex:none}
