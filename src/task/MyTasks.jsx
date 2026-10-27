@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { html, Icon, HI } from '../ui.jsx';
 import { mkTask, completeCard, reopenCard, startTimer, pauseTimer, isDoing, myTasksOf } from '../tasks.js';
 
-// My Tasks: To do, Doing, Completed. Doing is a marker for what you are on right now; it resets when you check out.
+// My Tasks: Pending, In progress, Completed. In progress is a marker for what you are on right now; it resets when you check out.
 export function MyTasks({ tasks, setTasks, user, tq, openTask }) {
   const [title, setTitle] = useState(''), [drag, setDrag] = useState(null), [over, setOver] = useState(null), [allDone, setAllDone] = useState(false);
   const term = tq.trim().toLowerCase();
@@ -28,7 +28,7 @@ export function MyTasks({ tasks, setTasks, user, tq, openTask }) {
         <span className="mt3-tm">${col === 'doing' ? 'In progress' : col === 'done' ? 'Completed' : ''}</span>
         <span className="mt3-a">
           ${col === 'todo' && html`<button className="btn pri sm" onClick=${() => toDoing(t.id)}>Start</button>`}
-          ${col === 'doing' && html`<button className="btn ghost sm" onClick=${() => toTodo(t.id)}>Back to to do</button><button className="mt3-ok" onClick=${() => toDone(t.id)} title="Complete" aria-label=${'Complete ' + t.title}><${Icon} n="check" s=${14}/></button>`}
+          ${col === 'doing' && html`<button className="btn ghost sm" onClick=${() => toTodo(t.id)}>Back to pending</button><button className="mt3-ok" onClick=${() => toDone(t.id)} title="Complete" aria-label=${'Complete ' + t.title}><${Icon} n="check" s=${14}/></button>`}
           ${col === 'done' && html`<button className="btn ghost sm" onClick=${() => toDoing(t.id)}>Reopen</button>`}
         </span>
       </div></article>`;
@@ -43,8 +43,8 @@ export function MyTasks({ tasks, setTasks, user, tq, openTask }) {
       <button className="btn pri" onClick=${() => openTask('new', { col: user.n })}><${Icon} n="plus" s=${16}/> New</button></div>
     <div className="mt-add"><input id="mt-add" className="inp" value=${title} placeholder="Add a task and press Enter" onChange=${ev => setTitle(ev.target.value)} onKeyDown=${ev => { if (ev.key === 'Enter') add(); }} aria-label="Quick add a task"/></div>
     <div className="mt3">
-      <${Col} id="todo" label="To do" list=${todo} empty="Nothing waiting. Add a task above."/>
-      <${Col} id="doing" label="Doing" list=${doing} empty="Drag a card here, or press Start, to mark what you are on."/>
+      <${Col} id="todo" label="Pending" list=${todo} empty="Nothing waiting. Add a task above."/>
+      <${Col} id="doing" label="In progress" list=${doing} empty="Drag a card here, or press Start, to mark what you are on."/>
       <${Col} id="done" label="Completed" list=${shownDone} empty="Finished tasks appear here."/>
     </div>
   </div>`;
