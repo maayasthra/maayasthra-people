@@ -1,7 +1,7 @@
--- 0026: Project managers write their end-of-day report without hours (the description is enough). Everyone else still gives hours. Run after 0025.
+-- 0026: Admins and project managers write their end-of-day report without hours (the description is enough). Employees still give hours. Safe to run again. Run after 0025.
 create or replace function public.submit_eod(p_rows jsonb)
 returns void language plpgsql security definer set search_path = public as $$
-declare me bigint := public.my_employee_id(); nohrs boolean := exists (select 1 from public.profiles where id = auth.uid() and role = 'Project manager' and active); r jsonb; s jsonb; total numeric := 0; sub_total numeric; h numeric; n int := 0;
+declare me bigint := public.my_employee_id(); nohrs boolean := exists (select 1 from public.profiles where id = auth.uid() and role in ('Admin', 'Project manager') and active); r jsonb; s jsonb; total numeric := 0; sub_total numeric; h numeric; n int := 0;
 begin
   if me is null or not public.is_staff() then raise exception 'Not allowed'; end if;
   if jsonb_typeof(p_rows) is distinct from 'array' or jsonb_array_length(p_rows) = 0 then raise exception 'Add at least one line to your report'; end if;

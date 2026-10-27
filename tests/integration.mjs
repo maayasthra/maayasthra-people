@@ -156,6 +156,8 @@ t('a project manager still has to describe the work', /describe what you did/.te
 t('a project manager can send a report with no hours', (await tryit(() => m.submitEod([{ project: 'Planning', desc: 'Reviewed the sprint', hours: 0 }], ids.karthik))) === '');
 const pe = (await m.loadEods(m.att.dayKey(), m.att.dayKey())).find(r => r.emp === ids.karthik);
 t('and it is stored with no hours', pe && pe.total === 0 && pe.rows.length === 1, pe && pe.total);
+as('vijay'); await m.loadStaff(); t('an admin can send a report with no hours too', (await tryit(() => m.submitEod([{ project: 'Hiring', desc: 'Interviews', hours: 0 }], ids.vijay))) === '');
+as('karthik'); await m.loadStaff();
 t('a check-out stamped hours in the past (an out-of-date page) is refused', /out of date/.test(await stepA(x => m.att.checkOut(x, ids.karthik, Date.now() - 3600e3))));
 t('check out', (await stepA(x => m.att.checkOut(x, ids.karthik))) === '');
 as('abines'); await m.loadStaff(); const eoDay = m.att.dayKey();
