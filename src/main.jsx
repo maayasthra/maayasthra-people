@@ -27,6 +27,7 @@ import { TeamView } from './task/TeamView.jsx';
 import { EodReports } from './task/EodReports.jsx';
 import { EodDialog } from './task/EodDialog.jsx';
 import { submitEod } from './eodDb.js';
+import { loadGroups, saveGroups } from './groupsDb.js';
 import { About } from './screens/About.jsx';
 import { Members } from './screens/Members.jsx';
 import { VERSION } from './about.js';
@@ -90,6 +91,21 @@ function App() {
       .then(l => { if (l) applyLeaves(l); }).catch(() => {}).finally(() => { saving.current.leave--; });
   };
   const updateReady = useUpdateAvailable();
+  const [groups, setGroupsRaw] = useState([]), gsync = useRef({ saved: [], cur: [], timer: 0, dirty: false });
+  // Board groups: admins edit them, project managers see them. Changes save a moment after the last edit.
+  useEffect(() => {
+    if (!auth || !(auth.role === 'admin' || auth.role === 'pm')) { setGroupsRaw([]); return; }
+    let live = true; const g = gsync.current;
+    const load = () => { if (g.dirty) return; loadGroups().then(l => { if (live && !g.dirty) { g.saved = l; g.cur = l; setGroupsRaw(l); } }).catch(() => {}); };
+    load();
+    const unsub = IS_DEMO ? null : subscribeTables('mp-groups', ['board_groups'], load);
+    return () => { live = false; if (unsub) unsub(); };
+  }, [auth]);
+  const setGroups = fn => {
+    const g = gsync.current, next = typeof fn === 'function' ? fn(g.cur) : fn;
+    g.cur = next; g.dirty = true; setGroupsRaw(next); clearTimeout(g.timer);
+    g.timer = setTimeout(async () => { try { await saveGroups(g.saved, g.cur); g.saved = g.cur; } catch (x) { setSyncErr(x.message); } g.dirty = false; }, 600);
+  };
   const [eodAsk, setEodAsk] = useState(null), [eodTick, setEodTick] = useState(0);
   const [bootErr, setBootErr] = useState('');
   const [seenVer, setSeenVer] = useState(() => { try { return localStorage.getItem('mp-seen-version'); } catch (x) { return null; } });
@@ -266,7 +282,7 @@ function App() {
   const taskScreen = nav.view === 'eod' ? html`<${EodReports} user=${user} role=${role} tick=${eodTick} checkedIn=${isIn(sessionsOf(att, user.n))} att=${att} onEditToday=${() => setEodAsk('save')}/>`
     : nav.view === 'mytasks' || !isMgr ? html`<${MyTasks} tasks=${tasks} setTasks=${setTasks} user=${user} tq=${tq} openTask=${openTask}/>`
     : nav.view === 'team' && isMgr ? html`<${TeamView} tasks=${tasks} onPick=${n => { setTf(f => ({ ...f, dept: 'All' })); setFocus(n); go('board'); }}/>`
-    : html`<${TaskBoard} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} tf=${tf} setTf=${setTf} tq=${tq} openTask=${openTask} focus=${focus} collapsed=${collapsed} setCollapsed=${setCollapsed} custom=${custom} setCustom=${setCustom} layout=${layout} setLayout=${setLayout}/>`;
+    : html`<${TaskBoard} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} tf=${tf} setTf=${setTf} tq=${tq} openTask=${openTask} focus=${focus} collapsed=${collapsed} setCollapsed=${setCollapsed} custom=${custom} setCustom=${setCustom} groups=${groups} setGroups=${setGroups} layout=${layout} setLayout=${setLayout}/>`;
   const screen = nav.view === 'about' ? html`<${About}/>` : app === 'task' ? taskScreen : nav.view === 'home' ? home
     : nav.view === 'people' ? html`<${People} pf=${pf} setPf=${setPf} open=${open} openForm=${openForm} role=${role} ver=${ver}/>`
     : nav.view === 'org' ? html`<${OrgChart} open=${open} user=${user} key=${ver}/>`

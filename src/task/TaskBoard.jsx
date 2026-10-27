@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { html, Icon, HI } from '../ui.jsx';
 import { BY, activeEmps } from '../data.js';
+import { BoardGroups } from './BoardGroups.jsx';
 import { PINNED, DONE, LABELS, LABEL_C, moveCard, copyCard, duplicateCard, deleteCard, completeCard, reopenCard, dropColumn, mkTask, colName } from '../tasks.js';
 
 /* The three-dots menu: open, move, copy, duplicate to a column, or delete */
@@ -68,7 +69,8 @@ function JumpMenu({ m, cols: all, jump, close }) {
       ${cols.length === 0 && html`<div className="cm-s">No match</div>`}</div></div>`;
 }
 
-export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask, focus, collapsed, setCollapsed, custom, setCustom, layout, setLayout }) {
+export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask, focus, collapsed, setCollapsed, custom, setCustom, layout, setLayout, groups, setGroups }) {
+  const [gdlg, setGdlg] = useState(false);
   const [drag, setDrag] = useState(null), [over, setOver] = useState(null), [menu, setMenu] = useState(null), [cmenu, setCmenu] = useState(null), [colDrag, setColDrag] = useState(null), [colOver, setColOver] = useState(null), [colsMenu, setColsMenu] = useState(false), [adding, setAdding] = useState(null), [text, setText] = useState('');
   const [pending, setPending] = useState({}), [lmenu, setLmenu] = useState(false), [newCol, setNewCol] = useState(null), [jmenu, setJmenu] = useState(null);
   const timers = useRef({}), scroller = useRef(null), lref = useRef(null), cref = useRef(null);
@@ -103,6 +105,11 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
   const isHidden = k => hiddenKeys.includes(k);
   const visible = ordered.filter(k => !isHidden(k) && !(tf.hideEmpty && defs[k].kind === 'person' && !cards(k).length));
   const hiddenCount = ordered.filter(isHidden).length;
+  // Groups are set up by hand (admins only). Each group's columns sit together under its heading.
+  const gOf = k => defs[k] && (defs[k].kind === 'person' || defs[k].kind === 'cust') ? groups.find(g => g.members.includes(k)) : null;
+  const segs = [], seenG = new Set();
+  visible.forEach(k => { const g = gOf(k); if (!g) { segs.push({ cols: [k] }); return; } if (seenG.has(g.id)) return; seenG.add(g.id); segs.push({ g, cols: visible.filter(x => gOf(x) === g) }); });
+  const groupable = ordered.filter(k => defs[k].kind === 'person' || defs[k].kind === 'cust').map(k => ({ key: k, label: defs[k].label }));
   // The first columns stay in view while the board scrolls sideways, as long as they are Retainer and Priority
   const lead = []; for (const k of visible) { if (k === 'retainer' || k === 'priority' || k === 'pending') lead.push(k); else break; }
   const stickyLeft = k => { let l = 0; for (const x of lead) { if (x === k) return l; l += (collapsed[x] ? 52 : 280) + 12; } return null; };
@@ -191,6 +198,7 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
       <div className="kbh-r">
         <button className="ibx" title="Jump to a person" aria-label="Jump to a person" onMouseDown=${ev => ev.stopPropagation()} onClick=${ev => { const r = ev.currentTarget.getBoundingClientRect(); setJmenu(jmenu ? null : { x: r.right - 260, y: r.bottom + 8 }); }}><${Icon} n="jump" s=${18}/></button>
         <button className=${'ibx' + (tf.hideEmpty ? ' on' : '')} title=${tf.hideEmpty ? 'Show empty columns' : 'Hide empty columns'} aria-label="Hide empty columns" aria-pressed=${!!tf.hideEmpty} onClick=${() => setTf({ ...tf, hideEmpty: !tf.hideEmpty })}><${Icon} n=${tf.hideEmpty ? 'eyeoff' : 'eye'} s=${18}/></button>
+        ${role === 'admin' && html`<button className=${'ibx' + (groups.length ? ' on' : '')} title="Group the columns" aria-label="Group the columns" onClick=${() => setGdlg(true)}><${Icon} n="layers" s=${18}/>${groups.length > 0 && html`<span className="ibx-n">${groups.length}</span>`}</button>`}
         <div className="lm-w" ref=${lref}>
           <button className=${'ibx' + (lcount ? ' on' : '')} title="Show labels on cards" aria-label="Show labels on cards" aria-haspopup="true" aria-expanded=${lmenu} onClick=${() => setLmenu(o => !o)}><${Icon} n="tag" s=${18}/>${lcount > 0 && html`<span className="ibx-n">${lcount}</span>`}</button>
           ${lmenu && html`<div className="lm" role="dialog" aria-label="Labels">
@@ -208,7 +216,8 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
         <button className="btn pri new-d" onClick=${() => openTask('new', { col: 'priority' })}><${Icon} n="plus" s=${16}/> New</button>
       </div></div>
     <div className="kb2" ref=${scroller} onDragOver=${edge}>
-      ${visible.map(k => renderCol(k, defs[k].kind, defs[k].label, { color: defs[k].color, left: stickyLeft(k) }))}
+      ${segs.map(s => s.g ? html`<section className="kgrp" key=${'g' + s.g.id} style=${{ '--c': s.g.color }}><header className="kgrp-h">${s.g.icon && html`<span className="kgrp-i">${s.g.icon}</span>`}<b>${s.g.name || 'Untitled group'}</b><small>${s.cols.length} ${s.cols.length === 1 ? 'column' : 'columns'}</small></header><div className="kgrp-c">${s.cols.map(k => renderCol(k, defs[k].kind, defs[k].label, { color: defs[k].color, left: stickyLeft(k) }))}</div></section>`
+        : renderCol(s.cols[0], defs[s.cols[0]].kind, defs[s.cols[0]].label, { color: defs[s.cols[0]].color, left: stickyLeft(s.cols[0]) }))}
       ${renderCol(DONE, 'doneCol', 'Completed Tasks')}
       <div className="kc2 addcol">${newCol == null ? html`<button className="addcol-b" title="Add a column" aria-label="Add a column" onClick=${() => setNewCol('')}><${Icon} n="plus" s=${18}/></button>`
         : html`<div className="addcol-f"><input autoFocus className="inp" value=${newCol} placeholder="Name" onChange=${ev => setNewCol(ev.target.value)} onKeyDown=${ev => { if (ev.key === 'Enter') addColumn(); if (ev.key === 'Escape') setNewCol(null); }} aria-label="New column name"/><div className="cm-a"><button className="btn ghost sm" onClick=${() => setNewCol(null)}>Cancel</button><button className="btn pri sm" onClick=${addColumn}>Add</button></div></div>`}</div>
@@ -216,5 +225,6 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
     ${jmenu && html`<${JumpMenu} m=${jmenu} cols=${[...visible.map(k => [k, defs[k].label, defs[k].kind === 'pin' ? defs[k].color : null]), [DONE, 'Completed Tasks', '#30D158']]} jump=${jump} close=${() => setJmenu(null)}/>`}
     ${menu && html`<${CardMenu} m=${menu} user=${user} custom=${custom} setTasks=${setTasks} openTask=${openTask} close=${() => setMenu(null)}/>`}
     ${cmenu && html`<${ColMenu} m=${cmenu} custom=${custom} setCustom=${setCustom} setTasks=${setTasks} close=${() => setCmenu(null)} onShift=${d => shiftCol(cmenu.id, d)} onHide=${() => hideCol(cmenu.id)} atStart=${visible.indexOf(cmenu.id) <= 0} atEnd=${visible.indexOf(cmenu.id) >= visible.length - 1}/>`}
+    ${gdlg && role === 'admin' && html`<${BoardGroups} groups=${groups} setGroups=${setGroups} columns=${groupable} onClose=${() => setGdlg(false)}/>`}
   </div>`;
 }

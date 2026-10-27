@@ -23,7 +23,7 @@ export async function setup() {
 }
 globalThis.__as = 'abines';
 export const as = n => { globalThis.__as = n; };
-const pk = { employee_private: 'employee_id', holidays: 'day' };
+const pk = { employee_private: 'employee_id', holidays: 'day', board_groups: 'id' };
 const fix = v => v instanceof Date ? (isNaN(v) ? null : v.toISOString()) : v;
 globalThis.__q = async (sql, params) => { const u = U[globalThis.__as]; await db.exec('begin'); await db.exec("set local role authenticated; select set_config('request.uid','" + u + "',true)"); try { const r = await db.query(sql, params); await db.exec('commit'); return { rows: r.rows, error: null }; } catch (e) { await db.exec('rollback'); return { rows: [], error: { message: e.message } }; } };
 export const shimSrc = `
@@ -77,7 +77,7 @@ const mock = { name: 'mock', setup(b) {
 }};
 export async function load() {
   const OUT = path.join(HERE, '.build'); fs.mkdirSync(OUT, { recursive: true });
-  await build({ stdin: { contents: "export * from '" + P + "/src/staff.js'; export * from '" + P + "/src/leave.js'; export * from '" + P + "/src/tasksDb.js'; export * from '" + P + "/src/attendanceDb.js'; export * from '" + P + "/src/eodDb.js'; export * as att from '" + P + "/src/attendance.js'; export * as data from '" + P + "/src/data.js'; export * as tasks from '" + P + "/src/tasks.js';", resolveDir: P + '/src', loader: 'js' }, bundle: true, format: 'esm', outfile: OUT + '/app.mjs', plugins: [mock], logLevel: 'error', define: { 'import.meta.env': '{}' }, external: ['react'] });
+  await build({ stdin: { contents: "export * from '" + P + "/src/staff.js'; export * from '" + P + "/src/leave.js'; export * from '" + P + "/src/tasksDb.js'; export * from '" + P + "/src/attendanceDb.js'; export * from '" + P + "/src/eodDb.js'; export * from '" + P + "/src/groupsDb.js'; export * as att from '" + P + "/src/attendance.js'; export * as data from '" + P + "/src/data.js'; export * as tasks from '" + P + "/src/tasks.js';", resolveDir: P + '/src', loader: 'js' }, bundle: true, format: 'esm', outfile: OUT + '/app.mjs', plugins: [mock], logLevel: 'error', define: { 'import.meta.env': '{}' }, external: ['react'] });
   fs.writeFileSync(OUT + '/react.mjs', 'export const useState=()=>[0,()=>{}]; export const useEffect=()=>{};');
   fs.writeFileSync(OUT + '/app.mjs', fs.readFileSync(OUT + '/app.mjs', 'utf8').replace(/from "react"/g, 'from "./react.mjs"'));
   return await import(OUT + '/app.mjs?' + Date.now());

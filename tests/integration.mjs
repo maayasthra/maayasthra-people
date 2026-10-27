@@ -291,6 +291,18 @@ as('abines'); t('an employee cannot load the members list', /Could not load the 
 as('vijay'); const mem = await m.loadMembers();
 t('an admin gets sign-in and creation dates for everyone', Object.keys(mem).length === m.data.EMP.length && Object.values(mem).every(x => x.created > 0), Object.keys(mem).length);
 
+// Board groups: only admins change them, managers read them
+as('vijay'); await m.loadStaff(); let g0 = await m.loadGroups();
+await m.saveGroups(g0, [{ id: 'g1', name: 'Design', color: '#BF5AF2', icon: '🎨', members: [ids.abines, 'c9'], position: 0 }, { id: 'g2', name: 'Dev', color: '#0A84FF', icon: '', members: [ids.arunkumar], position: 1 }]);
+let g1 = await m.loadGroups();
+t('an admin saves board groups with a name, colour, emoji and members', g1.length === 2 && g1[0].name === 'Design' && g1[0].icon === '🎨' && g1[0].members.includes(ids.abines) && g1[0].members.includes('c9'), g1);
+await m.saveGroups(g1, [{ ...g1[0], name: 'Design team' }]);
+g1 = await m.loadGroups(); t('renaming and removing a group is saved', g1.length === 1 && g1[0].name === 'Design team', g1);
+t('a colour that is not a colour is refused', !!(await tryit(() => m.saveGroups(g1, [{ ...g1[0], color: 'red' }]))));
+as('karthik'); await m.loadStaff(); t('a project manager can read the groups', (await m.loadGroups()).length === 1);
+t('a project manager cannot change them', !!(await tryit(() => m.saveGroups(g1, [{ ...g1[0], name: 'Mine' }]))) && (await m.loadGroups())[0].name === 'Design team');
+as('abines'); await tryit(() => m.saveGroups(g1, [])); t('an employee cannot remove or change them either', (await m.loadGroups()).length === 1);
+
 console.log('--- done ---');
 
 if (process.exitCode) console.log('SOME CHECKS FAILED');
