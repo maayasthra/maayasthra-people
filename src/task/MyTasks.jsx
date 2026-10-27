@@ -13,7 +13,7 @@ export function MyTasks({ tasks, setTasks, user, tq, openTask }) {
   const done = mine.filter(t => t.done).sort((a, b) => lastEnd(b) - lastEnd(a));
   const shownDone = allDone ? done : done.slice(0, 12);
 
-  // The three moves. Only one card is Doing at a time.
+  // The three moves. Any number of cards can be Doing at once.
   const toDoing = id => setTasks(ts => startTimer(ts, id, user.n));
   const toTodo = id => setTasks(ts => { const t = ts.find(x => x.id === id); return t && t.done ? reopenCard(ts, id, user.n) : pauseTimer(ts, id, user.n); });
   const toDone = id => setTasks(ts => completeCard(ts, id));

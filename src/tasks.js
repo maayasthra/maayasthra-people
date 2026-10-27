@@ -86,10 +86,10 @@ export const spentMs = (t, now = Date.now(), n) => (t.time || []).reduce((sum, s
 // Time inside a window (a week, a month), for the hours report
 export const spentIn = (t, from, to, now = Date.now(), n) => (t.time || []).reduce((sum, s) => (n == null || s.emp === n) ? sum + Math.max(0, Math.min(s.end == null ? now : s.end, to) - Math.max(s.start, from)) : sum, 0);
 export const fmtDur = (ms, secs = false) => { const t = Math.floor(Math.max(0, ms) / 1000), h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), s = t % 60; return secs ? String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0') : h ? h + 'h ' + String(m).padStart(2, '0') + 'm' : m ? m + ' min' : t ? '< 1 min' : '0 min'; };
-// Start my timer on a card (reopening it if it was completed). Pause stops mine.
+// Mark a card as Doing for me (reopening it if it was completed). Several cards can be Doing at once. Pause takes mine off it.
 export function startTimer(ts, id, n, now = Date.now()) {
   return ts.map(t => {
-    if (t.id !== id) return isDoing(t, n) && ts.some(x => x.id === id && !isDoing(x, n)) ? { ...t, time: stopFor(t.time, n, now) } : t;
+    if (t.id !== id) return t;
     if (isDoing(t, n)) return t;
     const open = t.done ? { ...t, done: false, cols: t.prev && t.prev.length ? t.prev : [n] } : t;
     return { ...open, time: [...(t.time || []), { id: now + '-' + n, emp: n, start: now, end: null }] };
