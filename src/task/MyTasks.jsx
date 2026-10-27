@@ -3,8 +3,8 @@ import { html, Icon, HI } from '../ui.jsx';
 import { mkTask, completeCard, reopenCard, startTimer, pauseTimer, isDoing, myTasksOf } from '../tasks.js';
 
 // My Tasks: Pending, In progress, Completed. In progress is a marker for what you are on right now; it resets when you check out.
-export function MyTasks({ tasks, setTasks, user, tq, openTask }) {
-  const [title, setTitle] = useState(''), [drag, setDrag] = useState(null), [over, setOver] = useState(null), [allDone, setAllDone] = useState(false);
+export function MyTasks({ tasks, setTasks, user, tq, openTask, canDelete }) {
+  const [title, setTitle] = useState(''), [drag, setDrag] = useState(null), [over, setOver] = useState(null), [allDone, setAllDone] = useState(false), [ask, setAsk] = useState(null);
   const term = tq.trim().toLowerCase();
   const mine = myTasksOf(tasks, user.n).filter(t => !term || t.title.toLowerCase().includes(term));
   const doing = mine.filter(t => isDoing(t, user.n));
@@ -24,9 +24,11 @@ export function MyTasks({ tasks, setTasks, user, tq, openTask }) {
     return html`<article className=${'mt3-k' + (col === 'doing' ? ' run' : '') + (drag === t.id ? ' dragging' : '')} draggable="true" onDragStart=${ev => { setDrag(t.id); ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', t.id); }} onDragEnd=${() => { setDrag(null); setOver(null); }}>
       <button className="mt3-t" onClick=${() => openTask(t.id)}>${t.title}</button>
       ${t.client && html`<small className="mt3-c">${t.client}</small>`}
+      ${canDelete && ask === t.id && html`<div className="mt3-del" role="alert"><span>Delete this task?</span><button className="btn ghost sm" onClick=${() => setAsk(null)}>Keep</button><button className="btn danger sm" onClick=${() => { setTasks(ts => ts.filter(x => x.id !== t.id)); setAsk(null); }}>Delete</button></div>`}
       <div className="mt3-f">
         <span className="mt3-tm">${col === 'doing' ? 'In progress' : col === 'done' ? 'Completed' : ''}</span>
         <span className="mt3-a">
+          ${canDelete && ask !== t.id && html`<button className="mt3-rm" onClick=${() => setAsk(t.id)} title="Delete this task" aria-label=${'Delete ' + t.title}><${Icon} n="trash" s=${15}/></button>`}
           ${col === 'todo' && html`<button className="btn pri sm" onClick=${() => toDoing(t.id)}>Start</button>`}
           ${col === 'doing' && html`<button className="btn ghost sm" onClick=${() => toTodo(t.id)}>Back to pending</button><button className="mt3-ok" onClick=${() => toDone(t.id)} title="Complete" aria-label=${'Complete ' + t.title}><${Icon} n="check" s=${14}/></button>`}
           ${col === 'done' && html`<button className="btn ghost sm" onClick=${() => toDoing(t.id)}>Reopen</button>`}
