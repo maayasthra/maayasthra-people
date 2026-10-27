@@ -139,4 +139,23 @@ function sfx(notes) {
   if (c.state === 'suspended') c.resume().then(go).catch(() => {}); else go();
 }
 export const checkInSound = () => sfx([[659.3, 0, 0.22], [987.8, 0.11, 0.38]]);                 // up: a bright two-note rise
+export const newTaskSound = () => sfx([[880, 0, 0.18], [1174.7, 0.12, 0.18], [1568, 0.24, 0.45]]);  // up: a three-note ping
 export const checkOutSound = () => sfx([[783.99, 0, 0.22], [587.33, 0.13, 0.22], [440, 0.26, 0.42]]); // down: a calm three-note fall
+
+/* ---------- a sound when a task is given to you ---------- */
+export function useTaskAlerts(tasks, n) {
+  const seen = useRef(null);
+  useEffect(() => {
+    if (n == null) { seen.current = null; return; }
+    const mine = (tasks || []).filter(t => !t.done && (t.cols || []).includes(n));
+    const ids = new Set(mine.map(t => t.id));
+    if (seen.current === null) { if (!(tasks || []).length) return; seen.current = ids; return; } // first load: nothing is new
+    const fresh = mine.filter(t => !seen.current.has(t.id) && t.by !== n);
+    seen.current = ids;
+    if (!fresh.length) return;
+    newTaskSound();
+    if (document.hidden && notifyState() === 'granted') {
+      try { const x = new Notification(fresh.length > 1 ? fresh.length + ' new tasks for you' : 'New task: ' + fresh[0].title, { body: fresh.length > 1 ? fresh.map(t => t.title).join(', ').slice(0, 180) : 'Open Maayasthra Task to see it.', tag: 'new-task', renotify: true, icon: '/apple-touch-icon.png' }); x.onclick = () => { window.focus(); x.close(); }; } catch (e) { /* ignore */ }
+    }
+  }, [tasks, n]);
+}

@@ -34,7 +34,7 @@ import { Announcements } from './screens/Announcements.jsx';
 import { ChangePassword } from './screens/ChangePassword.jsx';
 import { VERSION } from './about.js';
 import { useUpdateAvailable } from './updates.js';
-import { useAnnouncementAlerts, checkOutSound } from './alerts.js';
+import { useAnnouncementAlerts, useTaskAlerts, checkOutSound } from './alerts.js';
 import { AnnouncementAlert } from './AnnouncementAlert.jsx';
 import { TaskDetail } from './task/TaskDetail.jsx';
 import { isDoing, stopFor, loadTasks, saveTasks, loadCollapsed, saveCollapsed, loadCustom, saveCustom, loadLayout, saveLayout, loadView, saveView } from './tasks.js';
@@ -243,6 +243,7 @@ function App() {
     document.addEventListener('visibilitychange', vis);
     return () => { unsub(); clearInterval(poll); clearTimeout(t); document.removeEventListener('visibilitychange', vis); };
   }, [auth]);
+  useTaskAlerts(tasks, auth ? auth.user.n : null);
   useEffect(() => { if (IS_DEMO) saveTasks(tasks); }, [tasks]);
   useEffect(() => { saveCollapsed(collapsed); }, [collapsed]);
   useEffect(() => { if (IS_DEMO) saveCustom(custom); }, [custom]);
