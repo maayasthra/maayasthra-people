@@ -24,7 +24,7 @@ function Report({ r }) {
 export function EodReports({ user, role, tick, onEditToday, checkedIn, att }) {
   const mgr = role === 'admin' || role === 'pm';
   const [view, setView] = useState('day'), [day, setDay] = useState(dayKey());
-  const [list, setList] = useState(null), [err, setErr] = useState(''), [openK, setOpenK] = useState(null), [rev, setRev] = useState(0);
+  const [list, setList] = useState(null), [err, setErr] = useState(''), [openK, setOpenK] = useState(mgr ? null : user.n), [rev, setRev] = useState(0);
   const range = view === 'day' ? [day, day] : view === 'week' ? [weekStart(day), addDays(weekStart(day), 6)] : (() => { const d = pd(day), md = monthDays(new Date(d).getUTCFullYear(), new Date(d).getUTCMonth()); return [md[0], md[md.length - 1]]; })();
   const [from, to] = range;
 
@@ -47,19 +47,20 @@ export function EodReports({ user, role, tick, onEditToday, checkedIn, att }) {
   const mine = by[user.n] && by[user.n].find(r => r.day === dayKey());
 
   return html`<div>
-    <div className="pg-h"><div><h1><${HI} n="timer" tone="green"/>EOD reports</h1><p>${mgr ? 'What everyone worked on, and for how long' : 'What you worked on each day'}</p></div>
-      <div className="seg" role="group" aria-label="Period">${[['day', 'Day'], ['week', 'Week'], ['month', 'Month']].map(([k, l]) => html`<button key=${k} className=${view === k ? 'on' : ''} onClick=${() => setView(k)}>${l}</button>`)}</div></div>
-    <div className="er-nav"><button className="ib" onClick=${() => step(-1)} aria-label="Earlier"><${Icon} n="chevL" s=${16}/></button><b>${title}</b>
+    <div className="pg-h"><div><h1><${HI} n="timer" tone="green"/>EOD reports</h1><p>${mgr ? 'What everyone worked on, and for how long' : 'What you sent today'}</p></div>
+      ${mgr && html`<div className="seg" role="group" aria-label="Period">${[['day', 'Day'], ['week', 'Week'], ['month', 'Month']].map(([k, l]) => html`<button key=${k} className=${view === k ? 'on' : ''} onClick=${() => setView(k)}>${l}</button>`)}</div>`}</div>
+    ${mgr && html`<div className="er-nav"><button className="ib" onClick=${() => step(-1)} aria-label="Earlier"><${Icon} n="chevL" s=${16}/></button><b>${title}</b>
       <button className="ib" onClick=${() => step(1)} aria-label="Later" disabled=${range[1] >= TODISO}><${Icon} n="next" s=${16}/></button>
       ${day !== dayKey() && html`<button className="btn ghost sm" onClick=${() => setDay(dayKey())}>Today</button>`}
       <span style=${{ flex: 1 }}></span>
-      ${!mgr && view === 'day' && day === dayKey() && (checkedIn || mine) && html`<button className="btn sec2 sm" onClick=${onEditToday}>${mine ? 'Update today’s report' : 'Write today’s report'}</button>`}</div>
-    <div className="tiles t3">
+      ${!mgr && view === 'day' && day === dayKey() && (checkedIn || mine) && html`<button className="btn sec2 sm" onClick=${onEditToday}>${mine ? 'Update today’s report' : 'Write today’s report'}</button>`}</div>`}
+    ${mgr && html`<div className="tiles t3">
       <${Tile} icon="timer" tone="green" label="Hours reported" value=${fmtH(total)} sub=${title.toLowerCase()}/>
       <${Tile} icon="people" tone="blue" label=${mgr ? 'Reports sent' : 'Days reported'} value=${view === 'day' ? rows.length : rows.reduce((t, r) => t + r.reps.length, 0)} sub=${title.toLowerCase()}/>
       ${mgr ? html`<${Tile} icon="clock" tone="orange" label="Not sent" value=${missing.length} sub=${view === 'day' ? 'checked in, no report yet' : 'pick a day to see who'}/>`
         : html`<${Tile} icon="board" tone="purple" label="Average a day" value=${rows.length && rows[0].reps.length ? fmtH(total / rows[0].reps.length) : '0h'} sub=${title.toLowerCase()}/>`}
-    </div>
+    </div>`}
+    ${!mgr && (checkedIn || mine) && html`<div className="er-nav"><span style=${{ flex: 1 }}></span><button className="btn sec2 sm" onClick=${onEditToday}>${mine ? 'Update today’s report' : 'Write today’s report'}</button></div>`}
     ${err && html`<div className="eod-e" role="alert">${err}</div>`}
     <div className="ph3">
       ${list === null && html`<div className="none">Loading…</div>`}
