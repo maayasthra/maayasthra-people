@@ -51,6 +51,7 @@ Run these in the Supabase SQL Editor, in order. Each file can be run again safel
 | `0016_stale_timers.sql` | A timer left running overnight ends at that day's shift end whenever anyone opens the board or presses a timer; timers stop when someone is marked Exited |
 | `0017_no_auto_checkout.sql` | No automatic check-out at shift end; check-in is allowed at any hour |
 | `0018_eod_reports.sql` | EOD reports table, `submit_eod`, and check-out refuses until today's report is sent |
+| `0019_refuse_stale_checkout.sql` | An out-of-date page cannot check anyone out at the shift end |
 
 ## Tests
 

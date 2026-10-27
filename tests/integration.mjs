@@ -148,6 +148,7 @@ t('more than 24 hours in a day is refused', /more than 24/.test(await tryit(() =
 await m.submitEod([{ project: 'Website', desc: '', hours: 0, task: null, subs: [{ title: 'Menu', desc: 'Built it', hours: 1.5 }, { title: 'Footer', desc: 'Links', hours: 1 }] }, { project: 'Newsletter', desc: 'Layout', hours: 2, subs: [] }], ids.karthik);
 const eo = (await m.loadEods(m.att.dayKey(), m.att.dayKey())).find(r => r.emp === ids.karthik);
 t('a report with subtasks totals the subtasks plus the other lines', eo && eo.total === 4.5 && eo.rows.length === 2, eo && eo.total);
+t('a check-out stamped hours in the past (an out-of-date page) is refused', /out of date/.test(await stepA(x => m.att.checkOut(x, ids.karthik, Date.now() - 3600e3))));
 t('check out', (await stepA(x => m.att.checkOut(x, ids.karthik))) === '');
 await m.submitEod([{ project: 'Website', desc: 'Final touches', hours: 5 }], ids.karthik);
 t('a report can be updated later the same day', (await m.loadEods(m.att.dayKey(), m.att.dayKey())).find(r => r.emp === ids.karthik).total === 5);
