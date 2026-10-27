@@ -2045,3 +2045,18 @@ button:focus:not(:focus-visible){outline:none}
   .mb-s,.mb-s .inp{width:100%}
   .mb-s{flex:1 1 100%}
 }
+
+/* ---------- EOD dialog: calmer, type-only ---------- */
+.eod-t{gap:0}
+.eod-g{background:transparent;padding:12px 0 10px;border-radius:0;gap:8px;border-top:1px solid var(--line)}
+.eod-g:first-of-type{border-top:0}
+.eod .inp{background:var(--fill);border:1px solid transparent;border-radius:10px;height:40px}
+.eod .inp:focus{border-color:var(--blue-soft);background:var(--surface);outline:none}
+.eod textarea.inp{resize:none;overflow:hidden;field-sizing:content;min-height:40px}
+.eod-sub::before{background:var(--line)}
+.eod-add{padding-top:2px}
+.eod-new{align-self:flex-start;margin-top:10px}
+.eod-hd{padding:0 0 8px}
+.eod-h-in{max-width:96px;justify-self:end}
+.eod-f{border-top:1px solid var(--line)}
+.eod input::-webkit-outer-spin-button,.eod input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
