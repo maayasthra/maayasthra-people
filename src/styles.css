@@ -2105,3 +2105,4 @@ button:focus:not(:focus-visible){outline:none}
   .eod-l{padding:11px 4px}
   .link{padding:10px 6px;margin:-10px -6px}
 }
+.side .brand{justify-content:center}
