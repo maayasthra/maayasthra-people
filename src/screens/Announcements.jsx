@@ -42,7 +42,7 @@ export function AnnList({ ann, setAnn, canPost, tracker = false, limit = 0 }) {
       shown.map(a => { const kd = KINDS[a.kind] || KINDS.general; return html`<article className="an" key=${a.id}>
         <span className="an-i" style=${{ '--c': kd.c }}><${Icon} n=${kd.icon} s=${22}/></span>
         <div className="an-b">
-          <div className="an-h"><b>${a.title}</b>${canPost && html`<button className="link" onClick=${() => setAnn(x => x.filter(y => y.id !== a.id))} aria-label=${'Remove ' + a.title}>Remove</button>`}</div>
+          <div className="an-h"><b>${a.title}</b>${canPost && html`<button className="an-rm" onClick=${() => setAnn(x => x.filter(y => y.id !== a.id))} aria-label=${'Remove ' + a.title} title="Remove this announcement"><${Icon} n="trash" s=${15}/>Remove</button>`}</div>
           ${a.body && html`<p>${a.body}</p>`}<small>${kd.label} · ${a.by} · ${fmtDM(a.date)}</small>${tracker && html`<${AckBar} a=${a} acks=${acks}/>`}</div></article>`; })}
   </div>`;
 }

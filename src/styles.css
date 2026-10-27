@@ -2342,3 +2342,13 @@ button:focus:not(:focus-visible){outline:none}
 .mt3-k{border-radius:var(--r-card,12px);padding:12px 12px 10px}
 .mt3-e{display:grid;place-items:center;box-sizing:border-box;min-height:98px;padding:12px;border-radius:var(--r-card,12px);border-width:1.5px}
 .mt3-del{border-radius:var(--r-card,12px)}
+
+/* Announcements: one set of corners, one kind of button */
+.an-i{width:44px;height:44px;border-radius:12px}
+.an-b p{margin-top:4px;font-size:14.5px;line-height:1.45;color:var(--text)}
+.an-b>small{display:block;margin-top:6px;font-size:12.5px;color:var(--muted)}
+.an-rm{display:inline-flex;align-items:center;gap:6px;flex:none;height:32px;padding:0 12px;border-radius:999px;font-size:13px;font-weight:500;color:var(--muted);background:var(--fill);transition:background .15s,color .15s}
+.an-rm:hover{background:rgba(255,69,58,.14);color:var(--red)}
+.ack-b{box-sizing:border-box;min-height:44px;padding:10px 14px;border-radius:12px}
+.ack-bar{height:6px;border-radius:6px}
+.ack-d{border-radius:12px}
