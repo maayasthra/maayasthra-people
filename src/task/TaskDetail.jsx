@@ -41,9 +41,6 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close
 
     <div className="td2-grid">
     <div className="td2-main">
-    <section className="td2-sec"><label className="td2-h" htmlFor="td-desc"><b>Description</b></label>
-      <textarea id="td-desc" className="td2-desc" value=${t.desc} disabled=${!canEdit} placeholder="Add notes, links or details" onChange=${ev => upd({ desc: ev.target.value })}></textarea></section>
-
     <section className="td2-sec">
       <div className="td2-h"><b>Subtasks</b>${t.subs.length > 0 && html`<span className="td2-n">${done} of ${t.subs.length}</span>`}</div>
       <div className="td2-list">
@@ -58,6 +55,9 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close
           : html`<button className="td2-sub td2-sub-add" onClick=${() => setAddingSub(true)}><span className="td2-ck plus"><${Icon} n="plus" s=${12}/></span>Add a subtask</button>`)}
       </div>
     </section>
+
+    <section className="td2-sec"><label className="td2-h" htmlFor="td-desc"><b>Description</b></label>
+      <textarea id="td-desc" className="td2-desc" value=${t.desc} disabled=${!canEdit} placeholder="Add notes, links or details" onChange=${ev => upd({ desc: ev.target.value })}></textarea></section>
 
     </div>
     <div className="td2-side">

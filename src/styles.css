@@ -2308,3 +2308,10 @@ button:focus:not(:focus-visible){outline:none}
   .sh-b{padding:18px 18px 24px}.sh-h,.sh-f{padding-left:18px;padding-right:18px}
   .td2-grid{grid-template-columns:minmax(0,1fr);gap:22px}
 }
+.td2-main .td2-sec:first-child{margin-top:0}
+.td2-main .td2-sec+.td2-sec{margin-top:24px}
+.td2-main .td2-sub{min-height:52px;font-size:15.5px}
+.td2-main .td2-sub .td2-ck{width:24px;height:24px}
+.td2-main .td2-h b{font-size:16px}
+.td2-main .td2-desc{min-height:72px;font-size:14px}
+.td2-main .td2-h:has(+ .td2-desc),.td2-main label.td2-h{font-size:13px;color:var(--muted)}
