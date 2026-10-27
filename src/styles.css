@@ -2253,3 +2253,22 @@ button:focus:not(:focus-visible){outline:none}
 .ack-bar{order:-1;flex:1 0 100%}
 .ack-t{flex:1 1 auto;white-space:nowrap}
 @media (max-width:860px){.an-pg{padding:4px 16px}}
+
+/* ---------- Announcement pop-up and list: alignment ---------- */
+.al-bell{animation:none}
+.al-bell svg{transform-origin:50% 18%;animation:alring 1.6s ease-in-out 3}
+.al-top{align-items:center}
+.al-p{align-items:center;gap:14px}
+.al-p span{flex:1 1 auto;min-width:0;line-height:1.4}
+.al-p .btn{flex:none;white-space:nowrap}
+@media (max-width:480px){.al-p{flex-direction:column;align-items:stretch}.al-p .btn{width:100%}}
+.dlg.al .dlg-a{justify-content:flex-end}
+.an{align-items:flex-start;padding:18px 0}
+.an-i{margin-top:1px}
+.an-h{align-items:center;min-height:44px;margin-top:0}
+.an p{margin:0 0 8px}
+.an small{display:block}
+.an-h .link{flex:none}
+.ack{margin-top:14px}
+.ack-b{box-sizing:border-box}
+.an-pg .anl{gap:0}
