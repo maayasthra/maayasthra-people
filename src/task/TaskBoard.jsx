@@ -110,7 +110,7 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
   const gOf = k => defs[k] && (defs[k].kind === 'person' || defs[k].kind === 'cust') ? groups.find(g => g.members.includes(k)) : null;
   const segs = [], seenG = new Set();
   visible.forEach(k => { const g = gOf(k); if (!g) { segs.push({ cols: [k] }); return; } if (seenG.has(g.id)) return; seenG.add(g.id); segs.push({ g, cols: visible.filter(x => gOf(x) === g) }); });
-  const groupable = ordered.filter(k => defs[k].kind === 'person' || defs[k].kind === 'cust').map(k => ({ key: k, label: defs[k].label }));
+  const groupable = ordered.filter(k => defs[k].kind === 'person' || defs[k].kind === 'cust').map(k => ({ key: k, label: defs[k].label, sub: defs[k].kind === 'person' ? (BY[k] || {}).role || '' : 'Custom column' }));
   // The first columns stay in view while the board scrolls sideways, as long as they are Retainer and Priority
   const lead = []; for (const k of visible) { if (k === 'retainer' || k === 'priority' || k === 'pending') lead.push(k); else break; }
   const stickyLeft = k => { let l = 0; for (const x of lead) { if (x === k) return l; l += (collapsed[x] ? 52 : 280) + 12; } return null; };
