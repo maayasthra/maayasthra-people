@@ -261,9 +261,9 @@ function App() {
   // Admins and project managers get the whole task app. Everyone else gets only their own tasks.
   const isMgr = role === 'admin' || role === 'pm';
   const seenNow = seenVer === VERSION || nav.view === 'about';
-  // Nobody checks out without sending the day's report. Anything marked as in progress goes back to the to-do list at check-out.
+  // Employees check out only after sending the day's report; admins and project managers just check out. Anything marked as in progress goes back to the to-do list at check-out.
   const stopMyTimers = at => setTasks(ts => ts.map(t => isDoing(t, user.n) ? { ...t, time: stopFor(t.time, user.n, at) } : t));
-  const requestOut = () => setEodAsk('out');
+  const requestOut = () => { if (isMgr) { setAtt(a => checkOut(a, user.n)); stopMyTimers(Date.now()); checkOutSound(); } else setEodAsk('out'); };
   const sendEod = async rows => {
     await submitEod(rows, user.n);
     if (eodAsk === 'out') { setAtt(a => checkOut(a, user.n)); stopMyTimers(Date.now()); checkOutSound(); }

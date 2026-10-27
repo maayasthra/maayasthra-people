@@ -77,7 +77,7 @@ export const MODULES = [
   ['leaves', 'Leave', 'Apply for Sick, Casual or Emergency leave and see who decided.'],
   ['clock', 'Attendance', 'Check in and out, see your hours and your team’s month at a glance.'],
   ['board', 'Tasks', 'The board, and My Tasks with To do, Doing and Completed.'],
-  ['eod', 'EOD reports', 'A short report when you check out. Only admins and project managers see the reports.'],
+  ['eod', 'EOD reports', 'A short report when employees check out. Admins and project managers just check out and see everyone’s reports.'],
   ['megaphone', 'Announcements', 'Studio notices on everyone’s Home page.']
 ];
 

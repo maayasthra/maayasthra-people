@@ -40,7 +40,7 @@ export function EodReports({ user, role, tick, onEditToday, checkedIn, att }) {
   const rows = people.filter(e => by[e.n]).map(e => ({ e, reps: by[e.n].sort((a, b) => b.day.localeCompare(a.day)), total: by[e.n].reduce((t, r) => t + r.total, 0) }))
     .sort((a, b) => b.total - a.total || a.e.name.localeCompare(b.e.name));
   // Only people who checked in that day are expected to send one
-  const missing = view === 'day' && mgr && day <= TODISO ? people.filter(e => !by[e.n] && getDay(att, e.n, day).sessions.length > 0) : [];
+  const missing = view === 'day' && mgr && day <= TODISO ? people.filter(e => (e.access || 'Employee') === 'Employee' && !by[e.n] && getDay(att, e.n, day).sessions.length > 0) : [];
   const total = rows.reduce((t, r) => t + r.total, 0);
   const step = n => setDay(d => view === 'day' ? addDays(d, n) : view === 'week' ? addDays(d, 7 * n) : (() => { const t = new Date(pd(d)); return new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + n, 1)).toISOString().slice(0, 10); })());
   const title = view === 'day' ? (day === dayKey() ? 'Today' : dayLabel(day)) : view === 'week' ? fmtDM(from) + ' – ' + fmtDM(to) : new Date(pd(from)).toLocaleDateString('en-IN', { month: 'long', year: 'numeric', timeZone: 'UTC' });
@@ -53,7 +53,7 @@ export function EodReports({ user, role, tick, onEditToday, checkedIn, att }) {
       <button className="ib" onClick=${() => step(1)} aria-label="Later" disabled=${range[1] >= TODISO}><${Icon} n="next" s=${16}/></button>
       ${day !== dayKey() && html`<button className="btn ghost sm" onClick=${() => setDay(dayKey())}>Today</button>`}
       <span style=${{ flex: 1 }}></span>
-      ${view === 'day' && day === dayKey() && (checkedIn || mine) && html`<button className="btn sec2 sm" onClick=${onEditToday}>${mine ? 'Update today’s report' : 'Write today’s report'}</button>`}</div>
+      ${!mgr && view === 'day' && day === dayKey() && (checkedIn || mine) && html`<button className="btn sec2 sm" onClick=${onEditToday}>${mine ? 'Update today’s report' : 'Write today’s report'}</button>`}</div>
     <div className="tiles t3">
       <${Tile} icon="timer" tone="green" label="Hours reported" value=${fmtH(total)} sub=${title.toLowerCase()}/>
       <${Tile} icon="people" tone="blue" label=${mgr ? 'Reports sent' : 'Days reported'} value=${view === 'day' ? rows.length : rows.reduce((t, r) => t + r.reps.length, 0)} sub=${title.toLowerCase()}/>

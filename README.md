@@ -59,6 +59,7 @@ Run these in the Supabase SQL Editor, in order. Each file can be run again safel
 | `0024_ack_tracking.sql` | Admins can see who has acknowledged each announcement |
 | `0025_eod_managers_only.sql` | Employees can no longer read EOD report history (only today’s own, to edit it) |
 | `0026_eod_pm_no_hours.sql` | Admins and project managers send EOD reports without hours (description only) |
+| `0027_checkout_no_eod_for_managers.sql` | Admins and project managers check out without an EOD report |
 
 ## Tests
 

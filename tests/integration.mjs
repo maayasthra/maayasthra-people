@@ -139,7 +139,9 @@ as('karthik'); m.att.setMe(ids.karthik); await m.loadStaff();
 let ax = {}; const stepA = async fn => { const prev = ax; ax = fn(ax); const e = await tryit(() => m.persistAtt(prev, ax)); ax = m.mergeAtt(ax, await m.loadAttendance(3)); return e; };
 t('check in', (await stepA(x => m.att.checkIn(x, ids.karthik))) === '');
 t('a second check-in while checked in is refused', /already checked in/.test(await stepA(x => m.att.checkIn({ ...x, [ids.karthik]: { [m.att.dayKey()]: { sessions: [...x[ids.karthik][m.att.dayKey()].sessions.map(s => ({ ...s })), { in: Date.now(), out: null, loc: 'office' }] } } }, ids.karthik))) || true);
-t('checking out without an EOD report is refused', /EOD report/.test(await stepA(x => m.att.checkOut(x, ids.karthik))));
+as('abines'); await m.loadStaff(); await m.supabase.rpc('check_in', { p_loc: 'office' });
+{ const r = await m.supabase.rpc('check_out', { p_at: Date.now() }); t('an employee checking out without an EOD report is refused', /EOD report/.test((r.error && r.error.message) || '')); }
+as('karthik'); await m.loadStaff();
 t('an empty report is refused', /at least one line/.test(await tryit(() => m.submitEod([], ids.karthik))));
 as('abines'); await m.loadStaff();
 t('a line without hours is refused', /enter the hours/.test(await tryit(() => m.submitEod([{ project: 'Site', desc: 'Fixed menu', hours: 0 }], ids.abines))));
@@ -159,7 +161,7 @@ t('and it is stored with no hours', pe && pe.total === 0 && pe.rows.length === 1
 as('vijay'); await m.loadStaff(); t('an admin can send a report with no hours too', (await tryit(() => m.submitEod([{ project: 'Hiring', desc: 'Interviews', hours: 0 }], ids.vijay))) === '');
 as('karthik'); await m.loadStaff();
 t('a check-out stamped hours in the past (an out-of-date page) is refused', /out of date/.test(await stepA(x => m.att.checkOut(x, ids.karthik, Date.now() - 3600e3))));
-t('check out', (await stepA(x => m.att.checkOut(x, ids.karthik))) === '');
+t('a project manager checks out without any report', (await stepA(x => m.att.checkOut(x, ids.karthik))) === '');
 as('abines'); await m.loadStaff(); const eoDay = m.att.dayKey();
 t('an employee cannot read someone else’s report', (await m.loadEods(eoDay, eoDay)).filter(r => r.emp !== ids.abines).length === 0);
 await db.exec("insert into eod_reports (employee_id, day, rows, total_hours) values (" + ids.abines + ", public.today_ist() - 1, '[]'::jsonb, 1)");
