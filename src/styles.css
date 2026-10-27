@@ -2336,3 +2336,9 @@ button:focus:not(:focus-visible){outline:none}
 .mt3-rm:hover{background:rgba(255,69,58,.14);color:var(--red)}
 .mt3-del{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 10px;border-radius:12px;background:rgba(255,69,58,.1);font-size:13.5px}
 .mt3-del span{margin-right:auto;color:var(--text)}
+
+/* My Tasks: same corners as the board, and an empty slot the size of a card */
+.mt3-col{border-radius:var(--r-col,18px)}
+.mt3-k{border-radius:var(--r-card,12px);padding:12px 12px 10px}
+.mt3-e{display:grid;place-items:center;box-sizing:border-box;min-height:98px;padding:12px;border-radius:var(--r-card,12px);border-width:1.5px}
+.mt3-del{border-radius:var(--r-card,12px)}
