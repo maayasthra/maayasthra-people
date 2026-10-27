@@ -55,7 +55,7 @@ export function Login({ onLogin }) {
   };
   return html`<div className="lg-wrap">
     <section className="lg-art">
-      <div className="brand" style=${{ padding: 0 }}><span className="mark"></span><span className="brand-t"><b>Maayasthra</b><span>People</span></span></div>
+      <div className="brand" style=${{ padding: 0 }}><img className="brand-logo" src="/maayasthra-logo.svg" alt="Maayasthra" width="168" height="50"/></div>
       <div className="lg-copy"><h1>Everyone at Maayasthra, in one place.</h1><p>Your team, your time off, your hours and your tasks. Sign in with your work email.</p></div>
       <div><div className="lg-mos" aria-hidden="true">${FACES.map(f => html`<div key=${f.n}><${Photo} e=${f}/></div>`)}</div>
         <div className="lg-url">people.maayasthra.com</div></div>
@@ -115,7 +115,7 @@ export function SetPassword({ onDone }) {
     }).catch(e => { setErr(e.message); setBusy(false); });
   };
   return html`<div className="lg-wrap" style=${{ gridTemplateColumns: 'minmax(0,1fr)' }}><section className="lg-form"><div className="lg-box">
-    <div className="brand" style=${{ padding: '0 0 28px' }}><span className="mark"></span><span className="brand-t"><b>Maayasthra</b><span>People</span></span></div>
+    <div className="brand" style=${{ padding: '0 0 28px' }}><img className="brand-logo" src="/maayasthra-logo.svg" alt="Maayasthra" width="150" height="45"/></div>
     <h2>Choose a password</h2>
     <form onSubmit=${submit} noValidate>
       <div className="fld"><label htmlFor="np1">New password</label><div className="pw"><input id="np1" className="inp" type=${show ? 'text' : 'password'} autoComplete="new-password" value=${pw} onChange=${ev => setPw(ev.target.value)}/><button type="button" className="pw-b" onClick=${() => setShow(!show)}>${show ? 'Hide' : 'Show'}</button></div></div>

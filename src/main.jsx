@@ -50,7 +50,7 @@ const SEED_ANN = IS_DEMO ? [
 function AppSwitch({ app, setApp }) {
   return html`<div className="apps2" role="tablist" aria-label="Apps">${[['people', 'People', 'people', '#0A84FF'], ['task', 'Task', 'board', '#BF5AF2']].map(([k, l, ic, c]) => html`<button key=${k} role="tab" aria-selected=${app === k} className=${app === k ? 'on' : ''} style=${{ '--c': c }} onClick=${() => setApp(k)}><${Icon} n=${ic} s=${20}/><span>${l}</span></button>`)}</div>`;
 }
-const Brand = () => html`<div className="brand"><span className="mark"></span><span className="brand-t"><b>Maayasthra</b><span>Workspace</span></span></div>`;
+const Brand = () => html`<div className="brand"><img className="brand-logo" src="/maayasthra-logo.svg" alt="Maayasthra" width="150" height="45"/></div>`;
 
 function TopRight({ user, role, open, openForm, signOut, goAbout, isNew }) {
   const [menu, setMenu] = useState(false);

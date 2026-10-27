@@ -421,7 +421,7 @@ textarea.inp{height:auto;min-height:84px;padding:12px 14px;resize:vertical;line-
   .cell{min-height:60px;padding:6px 4px;align-items:center}
   .cl{display:none}
   .dots{display:flex;justify-content:center}
-  .dows span{padding:10px 0;text-align:center;font-size:10.5px;letter-spacing:.04em}
+  .dows span{padding:10px 0;text-align:center;font-size:11px;letter-spacing:.04em}
   .num{margin:0}
   .bals{grid-template-columns:repeat(2,minmax(0,1fr))}
   .bl:nth-child(3){padding-left:0;border-left:0}
@@ -941,7 +941,7 @@ button.tile:hover{transform:none;background:var(--card-hi)}
 .ov.wide .ov-r{grid-template-columns:minmax(190px,260px) repeat(var(--n),minmax(80px,1fr)) 100px 100px 70px 80px;gap:8px;padding:6px 0}
 .ov-h{padding:12px 0 12px;font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);border-bottom:1px solid var(--line);margin-bottom:4px}
 .ov-d{display:flex;flex-direction:column;align-items:center;font-variant-numeric:tabular-nums;line-height:1.25;font-size:12.5px;color:var(--muted);letter-spacing:0;text-transform:none}
-.ov-d small{font-size:10.5px;color:var(--faint)}
+.ov-d small{font-size:11px;color:var(--faint)}
 .ov.wide .ov-d{font-size:13.5px;font-weight:600;color:var(--text)}
 .ov.wide .ov-d small{font-size:12px;font-weight:500}
 .ov-d.today,.ov-d.today small{color:var(--accent)}
@@ -1357,7 +1357,7 @@ button.ovc:hover{filter:brightness(1.18)}
   .ov .ov-r,.ov.wide .ov-r{grid-template-columns:minmax(0,1fr) 52px 52px 42px 54px;gap:6px}
   .ov-d,.ovc,.ov-f{display:none!important}
   .ov,.ov.wide{min-width:0}
-  .ov-h .ov-s{font-size:10px;letter-spacing:.02em;text-transform:none;line-height:1.2}
+  .ov-h .ov-s{font-size:11px;letter-spacing:.02em;text-transform:none;line-height:1.2}
   .ov-s{font-size:14px}
   .ov-lg{display:none}
   /* my leaves tiles stay in one row */
@@ -1388,7 +1388,7 @@ textarea.td-title{resize:none;overflow:hidden;line-height:1.25;display:block;fon
 @media (max-width:860px){
   .tv-r{grid-template-columns:minmax(0,1fr) repeat(3,50px);gap:6px}
   .tv-r>span:nth-child(n+4):not(:last-child),.tv-h span:nth-child(n+4):not(:last-child){display:block}
-  .tv-h span{font-size:10px;letter-spacing:0;text-transform:none}
+  .tv-h span{font-size:11px;letter-spacing:0;text-transform:none}
   .tv-n{font-size:15px}
   .tv .at-p .row-t span{display:none}
 }
@@ -1944,6 +1944,7 @@ button:focus:not(:focus-visible){outline:none}
   .app.wide .hdr{padding-left:20px;padding-right:20px}
   .app.wide .side{padding-right:12px}
   .app.wide{grid-template-columns:216px minmax(0,1fr)}
+  .app.wide.no-side{grid-template-columns:minmax(0,1fr)}
   .app.wide .kb2{height:calc(100vh - 250px)}
 }
 /* Only Retainer carries colour: its cards take a quiet blue tint */
@@ -2090,3 +2091,17 @@ button:focus:not(:focus-visible){outline:none}
 .bg-c i{width:8px;height:8px;border-radius:50%}
 @media (max-width:600px){.bg-row{flex-direction:column;gap:6px}.bg-row>span{width:auto;padding-top:0}}
 @media (max-width:860px){.kgrp,.kgrp-c{display:contents}.kgrp-h{display:none}}
+
+/* ---------- Brand: the Maayasthra logo and the arrow icon ---------- */
+.mark,.ab-mark{background:url(/favicon.svg) center/cover no-repeat;border-radius:50%;box-shadow:none}
+.mark::after,.ab-mark::after{display:none}
+.brand-logo{display:block;width:150px;max-width:100%;height:auto}
+.side .brand{padding:4px 6px 26px}
+.lg-box .brand-logo,.lg-l .brand-logo{width:168px}
+
+/* ---------- Audit fixes: bigger taps and readable small text ---------- */
+.eod-l{padding:6px 2px}
+@media (max-width:860px){
+  .eod-l{padding:11px 4px}
+  .link{padding:10px 6px;margin:-10px -6px}
+}

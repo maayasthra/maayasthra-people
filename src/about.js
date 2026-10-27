@@ -9,6 +9,7 @@ export const CHANGELOG = [
     'Task timing is gone from My Tasks and the card drawer. Doing now just marks what you are on, and resets when you check out',
     'Board columns are Pending Tasks, Retainer Tasks, then Priority Tasks. Only Retainer is coloured, and its cards have a soft blue tint',
     'The board uses more of the screen',
+    'New Maayasthra logo and website icon',
     'You can now have several cards in Doing at once',
     'Admins: group the board’s columns by hand, each group with its own name, colour and emoji',
     'Admins: a new Members page with everyone’s access, last login and account date, an Invite Members button, and a sign-up link to share'
