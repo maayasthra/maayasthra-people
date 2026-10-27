@@ -303,6 +303,18 @@ as('karthik'); await m.loadStaff(); t('a project manager can read the groups', (
 t('a project manager cannot change them', !!(await tryit(() => m.saveGroups(g1, [{ ...g1[0], name: 'Mine' }]))) && (await m.loadGroups())[0].name === 'Design team');
 as('abines'); await tryit(() => m.saveGroups(g1, [])); t('an employee cannot remove or change them either', (await m.loadGroups()).length === 1);
 
+// Announcement read marks
+as('vijay'); await m.loadStaff(); let an0 = await m.loadAnnouncements();
+await m.persistAnnouncements(an0, [{ id: 'new', kind: 'general', title: 'Office closed Friday', body: 'Back on Monday', date: '', by: 'x' }, ...an0], ids.vijay);
+const an1 = await m.loadAnnouncements(); const aid = an1[0].id;
+t('an announcement carries who posted it', an1[0].byId === ids.vijay, an1[0]);
+as('abines'); await m.loadStaff();
+t('an employee has no read marks at first', ((await m.supabase.from('announcement_reads').select('announcement_id')).data || []).length === 0);
+const mr = await m.supabase.rpc('mark_announcement_read', { p_id: aid }); t('an employee can mark an announcement read', !mr.error, mr.error && mr.error.message);
+t('the mark is saved', ((await m.supabase.from('announcement_reads').select('announcement_id')).data || []).some(r => String(r.announcement_id) === String(aid)));
+const wr = await m.supabase.from('announcement_reads').insert({ announcement_id: aid, employee_id: ids.karthik }); t('nobody can write a read mark for someone else directly', !!wr.error);
+as('karthik'); await m.loadStaff(); t('people only see their own read marks', ((await m.supabase.from('announcement_reads').select('announcement_id')).data || []).length === 0);
+
 console.log('--- done ---');
 
 if (process.exitCode) console.log('SOME CHECKS FAILED');

@@ -55,6 +55,7 @@ Run these in the Supabase SQL Editor, in order. Each file can be run again safel
 | `0020_members.sql` | `admin_members()`: last sign-in and account date for the admin Members page |
 | `0021_many_doing.sql` | Several cards can be Doing at once |
 | `0022_board_groups.sql` | Board groups (name, colour, emoji, columns), written by admins only |
+| `0023_announcement_reads.sql` | Which announcements each person has read (they pop up until closed) |
 
 ## Tests
 

@@ -106,7 +106,7 @@ export async function persistBoard(prev, next, opts = {}) {
 export async function loadAnnouncements() {
   const { data, error } = await supabase.from('announcements').select('*').order('created_at', { ascending: false }).limit(100);
   if (error) throw new Error('Could not load announcements.');
-  return data.map(r => ({ id: r.id, kind: r.kind, title: r.title, body: r.body, date: dayKey(Date.parse(r.created_at)), by: (BY[r.by_emp] || {}).name || 'People and Ops' }));
+  return data.map(r => ({ id: r.id, kind: r.kind, title: r.title, body: r.body, date: dayKey(Date.parse(r.created_at)), by: (BY[r.by_emp] || {}).name || 'People and Ops', byId: r.by_emp || 0 }));
 }
 export async function persistAnnouncements(prev, next, me) {
   const before = new Set(prev.map(a => a.id)), after = new Set(next.map(a => a.id));

@@ -32,6 +32,8 @@ import { About } from './screens/About.jsx';
 import { Members } from './screens/Members.jsx';
 import { VERSION } from './about.js';
 import { useUpdateAvailable } from './updates.js';
+import { useAnnouncementAlerts } from './alerts.js';
+import { AnnouncementAlert } from './AnnouncementAlert.jsx';
 import { TaskDetail } from './task/TaskDetail.jsx';
 import { isDoing, stopFor, loadTasks, saveTasks, loadCollapsed, saveCollapsed, loadCustom, saveCustom, loadLayout, saveLayout, loadView, saveView } from './tasks.js';
 import { IS_DEMO } from './env.js';
@@ -120,6 +122,7 @@ function App() {
     persistAnnouncements(prev, next, auth && auth.user.n).then(loadAnnouncements).then(applyAnn)
       .catch(e => { setSyncErr(e.message || 'Could not save. Try again.'); return loadAnnouncements().then(applyAnn); }).catch(() => {});
   };
+  const alerts = useAnnouncementAlerts(auth, ann);
   const [pf, setPf] = useState({ q: '', dept: 'All', city: 'All', sort: 'name', former: false });
   const [ver, setVer] = useState(0);
   const [att, setAttRaw] = useState(() => IS_DEMO ? loadAtt() : {});
@@ -316,6 +319,7 @@ function App() {
       ${updateReady && html`<div className="sync-err upd" role="status"><span>A new version of Maayasthra People is ready.</span><button onClick=${() => location.reload()}>Refresh</button></div>`}
       ${syncErr && html`<div className="sync-err" role="alert"><span>${syncErr}</span><button onClick=${() => setSyncErr('')} aria-label="Dismiss">Dismiss</button></div>`}
     </div>
+    ${alerts.current && html`<${AnnouncementAlert} a=${alerts.current} count=${alerts.count} perm=${alerts.perm} askPerm=${alerts.askPerm} onClose=${() => alerts.dismiss(alerts.current.id)}/>`}
     ${eodAsk && html`<${EodDialog} user=${user} tasks=${tasks} worked=${workedMs(sessionsOf(att, user.n), Date.now())} mode=${eodAsk} onSend=${sendEod} onCancel=${() => setEodAsk(null)}/>`}
     ${taskSel && html`<${TaskDetail} key=${taskSel.id} id=${taskSel.id} ctx=${taskSel.ctx} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} leaves=${leaves} custom=${custom} close=${() => setTaskSel(null)}/>`}
     <nav className="bnav" style=${{ gridTemplateColumns: 'repeat(' + mob.length + ', 1fr)' }} aria-label="Main">${mob.map(k => k === 'more'
