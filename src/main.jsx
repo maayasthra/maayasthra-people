@@ -28,6 +28,7 @@ import { EodReports } from './task/EodReports.jsx';
 import { EodDialog } from './task/EodDialog.jsx';
 import { submitEod } from './eodDb.js';
 import { About } from './screens/About.jsx';
+import { Members } from './screens/Members.jsx';
 import { VERSION } from './about.js';
 import { useUpdateAvailable } from './updates.js';
 import { TaskDetail } from './task/TaskDetail.jsx';
@@ -35,7 +36,7 @@ import { isDoing, stopFor, loadTasks, saveTasks, loadCollapsed, saveCollapsed, l
 import { IS_DEMO } from './env.js';
 import './styles.css';
 
-const ALL = { about: 'About', board: 'Board', mytasks: 'My Tasks', eod: 'EOD reports', team: 'Team', home: 'Home', people: 'People', org: 'Org chart', calendar: 'Calendar', attendance: 'Attendance', hours: 'My Hours', leaves: 'My Leaves', requests: 'Requests', settings: 'Settings' };
+const ALL = { about: 'About', members: 'Members', board: 'Board', mytasks: 'My Tasks', eod: 'EOD reports', team: 'Team', home: 'Home', people: 'People', org: 'Org chart', calendar: 'Calendar', attendance: 'Attendance', hours: 'My Hours', leaves: 'My Leaves', requests: 'Requests', settings: 'Settings' };
 const SHORT = { mytasks: 'Mine', eod: 'EOD', org: 'Org', leaves: 'Leaves', attendance: 'Hours', hours: 'Hours' };
 
 const SEED_ANN = IS_DEMO ? [
@@ -233,7 +234,7 @@ function App() {
   if (!auth) return html`<${Login} onLogin=${(user, role) => { setMe(user.n); setNav({ view: 'home' }); setAuth({ user, role }); window.scrollTo({ top: 0 }); }}/>`;
   // The live record, so a change to your own details (shift times, name) shows straight away
   const user = (!IS_DEMO && BY[auth.user.n]) || auth.user, role = auth.role;
-  const peopleKeys = role === 'admin' ? ['home', 'people', 'org', 'calendar', 'attendance', 'leaves', 'requests', 'settings'] : ['home', 'people', 'org', 'calendar', 'hours', 'leaves'];
+  const peopleKeys = role === 'admin' ? ['home', 'people', 'members', 'org', 'calendar', 'attendance', 'leaves', 'requests', 'settings'] : ['home', 'people', 'org', 'calendar', 'hours', 'leaves'];
   // Admins and project managers get the whole task app. Everyone else gets only their own tasks.
   const isMgr = role === 'admin' || role === 'pm';
   const seenNow = seenVer === VERSION || nav.view === 'about';
@@ -251,10 +252,10 @@ function App() {
   const goTask = id => { setAppState('task'); setNav({ view: 'mytasks' }); setTaskSel(id ? { id } : null); window.scrollTo({ top: 0 }); };
   const top = () => window.scrollTo({ top: 0 });
   const go = v => { setNav({ view: v }); setTaskSel(null); setMoreOpen(false); top(); };
-  const open = (id, tab) => { setNav(p => ({ view: 'profile', id, tab: typeof tab === 'string' ? tab : undefined, from: p.view === 'profile' ? p.from : p.view === 'form' ? 'people' : p.view })); top(); };
+  const open = (id, tab) => { setNav(p => ({ view: 'profile', id, tab: typeof tab === 'string' ? tab : undefined, from: p.view === 'profile' ? p.from : p.view === 'form' ? (p.from || 'people') : p.view })); top(); };
   const openForm = id => { setNav(p => ({ view: 'form', id, from: p.view === 'profile' ? p.from : p.view })); top(); };
   const back = () => { setNav({ view: nav.from || 'people' }); top(); };
-  const formDone = id => { if (id) { setNav(p => ({ view: 'profile', id, from: p.from || 'people' })); } else go('people'); top(); };
+  const formDone = id => { if (id) { setNav(p => ({ view: 'profile', id, from: p.from || 'people' })); } else go(nav.from || 'people'); top(); };
   const signOut = () => { signOutAuth(); setAuth(null); setAppState('people'); setTaskSel(null); setNav({ view: 'home' }); top(); };
   const mob = app === 'task' ? keys : role === 'admin' ? ['home', 'people', 'attendance', 'requests', 'more'] : ['home', 'people', 'hours', 'leaves', 'more'];
   const more = keys.filter(k => !mob.includes(k));
@@ -276,6 +277,7 @@ function App() {
     : nav.view === 'hours' ? html`<${MyHours} user=${user} att=${att} setAtt=${setAtt} leaves=${leaves}/>`
     : nav.view === 'leaves' ? html`<${MyLeaves} leaves=${leaves} setLeaves=${setLeaves} user=${user} key=${ver}/>`
     : nav.view === 'requests' && role === 'admin' ? html`<${Requests} user=${user} leaves=${leaves} setLeaves=${setLeaves} open=${open}/>`
+    : nav.view === 'members' && role === 'admin' ? html`<${Members} open=${open} openForm=${openForm}/>`
     : nav.view === 'settings' && role === 'admin' ? html`<${Settings} onChange=${bump}/>`
     : home;
 

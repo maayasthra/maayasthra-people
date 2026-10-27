@@ -286,6 +286,11 @@ await m.loadStaff();
 const aft = m.data.BY[ids.abines];
 t('a stale edit form does not undo a change made meanwhile', aft.status === 'Contract' && aft.city === 'Madurai' && aft.phone === '99999 11111', { status: aft.status, city: aft.city });
 
+// Members page data is for admins only
+as('abines'); t('an employee cannot load the members list', /Could not load the members/.test(await tryit(() => m.loadMembers())));
+as('vijay'); const mem = await m.loadMembers();
+t('an admin gets sign-in and creation dates for everyone', Object.keys(mem).length === m.data.EMP.length && Object.values(mem).every(x => x.created > 0), Object.keys(mem).length);
+
 console.log('--- done ---');
 
 if (process.exitCode) console.log('SOME CHECKS FAILED');

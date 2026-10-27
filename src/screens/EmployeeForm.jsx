@@ -59,8 +59,8 @@ export function EmployeeForm({ id, role, user, done, bump }) {
   const title = !e ? 'Add a person' : self && !isAdmin ? 'Edit your profile' : self ? 'Edit your profile' : 'Edit ' + e.name;
 
   return html`<div className="ef2">
-    <button className="back" onClick=${() => done(e ? e.n : null)}><${Icon} n="back" s=${16}/> ${e ? 'Back to profile' : 'Back to people'}</button>
-    <div className="pg-h"><div><h1>${title}</h1>${e && html`<p>${e.role} · ${e.dept}</p>`}</div></div>
+    <button className="back" onClick=${() => done(e ? e.n : null)}><${Icon} n="back" s=${16}/> ${e ? 'Back to profile' : 'Back'}</button>
+    <div className="pg-h"><div><h1>${title}</h1>${e ? html`<p>${e.role} · ${e.dept}</p>` : !IS_DEMO && html`<p>Add their work email. They can then create their own account at ${location.host} with that email.</p>`}</div></div>
     <form className="ef2-f" onSubmit=${submit} noValidate>
       <section className="ef2-card ef2-photo">
         <div className="ef2-ph"><${Photo} e=${preview}/></div>

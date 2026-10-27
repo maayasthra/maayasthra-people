@@ -52,6 +52,7 @@ Run these in the Supabase SQL Editor, in order. Each file can be run again safel
 | `0017_no_auto_checkout.sql` | No automatic check-out at shift end; check-in is allowed at any hour |
 | `0018_eod_reports.sql` | EOD reports table, `submit_eod`, and check-out refuses until today's report is sent |
 | `0019_refuse_stale_checkout.sql` | An out-of-date page cannot check anyone out at the shift end |
+| `0020_members.sql` | `admin_members()`: last sign-in and account date for the admin Members page |
 
 ## Tests
 

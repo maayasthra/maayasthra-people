@@ -8,7 +8,7 @@ export const db = new PGlite();
 const U = {};
 export const ids = {};
 export async function setup() {
-  await db.exec(`create schema auth; create table auth.users (id uuid primary key default gen_random_uuid(), email text);
+  await db.exec(`create schema auth; create table auth.users (id uuid primary key default gen_random_uuid(), email text, last_sign_in_at timestamptz, created_at timestamptz default now());
   create role authenticated; create role anon;
   create or replace function auth.uid() returns uuid language sql stable as \$\$ select nullif(current_setting('request.uid', true), '')::uuid \$\$;
   grant usage on schema public, auth to authenticated, anon;`);
@@ -66,7 +66,7 @@ async function run(q) {
 }
 export const supabase = {
   from: t => builder(t),
-  rpc: (n, a) => { const ks = Object.keys(a || {}); return __q('select ' + n + '(' + ks.map((k, i) => k + ' => $' + (i + 1)).join(', ') + ')', ks.map(k => par(a[k]))).then(r => ({ error: r.error })); }
+  rpc: (n, a) => { const ks = Object.keys(a || {}); return __q('select * from ' + n + '(' + ks.map((k, i) => k + ' => $' + (i + 1)).join(', ') + ')', ks.map(k => par(a[k]))).then(r => ({ error: r.error, data: r.error ? null : r.rows.map(norm) })); }
 };
 export const authEnabled = true;`;
 const mock = { name: 'mock', setup(b) {

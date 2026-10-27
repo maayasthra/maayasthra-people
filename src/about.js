@@ -8,7 +8,8 @@ export const CHANGELOG = [
     'EOD reports replaces Project hours. Everyone sees their own days; admins and project managers see everyone, by day, week or month',
     'Task timing is gone from My Tasks and the card drawer. Doing now just marks what you are on, and resets when you check out',
     'Board columns are Pending Tasks, Retainer Tasks, then Priority Tasks. Only Retainer is coloured, and its cards have a soft blue tint',
-    'The board uses more of the screen'
+    'The board uses more of the screen',
+    'Admins: a new Members page with everyone’s access, last login and account date, an Invite Members button, and a sign-up link to share'
   ] },
   { version: '1.5.1', date: '26 Oct 2026', title: 'No automatic check-out', items: [
     'You now stay checked in until you check out yourself; nothing ends your day at the shift end',

@@ -79,3 +79,12 @@ export async function saveRole(id, role) {
   if (error) throw new Error(/at least one admin/i.test(error.message) ? 'There must be at least one admin.' : 'Could not change the role. Try again.');
   await loadStaff();
 }
+
+// Admin: when each person last signed in, when their account was created, and whether they have signed up yet.
+export async function loadMembers() {
+  const { data, error } = await supabase.rpc('admin_members');
+  if (error) throw new Error('Could not load the members list.');
+  const out = {};
+  data.forEach(r => { out[r.employee_id] = { last: r.last_sign_in ? Date.parse(r.last_sign_in) : 0, created: r.account_created ? Date.parse(r.account_created) : 0, signedUp: !!r.signed_up }; });
+  return out;
+}
