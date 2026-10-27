@@ -2325,3 +2325,8 @@ button:focus:not(:focus-visible){outline:none}
 .kt-st.big{margin:2px 0 0 42px;font-size:13px}
 .kt-st.big span{color:var(--muted);overflow:hidden;text-overflow:ellipsis}
 .kt-f .kt-s{min-width:0}
+
+/* EOD without hours (project managers) */
+.dlg.eod.nh .eod-hd,.dlg.eod.nh .eod-r{grid-template-columns:minmax(150px,1.1fr) minmax(200px,2fr) 30px}
+.er-t.nh .er-hd,.er-t.nh .er-r{grid-template-columns:minmax(140px,1.1fr) minmax(160px,2fr)}
+@media (max-width:640px){.dlg.eod.nh .eod-r{grid-template-columns:1fr 30px}.dlg.eod.nh .eod-r>textarea{grid-column:1 / 3}.er-t.nh .er-r{grid-template-columns:1fr}.er-t.nh .er-r>span:nth-child(2){grid-column:auto}}

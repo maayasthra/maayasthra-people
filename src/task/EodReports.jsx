@@ -10,11 +10,12 @@ const isWorking = iso => { const w = new Date(pd(iso)).getUTCDay(); return w !==
 const dayLabel = iso => new Date(pd(iso)).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
 
 function Report({ r }) {
-  return html`<div className="er-t" role="table">
-    <div className="er-hd" role="row"><span>Project</span><span>Description</span><span>Hours</span></div>
+  const hrs = r.total > 0;
+  return html`<div className=${'er-t' + (hrs ? '' : ' nh')} role="table">
+    <div className="er-hd" role="row"><span>Project</span><span>Description</span>${hrs && html`<span>Hours</span>`}</div>
     ${r.rows.map((x, i) => html`<div key=${i}>
-      <div className="er-r" role="row"><b>${x.project}</b><span>${x.desc || (x.subs && x.subs.length ? '' : '—')}</span><span className="er-h">${fmtH(x.subs && x.subs.length ? x.subs.reduce((t, s) => t + s.hours, 0) : x.hours)}</span></div>
-      ${(x.subs || []).map((s, j) => html`<div className="er-r er-s" role="row" key=${j}><span>${s.title}</span><span>${s.desc || '—'}</span><span className="er-h">${fmtH(s.hours)}</span></div>`)}
+      <div className="er-r" role="row"><b>${x.project}</b><span>${x.desc || (x.subs && x.subs.length ? '' : '—')}</span>${hrs && html`<span className="er-h">${fmtH(x.subs && x.subs.length ? x.subs.reduce((t, s) => t + s.hours, 0) : x.hours)}</span>`}</div>
+      ${(x.subs || []).map((s, j) => html`<div className="er-r er-s" role="row" key=${j}><span>${s.title}</span><span>${s.desc || '—'}</span>${hrs && html`<span className="er-h">${fmtH(s.hours)}</span>`}</div>`)}
     </div>`)}
   </div>`;
 }
@@ -67,9 +68,9 @@ export function EodReports({ user, role, tick, onEditToday, checkedIn, att }) {
         <button className="ph3-h" onClick=${() => setOpenK(openK === r.e.n ? null : r.e.n)} aria-expanded=${openK === r.e.n}>
           <${Av} e=${r.e} s=${44}/>
           <span className="row-t"><b>${r.e.name}</b><span>${r.e.role}</span></span>
-          <span className="ph3-n"><b>${fmtH(r.total)}</b><small>${view === 'day' ? 'reported' : plural(r.reps.length, 'day')}</small></span>
+          <span className="ph3-n"><b>${r.total > 0 ? fmtH(r.total) : plural(r.reps.length, 'report')}</b><small>${r.total > 0 ? (view === 'day' ? 'reported' : plural(r.reps.length, 'day')) : 'no hours'}</small></span>
           <${Icon} n=${openK === r.e.n ? 'chevL' : 'next'} s=${16}/></button>
-        ${openK === r.e.n && html`<div className="er-d">${r.reps.map(rep => html`<div key=${rep.day}>${view !== 'day' && html`<h3 className="er-day">${dayLabel(rep.day)} · ${fmtH(rep.total)}</h3>`}<${Report} r=${rep}/></div>`)}</div>`}
+        ${openK === r.e.n && html`<div className="er-d">${r.reps.map(rep => html`<div key=${rep.day}>${view !== 'day' && html`<h3 className="er-day">${dayLabel(rep.day)}${rep.total > 0 ? ' · ' + fmtH(rep.total) : ''}</h3>`}<${Report} r=${rep}/></div>`)}</div>`}
       </section>`)}
       ${missing.length > 0 && html`<section className="er-miss"><h3>Checked in, report not sent yet</h3><div>${missing.map(e => html`<span key=${e.n} className="er-chip"><${Av} e=${e} s=${22}/>${e.name}</span>`)}</div></section>`}
     </div>
