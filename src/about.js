@@ -12,6 +12,7 @@ export const CHANGELOG = [
     'New announcements pop up with a chime during working hours, until you close them. If the page is in the background you also get a desktop alert',
     'Change password in the account menu; the People page is gone from the menu (use Org chart)',
     'The board takes a little less space',
+    'A separate Announcements page in the menu, with the acknowledgement tracker for admins',
     'Announcement alerts repeat every minute until you press Got it, and admins can see who has acknowledged each announcement',
     'A short sound when you check in and when you check out',
     'New Maayasthra logo and website icon',

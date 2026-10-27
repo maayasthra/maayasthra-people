@@ -2207,7 +2207,6 @@ button:focus:not(:focus-visible){outline:none}
 .kc-e{padding:16px 10px}
 .kc-new{padding:5px 8px}
 .kc2.shut{flex:0 0 46px;padding:8px 4px}
-.kc2.pin .kc2-h{margin:-10px -8px 8px}
 .kgrp{padding:6px 8px 8px}
 .kgrp-h{padding:4px 6px 8px}
 .kgrp.shut{flex:0 0 46px;padding:8px 4px}
@@ -2218,7 +2217,7 @@ button:focus:not(:focus-visible){outline:none}
 /* ---------- Board: one corner radius, and pinned columns that do not shift while scrolling ---------- */
 :root{--r-col:18px;--r-card:12px}
 .kc2,.kc2.shut,.kc2.pin,.kc2.pin.shut,.kc2.pool,.kc2.addcol,.kgrp,.kgrp.shut{border-radius:var(--r-col)}
-.kc2.pin .kc2-h{border-radius:var(--r-col) var(--r-col) 0 0}
+.kc2.pin .kc2-h{margin:0;padding:2px 6px 8px;background:transparent;border-radius:0}
 .kt,.kc-e,.kc-new{border-radius:var(--r-card)}
 /* A closed column is exactly this wide, so the sticky offsets that assume it are exact */
 .kc2.shut,.kgrp.shut{flex:0 0 46px;width:46px;min-width:46px;max-width:46px;box-sizing:border-box;overflow:hidden}
@@ -2244,3 +2243,13 @@ button:focus:not(:focus-visible){outline:none}
 .ack-r small{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ack-r em{font-style:normal;font-size:12px;color:var(--muted);flex:none;font-variant-numeric:tabular-nums}
 .ack-n{padding:14px 6px;color:var(--muted);font-size:13.5px}
+
+/* ---------- Announcements page, acknowledgement bar in narrow spaces ---------- */
+.pn-r{display:inline-flex;align-items:center;gap:12px}
+.an-new{margin-top:22px;padding:20px;border-radius:20px;background:var(--card);border:1px solid var(--line)}
+.an-new h2{font-size:17px;font-weight:600;margin-bottom:14px}
+.an-pg{margin-top:22px;padding:6px 22px;border-radius:20px;background:var(--card);border:1px solid var(--line);max-width:860px}
+.ack-b{flex-wrap:wrap;row-gap:8px}
+.ack-bar{order:-1;flex:1 0 100%}
+.ack-t{flex:1 1 auto;white-space:nowrap}
+@media (max-width:860px){.an-pg{padding:4px 16px}}

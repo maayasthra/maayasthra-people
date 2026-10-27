@@ -30,6 +30,7 @@ import { submitEod } from './eodDb.js';
 import { loadGroups, saveGroups } from './groupsDb.js';
 import { About } from './screens/About.jsx';
 import { Members } from './screens/Members.jsx';
+import { Announcements } from './screens/Announcements.jsx';
 import { ChangePassword } from './screens/ChangePassword.jsx';
 import { VERSION } from './about.js';
 import { useUpdateAvailable } from './updates.js';
@@ -40,7 +41,7 @@ import { isDoing, stopFor, loadTasks, saveTasks, loadCollapsed, saveCollapsed, l
 import { IS_DEMO } from './env.js';
 import './styles.css';
 
-const ALL = { about: 'About', members: 'Members', board: 'Board', mytasks: 'My Tasks', eod: 'EOD reports', team: 'Team', home: 'Home', people: 'People', org: 'Org chart', calendar: 'Calendar', attendance: 'Attendance', hours: 'My Hours', leaves: 'My Leaves', requests: 'Requests', settings: 'Settings' };
+const ALL = { about: 'About', announcements: 'Announcements', members: 'Members', board: 'Board', mytasks: 'My Tasks', eod: 'EOD reports', team: 'Team', home: 'Home', people: 'People', org: 'Org chart', calendar: 'Calendar', attendance: 'Attendance', hours: 'My Hours', leaves: 'My Leaves', requests: 'Requests', settings: 'Settings' };
 const SHORT = { mytasks: 'Mine', eod: 'EOD', org: 'Org', leaves: 'Leaves', attendance: 'Hours', hours: 'Hours' };
 
 const SEED_ANN = IS_DEMO ? [
@@ -255,7 +256,7 @@ function App() {
   if (!auth) return html`<${Login} onLogin=${(user, role) => { setMe(user.n); setNav({ view: 'home' }); setAuth({ user, role }); window.scrollTo({ top: 0 }); }}/>`;
   // The live record, so a change to your own details (shift times, name) shows straight away
   const user = (!IS_DEMO && BY[auth.user.n]) || auth.user, role = auth.role;
-  const peopleKeys = role === 'admin' ? ['home', 'members', 'org', 'calendar', 'attendance', 'leaves', 'requests', 'settings'] : ['home', 'org', 'calendar', 'hours', 'leaves'];
+  const peopleKeys = role === 'admin' ? ['home', 'announcements', 'members', 'org', 'calendar', 'attendance', 'leaves', 'requests', 'settings'] : ['home', 'announcements', 'org', 'calendar', 'hours', 'leaves'];
   // Admins and project managers get the whole task app. Everyone else gets only their own tasks.
   const isMgr = role === 'admin' || role === 'pm';
   const seenNow = seenVer === VERSION || nav.view === 'about';
@@ -297,6 +298,7 @@ function App() {
     : nav.view === 'hours' ? html`<${MyHours} user=${user} att=${att} setAtt=${setAtt} leaves=${leaves}/>`
     : nav.view === 'leaves' ? html`<${MyLeaves} leaves=${leaves} setLeaves=${setLeaves} user=${user} key=${ver}/>`
     : nav.view === 'requests' && role === 'admin' ? html`<${Requests} user=${user} leaves=${leaves} setLeaves=${setLeaves} open=${open}/>`
+    : nav.view === 'announcements' ? html`<${Announcements} ann=${ann} setAnn=${setAnn} user=${user} role=${role}/>`
     : nav.view === 'members' && role === 'admin' ? html`<${Members} open=${open} openForm=${openForm}/>`
     : nav.view === 'settings' && role === 'admin' ? html`<${Settings} onChange=${bump}/>`
     : home;

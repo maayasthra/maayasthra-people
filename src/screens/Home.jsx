@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { html, Icon, Av, Tile, first } from '../ui.jsx';
 import { downloadLeaveReport } from '../report.js';
 import { DueChip } from '../task/parts.jsx';
-import { checkInSound, useAcks } from '../alerts.js';
+import { checkInSound } from '../alerts.js';
+import { AnnList, Composer } from './Announcements.jsx';
 import { isOpen } from '../tasks.js';
 import { SessionList, useDay, dayNote } from '../Attendance.jsx';
 import { hm, lunchInfo, checkIn, checkOut, dayInfo, useNow, clock, minuteOfDay } from '../attendance.js';
@@ -80,61 +81,6 @@ function Actions({ leaves, go, openForm, compose }) {
     <button className="btn ghost" onClick=${() => go('settings')}><${Icon} n="settings" s=${16}/> Policy</button></div>`;
 }
 
-const KINDS = {
-  general: { label: 'General', icon: 'megaphone', c: '#0A84FF' },
-  holiday: { label: 'Holiday', icon: 'sun', c: '#FF9F0A' },
-  reminder: { label: 'Reminder', icon: 'bell', c: '#FF453A' },
-  celebrate: { label: 'Celebration', icon: 'star', c: '#30D158' }
-};
-
-const when = t => new Date(t).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true }).replace(/ (am|pm)$/i, m => m.toUpperCase());
-
-// Admins: who has pressed "Got it" on an announcement, and who has not yet
-function AckBar({ a, acks }) {
-  const [open, setOpen] = useState(false), [tab, setTab] = useState('pending');
-  const list = acks[String(a.id)] || [];
-  const mine = e => a.byId ? e.n === a.byId : e.name === a.by;
-  const everyone = activeEmps().filter(e => !mine(e));
-  const done = list.map(x => ({ e: BY[x.emp], at: x.at })).filter(x => x.e && !mine(x.e)).sort((p, q) => q.at - p.at);
-  const doneIds = new Set(done.map(x => x.e.n)), pending = everyone.filter(e => !doneIds.has(e.n));
-  const pct = everyone.length ? Math.round(done.length / everyone.length * 100) : 0;
-  return html`<div className="ack">
-    <button className="ack-b" onClick=${() => setOpen(o => !o)} aria-expanded=${open} title="See who has acknowledged this">
-      <span className="ack-bar"><i style=${{ width: pct + '%' }}></i></span>
-      <span className="ack-t"><b>${done.length}</b> of ${everyone.length} acknowledged${pending.length > 0 ? ' · ' + pending.length + ' waiting' : ' · everyone'}</span><${Icon} n=${open ? 'chevL' : 'next'} s=${14}/></button>
-    ${open && html`<div className="ack-d">
-      <div className="ack-seg" role="group" aria-label="Show"><button className=${tab === 'pending' ? 'on' : ''} onClick=${() => setTab('pending')}>Not yet (${pending.length})</button><button className=${tab === 'done' ? 'on' : ''} onClick=${() => setTab('done')}>Acknowledged (${done.length})</button></div>
-      <div className="ack-l">${tab === 'pending'
-        ? (pending.length ? pending.map(e => html`<div className="ack-r" key=${e.n}><${Av} e=${e} s=${28}/><span><b>${e.name}</b><small>${e.role}</small></span></div>`) : html`<div className="ack-n">Everyone has acknowledged this.</div>`)
-        : (done.length ? done.map(x => html`<div className="ack-r" key=${x.e.n}><${Av} e=${x.e} s=${28}/><span><b>${x.e.name}</b><small>${x.e.role}</small></span><em>${when(x.at)}</em></div>`) : html`<div className="ack-n">No one has acknowledged this yet.</div>`)}</div>
-    </div>`}
-  </div>`;
-}
-
-function AnnList({ ann, setAnn, canPost }) {
-  const acks = useAcks(canPost);
-  return html`<div className="anl">
-    ${ann.length === 0 ? html`<div className="empty" style=${{ textAlign: 'left' }}>No announcements right now.</div>` :
-      ann.map(a => { const kd = KINDS[a.kind] || KINDS.general; return html`<article className="an" key=${a.id}>
-        <span className="an-i" style=${{ '--c': kd.c }}><${Icon} n=${kd.icon} s=${22}/></span>
-        <div className="an-b">
-          <div className="an-h"><b>${a.title}</b>${canPost && html`<button className="link" onClick=${() => setAnn(x => x.filter(y => y.id !== a.id))} aria-label=${'Remove ' + a.title}>Remove</button>`}</div>
-          ${a.body && html`<p>${a.body}</p>`}<small>${kd.label} · ${a.by} · ${fmtDM(a.date)}</small>${canPost && html`<${AckBar} a=${a} acks=${acks}/>`}</div></article>`; })}
-  </div>`;
-}
-
-function Composer({ user, setAnn, close }) {
-  const [t, setT] = useState(''); const [b, setB] = useState(''); const [k, setK] = useState('general');
-  const post = ev => {
-    ev.preventDefault(); if (!t.trim()) return;
-    setAnn(a => [{ id: Date.now(), kind: k, title: t.trim(), body: b.trim(), date: TODISO, by: user.name }, ...a]); close();
-  };
-  return html`<form onSubmit=${post}>
-    <div className="fld"><span className="lb">Type</span><div className="chips" style=${{ marginTop: 0, flexWrap: 'wrap' }}>${Object.entries(KINDS).map(([key, v]) => html`<button type="button" key=${key} className=${'chip' + (k === key ? ' on' : '')} onClick=${() => setK(key)}>${v.label}</button>`)}</div></div>
-    <div className="fld"><label htmlFor="ann-t">Headline</label><input id="ann-t" className="inp" value=${t} onChange=${ev => setT(ev.target.value)} placeholder="What do people need to know?"/></div>
-    <div className="fld"><label htmlFor="ann-b">Details (optional)</label><textarea id="ann-b" className="inp" value=${b} onChange=${ev => setB(ev.target.value)}></textarea></div>
-    <div style=${{ display: 'flex', gap: 10, marginTop: 18 }}><button className="btn pri sm" type="submit" disabled=${!t.trim()}>Post to everyone</button><button className="btn ghost sm" type="button" onClick=${close}>Cancel</button></div></form>`;
-}
 
 function NotYet({ att, leaves, open }) {
   const now = useNow(30000), away = awayList(leaves);
@@ -223,8 +169,8 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
         <${Birthdays} open=${open}/>
       </section>
       <section className="eq3 sec" ref=${annRef}>
-        <${Panel} title="Announcements" sub="" right=${!composing && html`<button className="btn sec2 sm" onClick=${() => setComposing(true)}><${Icon} n="plus" s=${15}/> New</button>`}>
-          ${composing ? html`<${Composer} user=${user} setAnn=${setAnn} close=${() => setComposing(false)}/>` : html`<${AnnList} ann=${ann} setAnn=${setAnn} canPost=${true}/>`}
+        <${Panel} title="Announcements" sub="" right=${!composing && html`<span className="pn-r"><button className="link" onClick=${() => go('announcements')}>View all</button><button className="btn sec2 sm" onClick=${() => setComposing(true)}><${Icon} n="plus" s=${15}/> New</button></span>`}>
+          ${composing ? html`<${Composer} user=${user} setAnn=${setAnn} close=${() => setComposing(false)}/>` : html`<${AnnList} ann=${ann} setAnn=${setAnn} canPost=${true} limit=${3}/>`}
         <//>
         <${AwayWeek} leaves=${leaves} open=${open}/>
         <${NotYet} att=${att} leaves=${leaves} open=${open}/>
@@ -247,7 +193,7 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
     </div>
     <section className="eq3 sec">
       <${YourDay} user=${user} att=${att} setAtt=${setAtt} onOut=${onOut}/>
-      <${Panel} title="Announcements" sub="From People and Ops"><${AnnList} ann=${ann} setAnn=${setAnn} canPost=${false}/><//>
+      <${Panel} title="Announcements" sub="From People and Ops" right=${ann.length > 3 && html`<button className="link" onClick=${() => go('announcements')}>View all</button>`}><${AnnList} ann=${ann} setAnn=${setAnn} canPost=${false} limit=${3}/><//>
       <${TeamPanel} user=${user} open=${open}/>
     </section>
     <section className="eq3 sec">
