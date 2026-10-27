@@ -11,7 +11,7 @@ export const CHANGELOG = [
     'The board uses more of the screen',
     'New Maayasthra logo and website icon',
     'You can now have several cards in Doing at once',
-    'Admins: sort the board’s columns into categories by hand (Categories button on the board), each with its own name, colour and emoji. Anyone can close and open a whole category',
+    'Admins: sort the board’s columns into departments by hand (Departments button on the board), each with its own name, colour and emoji. Anyone can close and open a whole department',
     'Admins: a new Members page with everyone’s access, last login and account date, an Invite Members button, and a sign-up link to share'
   ] },
   { version: '1.5.1', date: '26 Oct 2026', title: 'No automatic check-out', items: [
