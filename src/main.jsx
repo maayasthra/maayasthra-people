@@ -29,6 +29,7 @@ import { EodDialog } from './task/EodDialog.jsx';
 import { submitEod } from './eodDb.js';
 import { About } from './screens/About.jsx';
 import { VERSION } from './about.js';
+import { useUpdateAvailable } from './updates.js';
 import { TaskDetail } from './task/TaskDetail.jsx';
 import { isDoing, stopFor, loadTasks, saveTasks, loadCollapsed, saveCollapsed, loadCustom, saveCustom, loadLayout, saveLayout, loadView, saveView } from './tasks.js';
 import { IS_DEMO } from './env.js';
@@ -87,6 +88,7 @@ function App() {
       .catch(e => { setSyncErr(e.message || 'Could not save. Try again.'); return loadLeaves(); })
       .then(l => { if (l) applyLeaves(l); }).catch(() => {}).finally(() => { saving.current.leave--; });
   };
+  const updateReady = useUpdateAvailable();
   const [eodAsk, setEodAsk] = useState(null), [eodTick, setEodTick] = useState(0);
   const [bootErr, setBootErr] = useState('');
   const [seenVer, setSeenVer] = useState(() => { try { return localStorage.getItem('mp-seen-version'); } catch (x) { return null; } });
@@ -293,6 +295,7 @@ function App() {
         <${TopRight} user=${user} role=${role} open=${open} openForm=${openForm} signOut=${signOut} goAbout=${() => go('about')} isNew=${!seenNow}/></header>
       <div className="ck-m"><${CheckWidget} user=${user} att=${att} setAtt=${setAtt} onOut=${requestOut}/></div>
       <main className="main" key=${app + nav.view + (nav.id || '')}>${screen}</main>
+      ${updateReady && html`<div className="sync-err upd" role="status"><span>A new version of Maayasthra People is ready.</span><button onClick=${() => location.reload()}>Refresh</button></div>`}
       ${syncErr && html`<div className="sync-err" role="alert"><span>${syncErr}</span><button onClick=${() => setSyncErr('')} aria-label="Dismiss">Dismiss</button></div>`}
     </div>
     ${eodAsk && html`<${EodDialog} user=${user} tasks=${tasks} worked=${workedMs(sessionsOf(att, user.n), Date.now())} mode=${eodAsk} onSend=${sendEod} onCancel=${() => setEodAsk(null)}/>`}
