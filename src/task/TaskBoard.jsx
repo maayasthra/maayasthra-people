@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { html, Icon, HI } from '../ui.jsx';
 import { BY, activeEmps } from '../data.js';
 import { BoardGroups } from './BoardGroups.jsx';
-import { PINNED, DONE, LABELS, LABEL_C, moveCard, copyCard, duplicateCard, deleteCard, completeCard, reopenCard, dropColumn, mkTask, colName } from '../tasks.js';
+import { PINNED, DONE, LABELS, LABEL_C, moveCard, copyCard, duplicateCard, deleteCard, completeCard, reopenCard, dropColumn, mkTask, colName, statusOf } from '../tasks.js';
 
 /* The three-dots menu: open, move, copy, duplicate to a column, or delete */
 function CardMenu({ m, user, custom, setTasks, openTask, close }) {
@@ -202,7 +202,7 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
             </div>
             <div className="kt-f">
               ${can ? html`<button className=${'kt-c' + (isDone ? ' on' : '')} onClick=${() => complete(t)} title=${t.done ? 'Reopen' : isDone ? 'Undo' : 'Mark complete'} aria-label=${t.done ? 'Reopen ' + t.title : isDone ? 'Undo complete' : 'Complete ' + t.title}><${Icon} n="check" s=${13}/></button>` : html`<span></span>`}
-              <span className="kt-s">${t.subs.length > 0 && html`<span><${Icon} n="check" s=${12}/>${t.subs.filter(s => s.done).length}/${t.subs.length}</span>`}${t.comments.length > 0 && html`<span><${Icon} n="comment" s=${12}/>${t.comments.length}</span>`}${t.cols.length > 1 && !t.done && html`<span className="kt-sh" title="Also in other columns">Shared</span>`}</span>
+              <span className="kt-s">${!t.done && (st => html`<span className=${'kt-st ' + st.k} title=${st.who.length ? st.label + ': ' + st.who.map(n => BY[n] ? BY[n].name : '').filter(Boolean).join(', ') : st.label}><i></i>${st.label}</span>`)(statusOf(t))}${t.subs.length > 0 && html`<span><${Icon} n="check" s=${12}/>${t.subs.filter(s => s.done).length}/${t.subs.length}</span>`}${t.comments.length > 0 && html`<span><${Icon} n="comment" s=${12}/>${t.comments.length}</span>`}${t.cols.length > 1 && !t.done && html`<span className="kt-sh" title="Also in other columns">Shared</span>`}</span>
             </div>
           </article>`; })}
         ${over && over.col === key && over.before === null && list.length > 0 && html`<div className="kc-drop"></div>`}

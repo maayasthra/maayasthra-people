@@ -2315,3 +2315,13 @@ button:focus:not(:focus-visible){outline:none}
 .td2-main .td2-h b{font-size:16px}
 .td2-main .td2-desc{min-height:72px;font-size:14px}
 .td2-main .td2-h:has(+ .td2-desc),.td2-main label.td2-h{font-size:13px;color:var(--muted)}
+
+/* ---- Card status: quiet, one line ---- */
+.kt-st{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:100%;font-size:11.5px;font-weight:500;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kt-st i{flex:none;width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.7}
+.kt-st.doing{color:var(--ok)}
+.kt-st.doing i{opacity:1;box-shadow:0 0 0 3px rgba(48,209,88,.16)}
+.kt-st.idle{color:var(--muted)}
+.kt-st.big{margin:2px 0 0 42px;font-size:13px}
+.kt-st.big span{color:var(--muted);overflow:hidden;text-overflow:ellipsis}
+.kt-f .kt-s{min-width:0}

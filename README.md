@@ -57,6 +57,7 @@ Run these in the Supabase SQL Editor, in order. Each file can be run again safel
 | `0022_board_groups.sql` | Board groups (name, colour, emoji, columns), written by admins only |
 | `0023_announcement_reads.sql` | Which announcements each person has read (they pop up until closed) |
 | `0024_ack_tracking.sql` | Admins can see who has acknowledged each announcement |
+| `0025_eod_managers_only.sql` | Employees can no longer read EOD report history (only today’s own, to edit it) |
 
 ## Tests
 

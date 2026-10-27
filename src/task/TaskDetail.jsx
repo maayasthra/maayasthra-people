@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { html, Icon, Av } from '../ui.jsx';
 import { Sheet } from './parts.jsx';
 import { BY, activeEmps } from '../data.js';
-import { PRIO, LABELS, PINNED, mkTask, colName, completeCard, reopenCard } from '../tasks.js';
+import { PRIO, LABELS, PINNED, mkTask, colName, completeCard, reopenCard, statusOf } from '../tasks.js';
 
 const ago = t => { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'Just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' d ago'; };
 
@@ -37,6 +37,7 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close
       ${!isNew && html`<button className=${'td2-tick' + (t.done ? ' on' : '')} disabled=${!canEdit} onClick=${toggleDone} title=${t.done ? 'Reopen' : 'Mark complete'} aria-label=${t.done ? 'Reopen this card' : 'Mark this card complete'}><${Icon} n="check" s=${15}/></button>`}
       <textarea id="td-title" rows="1" autoFocus=${isNew} className="td-title" value=${t.title} disabled=${!canEdit} placeholder="Card title" ref=${el => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }} onChange=${ev => upd({ title: ev.target.value.replace(/\n/g, ' ') })} onKeyDown=${ev => { if (ev.key === 'Enter') ev.preventDefault(); }} aria-label="Card title"></textarea>
     </div>
+    ${!isNew && !t.done && (st => html`<div className=${'kt-st big ' + st.k}><i></i>${st.label}${st.who.length > 0 && html`<span> · ${st.who.map(n => BY[n] ? BY[n].name : '').filter(Boolean).join(', ')}</span>`}</div>`)(statusOf(t))}
     ${err && html`<div className="lg-err" role="alert">${err}</div>`}
 
     <div className="td2-grid">

@@ -154,6 +154,8 @@ await m.submitEod([{ project: 'Website', desc: 'Final touches', hours: 5 }], ids
 t('a report can be updated later the same day', (await m.loadEods(m.att.dayKey(), m.att.dayKey())).find(r => r.emp === ids.karthik).total === 5);
 as('abines'); await m.loadStaff(); const eoDay = m.att.dayKey();
 t('an employee cannot read someone else’s report', (await m.loadEods(eoDay, eoDay)).filter(r => r.emp !== ids.abines).length === 0);
+await db.exec("insert into eod_reports (employee_id, day, rows, total_hours) values (" + ids.abines + ", public.today_ist() - 1, '[]'::jsonb, 1)");
+t('an employee cannot read their own past reports', !(await m.loadEods(m.att.dayKey(Date.now() - 86400000), eoDay)).some(r => r.emp === ids.abines && r.day !== eoDay));
 as('vijay'); t('admins and project managers can read everyone’s', (await m.loadEods(eoDay, eoDay)).some(r => r.emp === ids.karthik));
 as('vijay'); await m.loadStaff(); const seen = await m.loadAttendance(3);
 t('an admin sees the check-in', Object.values(seen[ids.karthik] || {}).length === 1);

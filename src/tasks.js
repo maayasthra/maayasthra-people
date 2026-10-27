@@ -81,6 +81,11 @@ export const myTasksOf = (tasks, n) => tasks.filter(t => (t.cols || []).includes
 // When a card leaves someone, their timer on it stops
 export const stopFor = (time, n, now = Date.now()) => (time || []).map(s => s.emp === n && s.end == null ? { ...s, end: Math.max(now, s.start) } : s);
 const stopRemoved = (t, nt, now = Date.now()) => nt.done ? nt : { ...nt, time: (t.cols || []).filter(c => typeof c === 'number' && !nt.cols.includes(c)).reduce((time, c) => stopFor(time, c, now), nt.time || t.time || []) };
+// Where a card stands: nobody has started it, someone is on it now, or it was started and nobody is on it at the moment
+export function statusOf(t) {
+  const tm = t.time || [], open = [...new Set(tm.filter(s => s.end == null).map(s => s.emp))], began = [...new Set(tm.map(s => s.emp))];
+  return open.length ? { k: 'doing', label: 'In progress', who: open } : tm.length ? { k: 'idle', label: 'Started earlier', who: began } : { k: 'new', label: 'Not started', who: [] };
+}
 export const isDoing = (t, n) => !t.done && (t.time || []).some(s => s.emp === n && s.end == null);
 export const spentMs = (t, now = Date.now(), n) => (t.time || []).reduce((sum, s) => (n == null || s.emp === n) ? sum + Math.max(0, (s.end == null ? now : s.end) - s.start) : sum, 0);
 // Time inside a window (a week, a month), for the hours report
