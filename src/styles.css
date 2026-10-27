@@ -2106,3 +2106,18 @@ button:focus:not(:focus-visible){outline:none}
   .link{padding:10px 6px;margin:-10px -6px}
 }
 .side .brand{justify-content:center}
+
+/* ---------- Categories: header button, close/open ---------- */
+.kb-cat{height:40px;border-radius:999px;padding:0 16px;white-space:nowrap}
+.kgrp-h{gap:6px}
+.kgrp-t{display:flex;align-items:center;gap:8px;flex:1;min-width:0;text-align:left;padding:4px 6px;border-radius:10px}
+.kgrp-t:hover{background:color-mix(in srgb,var(--c) 14%,transparent)}
+.kgrp-t small{margin-left:auto;font-size:12px;color:var(--muted);font-weight:400}
+.kgrp-h .ib{width:30px;height:30px;flex:none}
+.kgrp.shut{flex:0 0 56px;padding:10px 6px;align-items:center;cursor:pointer;background:color-mix(in srgb,var(--c) 14%,transparent)}
+.kgrp-s{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;color:var(--c)}
+.kgrp-v{writing-mode:vertical-rl;font-size:14px;font-weight:650;color:var(--c);white-space:nowrap;max-height:260px;overflow:hidden;text-overflow:ellipsis}
+.kgrp-s .kc-n{background:color-mix(in srgb,var(--c) 28%,transparent);color:var(--text)}
+.bg-g.focus{box-shadow:inset 3px 0 0 var(--c),0 0 0 2px color-mix(in srgb,var(--c) 55%,transparent)}
+@media (max-width:860px){.kb-cat{padding:0 12px}}
+@media (max-width:860px){.kgrp.shut{display:none}}
