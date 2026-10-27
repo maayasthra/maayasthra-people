@@ -186,7 +186,7 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
       <${Actions} leaves=${leaves} go=${go} openForm=${openForm} compose=${compose}/></div>
       <p className="lede">${pending ? html`<span><b>${pending}</b> to review</span>` : 'All clear'}</p>
       <div className="tiles">
-        <${Tile} icon="people" tone="blue" label="Headcount" value=${people.length} sub=${depts + ' departments'} onClick=${() => go('people')}/>
+        <${Tile} icon="people" tone="blue" label="Headcount" value=${people.length} sub=${depts + ' departments'} onClick=${() => go('org')}/>
         <${Tile} icon="leaves" tone="purple" label="On leave today" value=${onLeave} sub=${HOL[TODISO] ? 'Holiday: ' + HOL[TODISO] : onLeave ? 'away' : 'all in'} onClick=${() => go('calendar')}/>
         <${Tile} icon="requests" tone="orange" hot=${pending > 0} label="Waiting for you" value=${pending} sub="to review" onClick=${() => go('requests')}/>
         <${Tile} icon="check" tone="green" label="Checked in now" value=${inNow} sub=${expected ? 'of ' + expected : 'studio closed today'} onClick=${() => go('attendance')}/>

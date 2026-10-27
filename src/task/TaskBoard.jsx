@@ -113,8 +113,8 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
   const groupable = ordered.filter(k => defs[k].kind === 'person' || defs[k].kind === 'cust').map(k => ({ key: k, label: defs[k].label, sub: defs[k].kind === 'person' ? (BY[k] || {}).role || '' : 'Custom column' }));
   // The first columns stay in view while the board scrolls sideways, as long as they are Retainer and Priority
   const lead = []; for (const k of visible) { if (k === 'retainer' || k === 'priority' || k === 'pending') lead.push(k); else break; }
-  const stickyLeft = k => { let l = 0; for (const x of lead) { if (x === k) return l; l += (collapsed[x] ? 52 : 280) + 12; } return null; };
-  const pinW = () => lead.reduce((sum, k) => sum + (collapsed[k] ? 52 : 280) + 12, 0);
+  const stickyLeft = k => { let l = 0; for (const x of lead) { if (x === k) return l; l += (collapsed[x] ? 46 : 280) + 12; } return null; };
+  const pinW = () => lead.reduce((sum, k) => sum + (collapsed[k] ? 46 : 280) + 12, 0);
   const moveCol = (key, target, after) => {
     if (key === target) return;
     setLayout(l => { const order = ordered.filter(k => k !== key), i = order.indexOf(target); order.splice(i < 0 ? order.length : i + (after ? 1 : 0), 0, key); return { ...l, order }; });

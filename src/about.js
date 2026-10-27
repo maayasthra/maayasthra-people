@@ -10,6 +10,8 @@ export const CHANGELOG = [
     'Board columns are Pending Tasks, Retainer Tasks, then Priority Tasks. Only Retainer is coloured, and its cards have a soft blue tint',
     'The board uses more of the screen',
     'New announcements pop up with a chime during working hours, until you close them. If the page is in the background you also get a desktop alert',
+    'Change password in the account menu; the People page is gone from the menu (use Org chart)',
+    'The board takes a little less space',
     'New Maayasthra logo and website icon',
     'You can now have several cards in Doing at once',
     'Admins: sort the board’s columns into departments by hand (Departments button on the board), each with its own name, colour and emoji. Anyone can close and open a whole department',

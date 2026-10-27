@@ -16,7 +16,7 @@ export function Profile({ id, tab: tab0, from, back, open, openForm, user, role,
   const isAdminRole = ROLEMAP[e.n] === 'Admin';
 
   return html`<div className="pf2">
-    <button className="back" onClick=${back}><${Icon} n="back" s=${16}/> ${from === 'home' ? 'Home' : from === 'org' ? 'Org chart' : from === 'members' ? 'Members' : 'People'}</button>
+    <button className="back" onClick=${back}><${Icon} n="back" s=${16}/> ${from === 'home' ? 'Home' : from === 'org' ? 'Org chart' : from === 'members' ? 'Members' : 'Back'}</button>
 
     <section className="pf2-hero">
       <div className="pf2-ph"><${Photo} e=${e}/></div>

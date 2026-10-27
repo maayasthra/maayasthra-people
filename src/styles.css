@@ -2195,3 +2195,22 @@ button:focus:not(:focus-visible){outline:none}
 .dlg.al .dlg-a{margin-top:18px}
 @keyframes alring{0%,60%,100%{transform:rotate(0)}10%{transform:rotate(14deg)}20%{transform:rotate(-12deg)}30%{transform:rotate(9deg)}40%{transform:rotate(-6deg)}50%{transform:rotate(3deg)}}
 @media (prefers-reduced-motion:reduce){.al-bell{animation:none}}
+
+/* ---------- Board: a little less space around columns and cards ---------- */
+.kc2{padding:10px 8px 8px;border-radius:18px}
+.kc2-h{padding:2px 6px 8px}
+.kc2-b{gap:6px}
+.kt{padding:9px 11px;border-radius:13px}
+.kt-open{gap:5px}
+.kt-f{margin-top:6px}
+.kt-c{width:22px;height:22px}
+.kc-e{padding:16px 10px}
+.kc-new{padding:5px 8px}
+.kc2.shut{flex:0 0 46px;padding:8px 4px}
+.kc2.pin .kc2-h{margin:-10px -8px 8px}
+.kgrp{padding:6px 8px 8px}
+.kgrp-h{padding:4px 6px 8px}
+.kgrp.shut{flex:0 0 46px;padding:8px 4px}
+.dlg.cp{width:min(420px,calc(100vw - 32px))}
+.dlg.cp .fld{margin-bottom:12px}
+.cp-show{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--muted);margin-top:2px}

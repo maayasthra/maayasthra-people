@@ -27,6 +27,13 @@ export async function sendReset(email) {
   const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: window.location.origin });
   if (error) throw new Error(friendly(error.message));
 }
+// A signed-in person changes their own password. The current one is checked first.
+export async function changePassword(email, current, next) {
+  const { error: e1 } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password: current });
+  if (e1) throw new Error(/invalid login/i.test(e1.message) ? 'Your current password is not right.' : friendly(e1.message));
+  const { error } = await supabase.auth.updateUser({ password: next });
+  if (error) throw new Error(friendly(error.message));
+}
 export async function setNewPassword(password) {
   const { error } = await supabase.auth.updateUser({ password });
   if (error) throw new Error(friendly(error.message));
