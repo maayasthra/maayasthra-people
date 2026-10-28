@@ -2360,3 +2360,10 @@ button:focus:not(:focus-visible){outline:none}
 .eod-hm .inp{width:46px;padding-left:6px;padding-right:6px;text-align:center;font-variant-numeric:tabular-nums}
 .eod-hm i{font-style:normal;font-size:12.5px;color:var(--muted);margin-right:3px}
 @media (max-width:640px){.eod-r{grid-template-columns:1fr 128px 30px}.dlg.eod.nh .eod-r{grid-template-columns:1fr 30px}}
+
+/* EOD: quieter subtask actions */
+.eod-add{gap:6px;padding:0;margin-top:-2px}
+.eod-l{display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:999px;font-size:12.5px;font-weight:500;color:var(--faint);background:transparent;transition:background .15s,color .15s}
+.eod-l:hover{text-decoration:none;background:var(--fill);color:var(--text)}
+.eod-sub{opacity:.95}
+@media (pointer:coarse),(max-width:860px){.eod-l{height:36px;padding:0 12px}}
