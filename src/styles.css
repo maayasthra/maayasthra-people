@@ -2367,3 +2367,20 @@ button:focus:not(:focus-visible){outline:none}
 .eod-l:hover{text-decoration:none;background:var(--fill);color:var(--text)}
 .eod-sub{opacity:.95}
 @media (pointer:coarse),(max-width:860px){.eod-l{height:36px;padding:0 12px}}
+
+/* Home: finish setting up your profile */
+.ps{margin-top:18px;padding:18px 20px;border-radius:18px;background:var(--card);border:1px solid var(--line)}
+.ps-h{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.ps-h h2{font-size:16px;font-weight:600;letter-spacing:-.01em}
+.ps-h p{margin-top:3px;font-size:13.5px;color:var(--muted)}
+.ps-p{display:flex;align-items:center;gap:12px;margin-top:14px}
+.ps-p b{font-size:12.5px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums;min-width:34px;text-align:right}
+.ps-bar{position:relative;flex:1;height:8px;border-radius:8px;background:rgba(255,255,255,.08)}
+.ps-bar i{position:absolute;left:0;top:0;bottom:0;border-radius:8px;background:var(--ok);transition:width .4s ease}
+.ps-l{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.ps-i{display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:0 14px 0 8px;border-radius:999px;background:var(--fill);font-size:13.5px;font-weight:500;color:var(--text);transition:background .15s}
+.ps-i:not(:disabled):hover{background:var(--fill-hi)}
+.ps-i.on{color:var(--muted);text-decoration:line-through;text-decoration-color:rgba(255,255,255,.25);cursor:default}
+.ps-ck{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;border:1.6px solid var(--line-hi);color:transparent}
+.ps-i.on .ps-ck{background:var(--ok);border-color:var(--ok);color:#fff}
+@media (max-width:640px){.ps{padding:16px}.ps-h{flex-direction:column;align-items:stretch}.ps-h .btn{width:100%}}

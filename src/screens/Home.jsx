@@ -4,6 +4,7 @@ import { downloadLeaveReport } from '../report.js';
 import { DueChip } from '../task/parts.jsx';
 import { checkInSound } from '../alerts.js';
 import { AnnList, Composer } from './Announcements.jsx';
+import { ProfileSetup } from './ProfileSetup.jsx';
 import { isOpen } from '../tasks.js';
 import { SessionList, useDay, dayNote } from '../Attendance.jsx';
 import { hm, lunchInfo, checkIn, checkOut, dayInfo, useNow, clock, minuteOfDay } from '../attendance.js';
@@ -157,6 +158,7 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
       <h1 className="h-greet">${greet}, ${first(user)}.</h1></div>
       <${Actions} leaves=${leaves} go=${go} openForm=${openForm} compose=${compose}/></div>
       <p className="lede">${pending ? html`<span><b>${pending}</b> to review</span>` : 'All clear'}</p>
+      <${ProfileSetup} user=${user} openForm=${openForm}/>
       <div className="tiles">
         <${Tile} icon="people" tone="blue" label="Headcount" value=${people.length} sub=${depts + ' departments'} onClick=${() => go('org')}/>
         <${Tile} icon="leaves" tone="purple" label="On leave today" value=${onLeave} sub=${HOL[TODISO] ? 'Holiday: ' + HOL[TODISO] : onLeave ? 'away' : 'all in'} onClick=${() => go('calendar')}/>
@@ -187,6 +189,7 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
     <div className="date-l">${dateL}</div>
     <h1 className="h-greet">${greet}, ${first(user)}.</h1>
     <p className="lede"><span>${hols[0] ? html`Next holiday: <b>${HOL[hols[0]]}</b>, ${fmtDay(pd(hols[0]))}` : 'No holidays coming up'}</span></p>
+    <${ProfileSetup} user=${user} openForm=${openForm}/>
     <div className="tiles">
       ${bal.map(b => html`<${Tile} key=${b.t} icon=${typeIcon(b.t)} tone=${typeTone(b.t)} label=${b.t} value=${b.left} sub=${b.pend ? 'days left · ' + b.pend + ' pending' : 'of ' + b.total + ' days left'} onClick=${() => go('leaves')}/>`)}
       <${Tile} icon="clock" tone="green" label="Worked today" value=${hm(worked)} sub=${live ? 'timer is running' : sessions.length ? 'checked out' : 'not checked in yet'}/>
