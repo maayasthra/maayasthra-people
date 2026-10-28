@@ -12,7 +12,7 @@ const dayLabel = iso => new Date(pd(iso)).toLocaleDateString('en-IN', { weekday:
 function Report({ r }) {
   const hrs = r.total > 0;
   return html`<div className=${'er-t' + (hrs ? '' : ' nh')} role="table">
-    <div className="er-hd" role="row"><span>Project</span><span>Description</span>${hrs && html`<span>Hours</span>`}</div>
+    <div className="er-hd" role="row"><span>Project</span><span>Description</span>${hrs && html`<span>Time</span>`}</div>
     ${r.rows.map((x, i) => html`<div key=${i}>
       <div className="er-r" role="row"><b>${x.project}</b><span>${x.desc || (x.subs && x.subs.length ? '' : '—')}</span>${hrs && html`<span className="er-h">${fmtH(x.subs && x.subs.length ? x.subs.reduce((t, s) => t + s.hours, 0) : x.hours)}</span>`}</div>
       ${(x.subs || []).map((s, j) => html`<div className="er-r er-s" role="row" key=${j}><span>${s.title}</span><span>${s.desc || '—'}</span>${hrs && html`<span className="er-h">${fmtH(s.hours)}</span>`}</div>`)}
