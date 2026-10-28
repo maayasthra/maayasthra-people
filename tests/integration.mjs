@@ -116,8 +116,9 @@ t('normal profile save still works', (await tryit(() => m.saveMyProfile({ phone:
 // ================= STAFF AND PRIVACY =================
 as('karthik'); await m.loadStaff();
 t('everyone signed in sees the whole directory', m.data.EMP.length === 8, m.data.EMP.length);
-await m.saveMyProfile({ phone: '98400', emergency: 'Mom', emergencyPhone: '99999', bio: 'hi', photo: '' });
+await m.saveMyProfile({ phone: '98400', emergency: 'Lakshmi', emergencyRelation: 'Mother', emergencyPhone: '99999', bio: 'hi', photo: '' });
 t('a person’s own phone is saved', m.data.BY[ids.karthik].phone === '98400');
+t('the emergency contact keeps a name, a relationship and one phone number', m.data.BY[ids.karthik].emergency === 'Lakshmi' && m.data.BY[ids.karthik].emergencyRelation === 'Mother' && m.data.BY[ids.karthik].emergencyPhone === '99999');
 as('arunkumar'); await m.loadStaff();
 t('other employees cannot see that phone', m.data.BY[ids.karthik].phone === '');
 as('vijay'); await m.loadStaff();

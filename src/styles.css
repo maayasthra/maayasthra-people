@@ -2384,3 +2384,6 @@ button:focus:not(:focus-visible){outline:none}
 .ps-ck{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;border:1.6px solid var(--line-hi);color:transparent}
 .ps-i.on .ps-ck{background:var(--ok);border-color:var(--ok);color:#fff}
 @media (max-width:640px){.ps{padding:16px}.ps-h{flex-direction:column;align-items:stretch}.ps-h .btn{width:100%}}
+
+/* Profile form: contact blocks */
+.ef2-sub{margin:20px 0 10px;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}

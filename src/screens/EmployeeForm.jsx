@@ -11,7 +11,7 @@ const Fld = ({ id, label, children, hint }) => html`<div className="fld"><label 
 export function EmployeeForm({ id, role, user, done, bump }) {
   const e = id ? BY[id] : null;
   const isAdmin = role === 'admin', self = !!e && e.n === user.n;
-  const [f, setF] = useState(() => e ? { ...e } : { name: '', email: '', role: '', dept: '', city: '', mgr: 0, status: 'Full-time', join: TODISO, dob: '', g: 'f', phone: '', emergency: '', emergencyPhone: '', bio: '', photo: '', shiftStart: '10:00', shiftEnd: '18:00' });
+  const [f, setF] = useState(() => e ? { ...e } : { name: '', email: '', role: '', dept: '', city: '', mgr: 0, status: 'Full-time', join: TODISO, dob: '', g: 'f', phone: '', emergency: '', emergencyRelation: '', emergencyPhone: '', bio: '', photo: '', shiftStart: '10:00', shiftEnd: '18:00' });
   const [access, setAccess] = useState(e ? ROLEMAP[e.n] : 'Employee');
   const [base0] = useState(() => e ? { ...e, access: ROLEMAP[e.n] } : undefined); // what the form opened with, so only real changes are saved
   const [err, setErr] = useState(''), [busy, setBusy] = useState(false);
@@ -35,7 +35,7 @@ export function EmployeeForm({ id, role, user, done, bump }) {
 
   const submit = async ev => {
     ev.preventDefault(); if (busy) return;
-    const contact = { phone: f.phone.trim(), emergency: f.emergency.trim(), emergencyPhone: f.emergencyPhone.trim(), bio: f.bio.trim(), photo: f.photo };
+    const contact = { phone: f.phone.trim(), emergency: f.emergency.trim(), emergencyRelation: (f.emergencyRelation || '').trim(), emergencyPhone: f.emergencyPhone.trim(), bio: f.bio.trim(), photo: f.photo };
     if (!isAdmin) {
       if (IS_DEMO) { updateEmployee(e.n, contact); bump(); done(e.n); return; }
       setBusy(true);
@@ -77,9 +77,12 @@ export function EmployeeForm({ id, role, user, done, bump }) {
           <${Fld} id="ef-bio" label="A line or two about you"><textarea id="ef-bio" className="inp" value=${f.bio} onChange=${ev => set({ bio: ev.target.value })} placeholder="What you work on, what you enjoy" maxLength="500"></textarea><//></section>
 
         <section className="ef2-card"><h2>Contact</h2><p className="ef2-s">Only you and the admins can see these.</p>
-          <${Fld} id="ef-phone" label="Phone"><input id="ef-phone" className="inp" type="tel" value=${f.phone} onChange=${ev => set({ phone: ev.target.value })} placeholder="+91 98xxx xxxxx"/><//>
-          <div className="two"><${Fld} id="ef-em" label="Emergency contact"><input id="ef-em" className="inp" value=${f.emergency} onChange=${ev => set({ emergency: ev.target.value })} placeholder="Name and relationship"/><//>
-            <${Fld} id="ef-emp" label="Their phone"><input id="ef-emp" className="inp" type="tel" value=${f.emergencyPhone} onChange=${ev => set({ emergencyPhone: ev.target.value })}/><//></div></section>
+          <${Fld} id="ef-phone" label="Your phone number"><input id="ef-phone" className="inp" type="tel" value=${f.phone} onChange=${ev => set({ phone: ev.target.value })} placeholder="+91 98xxx xxxxx"/><//>
+          <h3 className="ef2-sub">Emergency contact</h3>
+          <div className="two"><${Fld} id="ef-em" label="Name"><input id="ef-em" className="inp" value=${f.emergency} onChange=${ev => set({ emergency: ev.target.value })} placeholder="Who should we call?"/><//>
+            <${Fld} id="ef-rel" label="Relationship"><input id="ef-rel" className="inp" value=${f.emergencyRelation || ''} onChange=${ev => set({ emergencyRelation: ev.target.value })} placeholder="For example, mother or spouse"/><//></div>
+          <${Fld} id="ef-emp" label="Their phone number"><input id="ef-emp" className="inp" type="tel" value=${f.emergencyPhone} onChange=${ev => set({ emergencyPhone: ev.target.value })} placeholder="+91 98xxx xxxxx"/><//>
+        </section>
 
         ${isAdmin ? html`<section className="ef2-card"><h2>Employment</h2><p className="ef2-s">Only admins can change these.</p>
           <div className="two"><${Fld} id="ef-name" label="Full name"><input id="ef-name" className="inp" value=${f.name} onChange=${ev => set({ name: ev.target.value })}/><//>

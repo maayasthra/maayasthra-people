@@ -6,7 +6,7 @@ const toApp = (r, p) => ({
   n: r.id, empId: r.emp_code, email: r.email, name: r.name, g: 'f', role: r.job_title, dept: r.department, city: r.city,
   join: r.join_date || '', dob: r.birth_date || '', status: r.status, mgr: r.manager_id || 0,
   shiftStart: r.shift_start.slice(0, 5), shiftEnd: r.shift_end.slice(0, 5), bio: r.bio, photo: r.photo,
-  phone: p ? p.phone : '', emergency: p ? p.emergency_name : '', emergencyPhone: p ? p.emergency_phone : ''
+  phone: p ? p.phone : '', emergency: p ? p.emergency_name : '', emergencyRelation: p ? (p.emergency_relation || '') : '', emergencyPhone: p ? p.emergency_phone : ''
 });
 const toRow = e => ({
   email: e.email, name: e.name, job_title: e.role, department: e.dept, city: e.city, join_date: e.join || null, birth_date: e.dob || null,
@@ -30,7 +30,7 @@ export async function loadStaff() {
 
 const upsertPrivate = async (id, e, base) => {
   // Only the contact fields that changed are written, so a private-details list that failed to load can never blank them
-  const f = { phone: ['phone', 'phone'], emergency_name: ['emergency', 'emergency'], emergency_phone: ['emergencyPhone', 'emergencyPhone'] };
+  const f = { phone: ['phone', 'phone'], emergency_name: ['emergency', 'emergency'], emergency_relation: ['emergencyRelation', 'emergencyRelation'], emergency_phone: ['emergencyPhone', 'emergencyPhone'] };
   const row = { employee_id: id };
   Object.entries(f).forEach(([col, [k]]) => { if (!base || (e[k] || '') !== (base[k] || '')) row[col] = e[k] || ''; });
   const { error } = await supabase.from('employee_private').upsert(row);
@@ -53,7 +53,7 @@ export async function saveEmployee(e, base) {
       if (error) throw new Error(nice(error.message));
       if (!data.length) throw new Error(NOT_ALLOWED);
     }
-    const pk = ['phone', 'emergency', 'emergencyPhone'];
+    const pk = ['phone', 'emergency', 'emergencyRelation', 'emergencyPhone'];
     if (base && !pk.some(k => (e[k] || '') !== (base[k] || ''))) { await loadStaff(); return BY[id]; }
   } else {
     const { data, error } = await supabase.from('employees').insert({ ...toRow(e), bio: e.bio || '', photo: e.photo || '' }).select('id').single();
@@ -67,7 +67,7 @@ export async function saveEmployee(e, base) {
 
 // Anyone: change only their own contact details, about line and photo.
 export async function saveMyProfile(e) {
-  const { error } = await supabase.rpc('update_my_profile', { p_phone: e.phone || '', p_bio: e.bio || '', p_photo: e.photo || '', p_emergency_name: e.emergency || '', p_emergency_phone: e.emergencyPhone || '' });
+  const { error } = await supabase.rpc('update_my_profile', { p_phone: e.phone || '', p_bio: e.bio || '', p_photo: e.photo || '', p_emergency_name: e.emergency || '', p_emergency_phone: e.emergencyPhone || '', p_emergency_relation: e.emergencyRelation || '' });
   if (error) throw new Error('Could not save. Check your connection and try again.');
   await loadStaff();
 }

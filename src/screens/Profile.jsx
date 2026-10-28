@@ -55,7 +55,7 @@ export function Profile({ id, tab: tab0, from, back, open, openForm, user, role,
         <${Row} k="Location">${e.city ? e.city + ', India' : '–'}<//>
         <${Row} k="Email"><span className="pf2-em">${e.email}</span><//>
         ${canSee && html`<${Row} k="Phone">${e.phone || '–'}<//>`}
-        ${canSee && html`<${Row} k="Emergency contact">${[e.emergency, e.emergencyPhone].filter(Boolean).join(' · ') || '–'}<//>`}
+        ${canSee && html`<${Row} k="Emergency contact">${[e.emergency && (e.emergencyRelation ? e.emergency + ' (' + e.emergencyRelation + ')' : e.emergency), e.emergencyPhone].filter(Boolean).join(' · ') || '–'}<//>`}
       </section>
 
       ${canSee && html`<section className="pf2-card"><h2>Leave this year</h2>
