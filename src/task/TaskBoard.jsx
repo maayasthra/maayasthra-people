@@ -180,7 +180,7 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
   // A plain function, not a component, so typing or dragging never remounts the columns.
   const renderCol = (key, kind, label, opts = {}) => {
     const list = cards(key), shut = !!collapsed[key];
-    const cls = 'kc2 ' + kind + (opts.left != null ? ' stk' : '') + (shut ? ' shut' : '') + (over && over.col === key ? ' over' : '') + (colDrag === key ? ' col-drag' : '') + (colOver && colOver.key === key ? (colOver.after ? ' ovr-r' : ' ovr-l') : '');
+    const cls = 'kc2 ' + kind + (key === 'retainer' ? ' retainer' : '') + (opts.left != null ? ' stk' : '') + (shut ? ' shut' : '') + (over && over.col === key ? ' over' : '') + (colDrag === key ? ' col-drag' : '') + (colOver && colOver.key === key ? (colOver.after ? ' ovr-r' : ' ovr-l') : '');
     const style = { ...(kind === 'pin' && opts.color ? { '--c': opts.color } : null), ...(opts.left != null ? { left: opts.left } : null) };
     const movable = isAdmin && kind !== 'doneCol';
     if (shut) return html`<section key=${key} data-col=${key} className=${cls} style=${style}><button className="kc2-s" onClick=${() => toggle(key)} aria-label=${'Show ' + label}><${Icon} n="next" s=${14}/><span className="kc2-v">${label}</span><span className="kc-n">${list.length}</span></button></section>`;
@@ -192,7 +192,7 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
       </header>
       <div className="kc2-b">
         ${list.map(t => { const isDone = t.done || pending[t.id], can = canMove(t), ls = t.labels.filter(l => tf.labels.includes(l));
-          return html`<article key=${t.id + key} data-id=${t.id} className=${'kt' + (drag && drag.id === t.id && drag.col === key ? ' dragging' : '') + (over && over.col === key && over.before === t.id ? ' drop-before' : '') + (isDone ? ' isdone' : '')}
+          return html`<article key=${t.id + key} data-id=${t.id} className=${'kt' + (t.retainer ? ' is-ret' : '') + (drag && drag.id === t.id && drag.col === key ? ' dragging' : '') + (over && over.col === key && over.before === t.id ? ' drop-before' : '') + (isDone ? ' isdone' : '')}
             draggable=${can} onDragStart=${ev => { setDrag({ id: t.id, col: key }); ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', t.id); }} onDragEnd=${() => { setDrag(null); setOver(null); }}>
             <div className="kt-top">
               <button className="kt-open" onClick=${() => openTask(t.id)} aria-label=${'Open ' + t.title}>

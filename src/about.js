@@ -4,6 +4,7 @@ export const BUILT = typeof __BUILD_DATE__ !== 'undefined' ? new Date(__BUILD_DA
 
 export const CHANGELOG = [
   { version: '1.6.0', date: '26 Oct 2026', title: 'End-of-day reports', items: [
+    'Retainer tasks keep their blue tint wherever they are moved, so they stay easy to spot. Managers can mark or unmark a task in its details',
     'The board remembers which columns you opened and closed, on every login and device',
     'The end-of-day report is saved as a draft while you type, so clicking away or closing the box never loses it',
     'A new look based on the Untitled UI design system: orange brand colour, flat cards with a hairline border, one radius and shadow scale, and a calmer navigation. The theme now follows your device until you choose',

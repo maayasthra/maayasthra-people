@@ -361,6 +361,21 @@ as('abines'); await m.loadStaff();
 await m.supabase.from('notifications').delete().eq('employee_id', ids.abines).eq('kind', 'eod');
 t('clearing one kind leaves the others', ((await m.supabase.from('notifications').select('key, kind')).data || []).every(r => r.kind !== 'eod'));
 
+
+// ================= RETAINER FLAG =================
+as('vijay'); await m.loadStaff();
+const rb = await m.loadBoard();
+const rid = 'ret-' + Date.now();
+await m.persistBoard(rb, { ...rb, tasks: [...rb.tasks, { ...m.tasks.mkTask({ title: 'Retainer report', cols: ['retainer'] }, { n: ids.vijay }), id: rid, retainer: true }] });
+let rb2 = await m.loadBoard();
+t('a manager can add a retainer task and it is flagged', (rb2.tasks.find(x => x.id === rid) || {}).retainer === true);
+await m.persistBoard(rb2, { ...rb2, tasks: rb2.tasks.map(x => x.id === rid ? { ...x, cols: [ids.abines] } : x) });
+rb2 = await m.loadBoard();
+t('it keeps the retainer flag after being moved to a person', (rb2.tasks.find(x => x.id === rid) || {}).retainer === true && rb2.tasks.find(x => x.id === rid).cols[0] === ids.abines);
+as('abines'); await m.loadStaff();
+const rb3 = await m.loadBoard();
+t('an employee cannot unmark a retainer task', /Only admins|retainer/i.test(await tryit(() => m.persistBoard(rb3, { ...rb3, tasks: rb3.tasks.map(x => x.id === rid ? { ...x, retainer: false } : x) }))) || (await m.loadBoard()).tasks.find(x => x.id === rid).retainer === true);
+
 console.log('--- done ---');
 
 if (process.exitCode) console.log('SOME CHECKS FAILED');

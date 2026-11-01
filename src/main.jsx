@@ -88,6 +88,9 @@ function TopRight({ user, role, open, openForm, signOut, goAbout, isNew, onPassw
   </div>`;
 }
 
+// A card that is in the Retainer column is a retainer task, and stays one wherever it is moved
+const flagRet = ts => ts.map(t => (t.cols || []).includes('retainer') && !t.retainer ? { ...t, retainer: true } : t);
+
 function App() {
   const [nav, setNav] = useState({ view: 'home' });
   const [auth, setAuth] = useState(null);
@@ -153,7 +156,7 @@ function App() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [booting, setBooting] = useState(authEnabled), [linkFlow, setLinkFlow] = useState(isLinkFlow);
   const [app, setAppState] = useState('people');
-  const [tasks, setTasksRaw] = useState(() => IS_DEMO ? loadTasks() : []), [collapsed, setCollapsed] = useState(loadCollapsed);
+  const [tasks, setTasksRaw] = useState(() => IS_DEMO ? flagRet(loadTasks()) : []), [collapsed, setCollapsed] = useState(loadCollapsed);
   const [focus, setFocus] = useState(null);
   const [taskSel, setTaskSel] = useState(null), [tq, setTq] = useState('');
   const [tf, setTf] = useState(loadView), [custom, setCustomRaw] = useState(() => IS_DEMO ? loadCustom() : []), [layout, setLayoutRaw] = useState(() => IS_DEMO ? loadLayout() : { order: [], hidden: [] });
@@ -228,7 +231,7 @@ function App() {
     finally { b.flying = false; if (b.dirty) queueSave(); }
   };
   const queueSave = () => { const b = board.current; b.dirty = true; clearTimeout(b.timer); b.timer = setTimeout(flush, 500); };
-  const setTasks = fn => { const b = board.current; b.tasks = typeof fn === 'function' ? fn(b.tasks) : fn; setTasksRaw(b.tasks); if (!IS_DEMO) queueSave(); };
+  const setTasks = fn => { const b = board.current; b.tasks = flagRet(typeof fn === 'function' ? fn(b.tasks) : fn); setTasksRaw(b.tasks); if (!IS_DEMO) queueSave(); };
   const setCustom = fn => { const b = board.current; b.custom = typeof fn === 'function' ? fn(b.custom) : fn; setCustomRaw(b.custom); if (!IS_DEMO) queueSave(); };
   const setLayout = fn => { const b = board.current; b.layout = typeof fn === 'function' ? fn(b.layout) : fn; setLayoutRaw(b.layout); if (!IS_DEMO) queueSave(); };
   const refreshBoard = async force => {

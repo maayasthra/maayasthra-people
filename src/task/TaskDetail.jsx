@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { html, Icon, Av } from '../ui.jsx';
+import { html, Icon, Av, Switch } from '../ui.jsx';
 import { Sheet } from './parts.jsx';
 import { BY, activeEmps } from '../data.js';
 import { PRIO, LABELS, PINNED, mkTask, colName, completeCard, reopenCard, statusOf } from '../tasks.js';
@@ -68,6 +68,8 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close
           ${t.cols.map(c => html`<span className="td2-chip" key=${c}>${typeof c === 'number' && BY[c] ? html`<${Av} e=${BY[c]} s=${22}/>` : html`<i className="td2-dot"></i>`}${colName(c, BY, custom)}${mgr && t.cols.length > 1 && !t.done && html`<button onClick=${() => upd({ cols: t.cols.filter(x => x !== c), time: typeof c === 'number' ? stopFor(t.time, c) : t.time })} aria-label=${'Remove ' + colName(c, BY, custom)}><${Icon} n="x" s=${11}/></button>`}</span>`)}
           ${mgr && !t.done && html`<label className="td2-add"><${Icon} n="plus" s=${14}/>Add<select value="" onChange=${ev => { const v = ev.target.value; if (v) upd({ cols: [...t.cols, /^\d+$/.test(v) ? Number(v) : v] }); }} aria-label="Add a person or column"><option value="">Add…</option>${addablePins.map(p => html`<option key=${p[0]} value=${p[0]}>${p[1]}</option>`)}${addable.map(e => html`<option key=${e.n} value=${e.n}>${e.name}</option>`)}</select></label>`}
         </div></div>
+      <div className="td2-r"><span className="td2-k"><${Icon} n="star" s=${16}/>Retainer</span>
+        <div className="td2-v">${mgr ? html`<div className="td2-ret"><${Switch} on=${!!t.retainer} set=${v => { if (!t.cols.includes('retainer')) upd({ retainer: v }); }} label="Retainer task"/><small>${t.cols.includes('retainer') ? 'In the Retainer column. Move it out first to unmark it.' : t.retainer ? 'Keeps its blue tint wherever it is moved.' : 'Mark it to keep a blue tint wherever it goes.'}</small></div>` : html`<span className=${'td2-rtag' + (t.retainer ? ' on' : '')}>${t.retainer ? 'Retainer task' : 'Not a retainer task'}</span>`}</div></div>
       <div className="td2-r"><span className="td2-k"><${Icon} n="flag" s=${16}/>Priority</span>
         <div className="td2-v"><div className="seg s3" role="group" aria-label="Priority">${Object.entries(PRIO).map(([k, v]) => html`<button key=${k} disabled=${!canEdit} className=${t.prio === k ? 'on' : ''} onClick=${() => upd({ prio: k })}>${v[0]}</button>`)}</div></div></div>
       <div className="td2-r"><span className="td2-k"><${Icon} n="tag" s=${16}/>Labels</span>

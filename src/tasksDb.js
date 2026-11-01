@@ -7,11 +7,11 @@ const PAGE = 1000;
 const toTask = r => ({
   id: r.id, title: r.title, client: r.client || '', cols: r.cols || [], prev: r.prev && r.prev.length ? r.prev : undefined, prio: r.prio,
   due: r.due || '', labels: r.labels || [], by: r.by_emp || 0, done: r.done, desc: r.descr || '', subs: r.subs || [], comments: r.comments || [],
-  time: r.time_log || [], created: Date.parse(r.created_at) || Date.now()
+  time: r.time_log || [], created: Date.parse(r.created_at) || Date.now(), retainer: !!r.retainer || (r.cols || []).includes('retainer')
 });
 const toRow = t => ({
   title: t.title, client: t.client || '', cols: t.cols, prev: t.prev && t.prev.length ? t.prev : null, prio: t.prio, due: t.due || null,
-  labels: t.labels || [], done: !!t.done, descr: t.desc || '', subs: t.subs || [], comments: t.comments || []
+  labels: t.labels || [], done: !!t.done, descr: t.desc || '', subs: t.subs || [], comments: t.comments || [], retainer: !!t.retainer
 });
 
 export async function loadBoard() {
@@ -32,8 +32,8 @@ export async function loadBoard() {
 }
 
 
-const FIELDS = { title: 'title', client: 'client', cols: 'cols', prev: 'prev', prio: 'prio', due: 'due', labels: 'labels', done: 'done', desc: 'descr' };
-const fieldValue = (t, k) => k === 'prev' ? (t.prev && t.prev.length ? t.prev : null) : k === 'due' ? (t.due || null) : k === 'done' ? !!t.done : k === 'labels' ? (t.labels || []) : (t[k] == null ? '' : t[k]);
+const FIELDS = { title: 'title', client: 'client', cols: 'cols', prev: 'prev', prio: 'prio', due: 'due', labels: 'labels', done: 'done', desc: 'descr', retainer: 'retainer' };
+const fieldValue = (t, k) => k === 'prev' ? (t.prev && t.prev.length ? t.prev : null) : k === 'due' ? (t.due || null) : k === 'done' ? !!t.done : k === 'retainer' ? !!t.retainer : k === 'labels' ? (t.labels || []) : (t[k] == null ? '' : t[k]);
 const changedFields = (a, b) => { const patch = {}; for (const k in FIELDS) if (JSON.stringify(fieldValue(a, k)) !== JSON.stringify(fieldValue(b, k))) patch[FIELDS[k]] = fieldValue(b, k); return patch; };
 const listChanges = (a, b) => {
   const am = new Map(a.map(x => [x.id, x])), bm = new Map(b.map(x => [x.id, x])), out = [];

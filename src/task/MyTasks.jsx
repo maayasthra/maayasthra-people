@@ -21,7 +21,7 @@ export function MyTasks({ tasks, setTasks, user, tq, openTask, canDelete }) {
   const add = () => { if (!title.trim()) return; setTasks(ts => [...ts, mkTask({ title: title.trim(), cols: [user.n] }, user)]); setTitle(''); };
 
   const Card = ({ t, col }) => {
-    return html`<article className=${'mt3-k' + (col === 'doing' ? ' run' : '') + (drag === t.id ? ' dragging' : '')} draggable="true" onDragStart=${ev => { setDrag(t.id); ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', t.id); }} onDragEnd=${() => { setDrag(null); setOver(null); }}>
+    return html`<article className=${'mt3-k' + (t.retainer ? ' is-ret' : '') + (col === 'doing' ? ' run' : '') + (drag === t.id ? ' dragging' : '')} draggable="true" onDragStart=${ev => { setDrag(t.id); ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', t.id); }} onDragEnd=${() => { setDrag(null); setOver(null); }}>
       <button className="mt3-t" onClick=${() => openTask(t.id)}>${t.title}</button>
       ${t.client && html`<small className="mt3-c">${t.client}</small>`}
       ${canDelete && ask === t.id && html`<div className="mt3-del" role="alert"><span>Delete this task?</span><button className="btn ghost sm" onClick=${() => setAsk(null)}>Keep</button><button className="btn danger sm" onClick=${() => { setTasks(ts => ts.filter(x => x.id !== t.id)); setAsk(null); }}>Delete</button></div>`}
