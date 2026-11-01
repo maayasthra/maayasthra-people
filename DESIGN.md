@@ -24,8 +24,8 @@ raw colours.**
 Neutral scale (Untitled UI "neutral"): 25 `#FCFCFC`, 50 `#FAFAFA`, 100 `#F5F5F5`, 200 `#E5E5E5`, 300 `#D4D4D4`, 400 `#A3A3A3`,
 500 `#737373`, 600 `#525252`, 700 `#404040`, 800 `#262626`, 900 `#171717`, 950 `#0A0A0A`.
 
-Brand scale (the Maayasthra orange; `#FE6D00` is the logo): 25 `#FFFAF5`, 50 `#FFF4EB`, 100 `#FFE5D0`, 200 `#FFCBA0`,
-300 `#FFA666`, 400 `#FF8433`, 500 `#FE6D00`, **600 `#D94A00` (primary buttons)**, 700 `#B03A00` (hover, brand text),
+Brand scale (the Maayasthra orange; **`#FE6D00` is the brand and the primary button colour**): 25 `#FFFAF5`, 50 `#FFF4EB`, 100 `#FFE5D0`, 200 `#FFCBA0`,
+300 `#FFA666`, 400 `#FF8433`, 500 and 600 `#FE6D00`, 700 `#E55F00` (hover). Orange text on white uses `#B03A00` (`--brand-text`) so it stays readable;
 800 `#8A2E05`, 900 `#6E2808`, 950 `#451603`.
 
 To change the brand colour, change only the `--brand-*` scale at the top of `untitled.css`.
@@ -79,7 +79,7 @@ Labels are sentence case, medium weight, never upper-case. Fields use 16px on ph
 ## 5. Components
 
 **Button** (`.btn`). Height 40px (`.sm` 36px, 40px on touch), radius 8px, 14px semibold, icon 20px with 8px gap.
-- `pri`: brand-600 fill, white text, a thin inner highlight, hover brand-700.
+- `pri`: brand orange `#FE6D00` fill, white text, a thin inner highlight, hover `#E55F00`.
 - `sec2` / `ghost` (secondary): white fill, 1px `--line-hi` border, secondary text, shadow-xs, hover neutral-50.
 - `tertiary`: no fill or border, tertiary text, hover neutral-50.
 - `danger`: error-600 fill, white text. Disabled is 50% opacity.
@@ -118,3 +118,5 @@ supporting text tertiary, actions right aligned.
 3. Keep copy short and in sentence case. Errors say what to do next.
 4. Check both themes and a 375px phone before shipping. Tap targets are 40px or more.
 5. Disabled things are faded, not recoloured.
+
+**Nested radii.** An item inside a padded container uses the outer radius minus the padding: the check-in widget is 12px with 4px padding, so its button is 8px.

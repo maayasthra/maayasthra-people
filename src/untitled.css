@@ -30,7 +30,7 @@
   --ink:23 23 23; --shade:10 13 18;
   --line:var(--n-200); --line-hi:var(--n-300);
   --fill:var(--n-100); --fill-hi:var(--n-200);
-  --accent:#FE6D00; --accent-hover:#E55F00; --on-accent:#1A0A00; --accent-soft:var(--brand-100); --brand-tint:var(--brand-50); --brand-text:#B03A00;
+  --accent:#FE6D00; --accent-hover:#E55F00; --on-accent:#fff; --accent-soft:var(--brand-100); --brand-tint:var(--brand-50); --brand-text:#B03A00;
   --orange:#FE6D00; --orange-soft:var(--brand-50); --orange-text:#B03A00;
   --blue:#FE6D00; --blue-soft:#B03A00; --blue-hi:#B03A00; --blue-tint:var(--brand-50);
   --on-tint:#B03A00; --tint-line:var(--brand-200);
@@ -48,7 +48,7 @@
   --ink:250 250 250; --shade:0 0 0;
   --line:var(--n-800); --line-hi:var(--n-700);
   --fill:var(--n-800); --fill-hi:var(--n-700);
-  --accent:#FE6D00; --accent-hover:#FF8433; --on-accent:#1A0A00; --accent-soft:rgba(254,109,0,.22); --brand-tint:rgba(254,109,0,.14); --brand-text:var(--brand-300);
+  --accent:#FE6D00; --accent-hover:#FF8433; --on-accent:#fff; --accent-soft:rgba(254,109,0,.22); --brand-tint:rgba(254,109,0,.14); --brand-text:var(--brand-300);
   --orange:var(--brand-500); --orange-soft:rgba(254,109,0,.14); --orange-text:var(--brand-300);
   --blue:#FE6D00; --blue-soft:var(--brand-300); --blue-hi:var(--brand-300); --blue-tint:rgba(217,74,0,.16);
   --on-tint:var(--brand-200); --tint-line:rgba(255,166,102,.3);
@@ -69,7 +69,7 @@ h1,h2,h3{letter-spacing:-.01em}
 /* Buttons */
 .btn{height:40px;padding:0 14px;border-radius:var(--r-ctl);font-size:14px;font-weight:600;letter-spacing:0;gap:6px;box-shadow:var(--shadow-xs);transition:background .1s linear,box-shadow .1s linear,color .1s linear,border-color .1s linear}
 .btn.sm{height:36px;padding:0 12px;border-radius:var(--r-ctl);font-size:14px}
-.btn.pri{background:var(--accent);color:var(--on-accent);border:0;box-shadow:0 0 0 1px rgba(10,13,18,.12) inset,0 -2px 0 rgba(10,13,18,.06) inset,var(--shadow-xs)}
+.btn.pri{background:var(--accent);color:var(--on-accent);border:0;box-shadow:0 0 0 1px rgba(10,13,18,.08) inset,0 -2px 0 rgba(10,13,18,.08) inset,var(--shadow-xs)}
 .btn.pri:hover:not(:disabled){background:var(--accent-hover);filter:none}
 .btn.sec2,.btn.ghost{background:var(--card);color:var(--text-2);border:1px solid var(--line-hi);box-shadow:var(--shadow-xs)}
 .btn.sec2:hover:not(:disabled),.btn.ghost:hover:not(:disabled){background:var(--card-hover);color:var(--text);border-color:var(--line-hi)}
@@ -219,7 +219,7 @@ button.tile:hover{transform:none}
 
 
 /* ---------- the exact brand orange, text on it, and one radius everywhere ---------- */
-/* Dark text on the orange: white on #FE6D00 is too faint to read */
+/* White text on the orange */
 .cell.today .num,.ot-x.on,.oc3-p em,.td2-go,.td2-send,.sync-err.upd button,.lf-t.on .lf-ti,.chip.on small{color:var(--on-accent)!important}
 .cell.today .num,.ot-x.on,.oc3-p em,.td2-go,.td2-send,.lf-t.on .lf-ti{background:var(--accent)!important}
 .sw.on{background:var(--accent)}
@@ -260,3 +260,7 @@ html{overflow-y:scroll}
 .hs-b,.nf-b{display:grid;place-items:center;width:40px;height:40px;background:var(--card);border:1px solid var(--line-hi);box-shadow:var(--shadow-xs);color:var(--text-2)}
 .hs-b:hover,.nf-b:hover{background:var(--card-hover);color:var(--text)}
 @media (min-width:861px){.hs-b{display:none!important}}
+
+/* Check-in widget: outer 12px, inner button 8px (outer radius minus the 4px padding) */
+.ck{border-radius:var(--r-card)!important;padding:4px 4px 4px 14px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow-xs)}
+.ck .btn{border-radius:var(--r-ctl)!important;height:36px}
