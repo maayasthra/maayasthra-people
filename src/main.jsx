@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { html, Icon, Av, Logo } from './ui.jsx';
 import { ThemeSwitch } from './ThemeSwitch.jsx';
+import { Tour, tourDone, markTour } from './Tour.jsx';
 import { applyTheme } from './theme.js';
 import { LEAVES0, HIST0, TODISO, TOD, DAY, isoOf, BY, ROLEMAP } from './data.js';
 import { loadLeaves, persistLeaves } from './leave.js';
@@ -58,7 +59,7 @@ function AppSwitch({ app, setApp }) {
 }
 const Brand = () => html`<div className="brand"><${Logo}/></div>`;
 
-function TopRight({ user, role, open, openForm, signOut, goAbout, isNew, onPassword }) {
+function TopRight({ user, role, open, openForm, signOut, goAbout, isNew, onPassword, onTour }) {
   const [menu, setMenu] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
@@ -77,6 +78,7 @@ function TopRight({ user, role, open, openForm, signOut, goAbout, isNew, onPassw
       <button role="menuitem" onClick=${() => { setMenu(false); open(user.n); }}><${Icon} n="user" s=${16}/> View profile</button>
       <button role="menuitem" onClick=${() => { setMenu(false); openForm(user.n); }}><${Icon} n="edit" s=${16}/> Edit profile</button>
       <button role="menuitem" onClick=${() => { setMenu(false); onPassword(); }}><${Icon} n="lock" s=${16}/> Change password</button>
+      <button role="menuitem" onClick=${() => { setMenu(false); onTour(); }}><${Icon} n="info" s=${16}/> Take the tour</button>
       <button role="menuitem" onClick=${() => { setMenu(false); goAbout(); }}><${Icon} n="info" s=${16}/> About · v${VERSION}${isNew && html`<em className="new-p">New</em>`}</button>
       <button role="menuitem" className="menu-o" onClick=${() => { setMenu(false); signOut(); }}><${Icon} n="logout" s=${16}/> Sign out</button></div>`}
   </div>`;
@@ -99,7 +101,7 @@ function App() {
       .then(l => { if (l) applyLeaves(l); }).catch(() => {}).finally(() => { saving.current.leave--; });
   };
   const updateReady = useUpdateAvailable();
-  const [pwOpen, setPwOpen] = useState(false);
+  const [pwOpen, setPwOpen] = useState(false), [tour, setTour] = useState(false);
   const [groups, setGroupsRaw] = useState([]), gsync = useRef({ saved: [], cur: [], timer: 0, dirty: false });
   // Board groups: admins edit them, project managers see them. Changes save a moment after the last edit.
   useEffect(() => {
@@ -254,6 +256,13 @@ function App() {
   useEffect(() => { saveView(tf); }, [tf]);
   useEffect(() => { try { localStorage.setItem('mp-nav', navHidden ? '1' : '0'); } catch (x) {} }, [navHidden]);
 
+  // A new person is offered the walkthrough once; after that it is only on request from the account menu
+  useEffect(() => {
+    if (!auth || tourDone(auth.user.n)) return;
+    const t = setTimeout(() => { setAppState('people'); setNav({ view: 'home' }); setTour(true); }, 1600);
+    return () => clearTimeout(t);
+  }, [auth && auth.user.n]);
+
   if (booting) return html`<div className="boot"><span className="mark"></span></div>`;
   if (bootErr && !auth) return html`<div className="boot"><span className="mark"></span><p className="boot-t">${bootErr}</p><button className="btn sec2" onClick=${() => location.reload()}>Try again</button></div>`;
   if (!auth && linkFlow) return html`<${SetPassword} onDone=${(user, role) => { setMe(user.n); setLinkFlow(false); setNav({ view: 'home' }); setAuth({ user, role }); }}/>`;
@@ -277,6 +286,7 @@ function App() {
   const openTask = (id, ctx) => setTaskSel({ id, ctx });
   const goTask = id => { setAppState('task'); setNav({ view: 'mytasks' }); setTaskSel(id ? { id } : null); window.scrollTo({ top: 0 }); };
   const top = () => window.scrollTo({ top: 0 });
+  const startTour = () => { setAppState('people'); setNav({ view: 'home' }); setTaskSel(null); setTimeout(() => setTour(true), 150); };
   const go = v => { setNav({ view: v }); setTaskSel(null); setMoreOpen(false); top(); };
   const open = (id, tab) => { setNav(p => ({ view: 'profile', id, tab: typeof tab === 'string' ? tab : undefined, from: p.view === 'profile' ? p.from : p.view === 'form' ? (p.from || 'home') : p.view })); top(); };
   const openForm = id => { setNav(p => ({ view: 'form', id, from: p.view === 'profile' ? p.from : p.view })); top(); };
@@ -320,12 +330,13 @@ function App() {
         <div className=${'hs' + (sOpen ? ' open' : '')}>${app === 'task' ? html`<div className="qs"><${Icon} n="search"/><input id="quick-search" className="qs-in" value=${tq} placeholder="Search tasks" onChange=${ev => setTq(ev.target.value)} aria-label="Search tasks"/></div>` : html`<${QuickSearch} open=${id => { setSOpen(false); open(id); }}/>`}</div>
         <button className="ib hs-b" onClick=${() => { setSOpen(o => !o); setTimeout(() => { const el = document.getElementById('quick-search'); if (el) el.focus(); }, 30); }} aria-label="Search"><${Icon} n="search" s=${17}/></button>
         <div className="ck-d"><${CheckWidget} user=${user} att=${att} setAtt=${setAtt} onOut=${requestOut}/></div>
-        <${TopRight} user=${user} role=${role} open=${open} openForm=${openForm} signOut=${signOut} goAbout=${() => go('about')} isNew=${!seenNow} onPassword=${() => setPwOpen(true)}/></header>
+        <${TopRight} user=${user} role=${role} open=${open} openForm=${openForm} signOut=${signOut} goAbout=${() => go('about')} isNew=${!seenNow} onPassword=${() => setPwOpen(true)} onTour=${startTour}/></header>
       <div className="ck-m"><${CheckWidget} user=${user} att=${att} setAtt=${setAtt} onOut=${requestOut}/></div>
       <main className="main" key=${app + nav.view + (nav.id || '')}>${screen}</main>
       ${updateReady && html`<div className="sync-err upd" role="status"><span>A new version of Maayasthra People is ready.</span><button onClick=${() => location.reload()}>Refresh</button></div>`}
       ${syncErr && html`<div className="sync-err" role="alert"><span>${syncErr}</span><button onClick=${() => setSyncErr('')} aria-label="Dismiss">Dismiss</button></div>`}
     </div>
+    ${tour && html`<${Tour} name=${user.name.split(' ')[0]} role=${role} onClose=${() => { markTour(user.n); setTour(false); }}/>`}
     ${pwOpen && html`<${ChangePassword} user=${user} onClose=${() => setPwOpen(false)}/>`}
     ${alerts.current && html`<${AnnouncementAlert} a=${alerts.current} count=${alerts.count} perm=${alerts.perm} askPerm=${alerts.askPerm} onClose=${() => alerts.dismiss(alerts.current.id)}/>`}
     ${eodAsk && html`<${EodDialog} user=${user} tasks=${tasks} worked=${workedMs(sessionsOf(att, user.n), Date.now())} mode=${eodAsk} noHours=${isMgr} onSend=${sendEod} onCancel=${() => setEodAsk(null)}/>`}
