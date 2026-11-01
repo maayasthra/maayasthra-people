@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import React from 'react';
-import { html, Icon, Av, Photo } from '../ui.jsx';
+import { html, Icon, Av, Photo, Logo } from '../ui.jsx';
+import { ThemeSwitch } from '../ThemeSwitch.jsx';
 import { EMP, BY, DEMO_PW, isAdminRole, ROLEMAP } from '../data.js';
 import { IS_DEMO } from '../env.js';
 import { authEnabled, signIn, signUp, sendReset, setNewPassword, resolveUser, currentSession, signOutAuth } from '../auth.js';
@@ -55,12 +56,12 @@ export function Login({ onLogin }) {
   };
   return html`<div className="lg-wrap">
     <section className="lg-art">
-      <div className="brand" style=${{ padding: 0 }}><img className="brand-logo" src="/maayasthra-logo.svg" alt="Maayasthra" width="168" height="50"/></div>
+      <div className="brand" style=${{ padding: 0 }}><${Logo} w=${168} h=${50}/></div>
       <div className="lg-copy"><h1>Everyone at Maayasthra, in one place.</h1><p>Your team, your time off, your hours and your tasks. Sign in with your work email.</p></div>
       <div><div className="lg-mos" aria-hidden="true">${FACES.map(f => html`<div key=${f.n}><${Photo} e=${f}/></div>`)}</div>
         <div className="lg-url">people.maayasthra.com</div></div>
     </section>
-    <section className="lg-form"><div className="lg-box">
+    <section className="lg-form"><div className="th-fix"><${ThemeSwitch}/></div><div className="lg-box">
       ${view === 'signin' ? html`<${React.Fragment}>
         <h2>Sign in</h2>${authEnabled && html`<p>Welcome back. Use your work email.</p>`}
         ${!authEnabled && html`<div className="seg" role="group" aria-label="Sign in as"><button type="button" className=${mode === 'employee' ? 'on' : ''} onClick=${() => { setMode('employee'); setErr(''); }}>Employee</button><button type="button" className=${mode === 'admin' ? 'on' : ''} onClick=${() => { setMode('admin'); setErr(''); }}>Admin</button></div>`}
@@ -115,7 +116,7 @@ export function SetPassword({ onDone }) {
     }).catch(e => { setErr(e.message); setBusy(false); });
   };
   return html`<div className="lg-wrap" style=${{ gridTemplateColumns: 'minmax(0,1fr)' }}><section className="lg-form"><div className="lg-box">
-    <div className="brand" style=${{ padding: '0 0 28px' }}><img className="brand-logo" src="/maayasthra-logo.svg" alt="Maayasthra" width="150" height="45"/></div>
+    <div className="brand" style=${{ padding: '0 0 28px' }}><${Logo}/></div>
     <h2>Choose a password</h2>
     <form onSubmit=${submit} noValidate>
       <div className="fld"><label htmlFor="np1">New password</label><div className="pw"><input id="np1" className="inp" type=${show ? 'text' : 'password'} autoComplete="new-password" value=${pw} onChange=${ev => setPw(ev.target.value)}/><button type="button" className="pw-b" onClick=${() => setShow(!show)}>${show ? 'Hide' : 'Show'}</button></div></div>

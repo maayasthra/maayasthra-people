@@ -52,6 +52,7 @@ const IC = {
   chevL:['M15 5l-7 7 7 7'],
   chevR:['M9 5l7 7-7 7'],
   timer:['M12 21a8 8 0 1 0 0-16 8 8 0 0 0 0 16z','M12 9v4l2 2','M9 3h6'],
+  system:['M4 5h16v11H4z','M9 20h6','M12 16v4'],
   members:['M12 3l7 3v5.5c0 4.3-2.9 7.7-7 9.5-4.1-1.8-7-5.2-7-9.5V6z','M9.2 12.2l2 2 3.6-4'],
   lock:['M6 11h12v9H6z','M8.5 11V8a3.5 3.5 0 0 1 7 0v3'],
   up:['M6 15l6-6 6 6'],
@@ -132,3 +133,6 @@ const HI_C = { blue: '#0A84FF', purple: '#BF5AF2', green: '#30D158', orange: '#F
 export const HI = ({ n, tone = 'blue' }) => html`<span className="h-i" style=${{ '--c': HI_C[tone] }}><${Icon} n=${n} s=${20}/></span>`;
 /* A select with a leading icon, for compact filter rows */
 export const Sel = ({ icon, id, value, onChange, label, children }) => html`<label className="sel-i" htmlFor=${id}><${Icon} n=${icon} s=${16}/><select id=${id} value=${value} onChange=${onChange} aria-label=${label} title=${label}>${children}</select></label>`;
+
+// The logo has white lettering for dark and dark lettering for light. CSS shows the one that fits the theme.
+export const Logo = ({ w = 150, h = 45 }) => html`<span className="logo"><img className="brand-logo dk" src="/maayasthra-logo.svg" alt="Maayasthra" width=${w} height=${h}/><img className="brand-logo lt" src="/maayasthra-logo-dark.svg" alt="" aria-hidden="true" width=${w} height=${h}/></span>`;

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
-import { html, Icon, Av } from './ui.jsx';
+import { html, Icon, Av, Logo } from './ui.jsx';
+import { ThemeSwitch } from './ThemeSwitch.jsx';
+import { applyTheme } from './theme.js';
 import { LEAVES0, HIST0, TODISO, TOD, DAY, isoOf, BY, ROLEMAP } from './data.js';
 import { loadLeaves, persistLeaves } from './leave.js';
 import { loadAttendance, mergeAtt, persistAtt } from './attendanceDb.js';
@@ -54,7 +56,7 @@ const SEED_ANN = IS_DEMO ? [
 function AppSwitch({ app, setApp }) {
   return html`<div className="apps2" role="tablist" aria-label="Apps">${[['people', 'People', 'people', '#0A84FF'], ['task', 'Task', 'board', '#BF5AF2']].map(([k, l, ic, c]) => html`<button key=${k} role="tab" aria-selected=${app === k} className=${app === k ? 'on' : ''} style=${{ '--c': c }} onClick=${() => setApp(k)}><${Icon} n=${ic} s=${20}/><span>${l}</span></button>`)}</div>`;
 }
-const Brand = () => html`<div className="brand"><img className="brand-logo" src="/maayasthra-logo.svg" alt="Maayasthra" width="150" height="45"/></div>`;
+const Brand = () => html`<div className="brand"><${Logo}/></div>`;
 
 function TopRight({ user, role, open, openForm, signOut, goAbout, isNew, onPassword }) {
   const [menu, setMenu] = useState(false);
@@ -71,6 +73,7 @@ function TopRight({ user, role, open, openForm, signOut, goAbout, isNew, onPassw
       <${Av} e=${user} s=${32}/><span className="tr-n"><b>${user.name}</b><span>${role === 'admin' ? 'Admin' : role === 'pm' ? 'Project manager' : 'Employee'}</span></span></button>
     ${menu && html`<div className="menu" role="menu">
       <div className="menu-h"><b>${user.name}</b><span>${user.email}</span></div>
+      <div className="th-row"><span>Appearance</span><${ThemeSwitch}/></div>
       <button role="menuitem" onClick=${() => { setMenu(false); open(user.n); }}><${Icon} n="user" s=${16}/> View profile</button>
       <button role="menuitem" onClick=${() => { setMenu(false); openForm(user.n); }}><${Icon} n="edit" s=${16}/> Edit profile</button>
       <button role="menuitem" onClick=${() => { setMenu(false); onPassword(); }}><${Icon} n="lock" s=${16}/> Change password</button>
@@ -334,4 +337,5 @@ function App() {
   </div>`;
 }
 
+applyTheme();
 createRoot(document.getElementById('root')).render(html`<${App}/>`);

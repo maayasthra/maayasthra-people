@@ -4,6 +4,7 @@ export const BUILT = typeof __BUILD_DATE__ !== 'undefined' ? new Date(__BUILD_DA
 
 export const CHANGELOG = [
   { version: '1.6.0', date: '26 Oct 2026', title: 'End-of-day reports', items: [
+    'Light and dark mode: pick Light, Dark or match your device from the account menu (or the sign-in page). The choice is remembered on this browser',
     'The profile form now has your phone number, and an emergency contact with a name, a relationship and one phone number',
     'A new person sees a progress card on the home page until their profile is filled in: photo, a line about them, phone and an emergency contact',
     'Checking out now asks for an end-of-day report: what you worked on, with hours, and subtasks under each project',
