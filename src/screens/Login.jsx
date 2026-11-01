@@ -77,6 +77,7 @@ export function Login({ onLogin }) {
       <div className="lx-foot">people.maayasthra.com</div>
     </section>
     <section className="lx-main"><div className="th-fix"><${ThemeSwitch}/></div><div className="lx-card lg-box">
+      <div className="lx-mlogo"><${Logo} w=${150} h=${45}/></div>
       ${view === 'signin' ? html`<${React.Fragment}>
         <h2>Welcome back</h2><p>Sign in with your work email to pick up where you left off.</p>
         ${!authEnabled && html`<div className="seg" role="group" aria-label="Sign in as"><button type="button" className=${mode === 'employee' ? 'on' : ''} onClick=${() => { setMode('employee'); setErr(''); }}>Employee</button><button type="button" className=${mode === 'admin' ? 'on' : ''} onClick=${() => { setMode('admin'); setErr(''); }}>Admin</button></div>`}

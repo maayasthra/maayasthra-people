@@ -38,7 +38,7 @@
   --warn-text:var(--warning-700); --cx:72%; --mix:#000;
   --seg-on:#fff; --seg-on-text:var(--n-900); --pop:#fff; --menu-bg:#fff;
   --hdr-bg:rgba(250,250,250,.86); --bnav-bg:rgba(255,255,255,.92); --ph-bg:var(--n-100);
-  --art-bg:linear-gradient(160deg,#FFF4EB 0%,#FAFAFA 55%,#F5F5F5 100%);
+  --art-bg:#FFFFFF;
   color-scheme:light;
 }
 /* Dark */
@@ -56,7 +56,7 @@
   --warn-text:#FDB022; --cx:100%; --mix:#fff;
   --seg-on:var(--n-700); --seg-on-text:#fff; --pop:var(--n-800); --menu-bg:var(--n-900);
   --hdr-bg:rgba(10,10,10,.82); --bnav-bg:rgba(23,23,23,.92); --ph-bg:var(--n-800);
-  --art-bg:linear-gradient(160deg,#1A0E06 0%,#0A0A0A 60%);
+  --art-bg:var(--n-900);
   color-scheme:dark;
 }
 
@@ -302,7 +302,7 @@ html{overflow-y:scroll}
 .kbh-r .btn,.kbh-r .chip,.kbh-r .sel,.kbh-r .ibx{height:40px;min-height:40px}
 .kbh-r .ibx{width:40px}
 /* Collapsed columns: the same height and the same count badge, and no dark smear beside them */
-.kc2.shut{min-height:360px}
+.kc2.shut{min-height:208px}
 .kc2.shut .kc-n{display:inline-grid;place-items:center;min-width:24px;padding:2px 8px;border-radius:999px;background:var(--fill);color:var(--text-2);font-size:12px;font-weight:500}
 .kc2.pin.shut .kc-n{background:color-mix(in srgb,var(--c) 18%,transparent);color:color-mix(in srgb,var(--c) var(--cx),var(--mix))}
 :root[data-theme="dark"] .kc2.pin,:root[data-theme="dark"] .kc2.pin.shut{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 32%,transparent)}
@@ -312,3 +312,38 @@ html{overflow-y:scroll}
 .eod-note{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px;padding:10px 14px;border-radius:var(--r-ctl);background:var(--brand-tint);border:1px solid var(--brand-200);color:var(--text-2);font-size:14px}
 :root[data-theme="dark"] .eod-note{border-color:rgba(255,166,102,.3)}
 .eod-ds{margin-right:auto;align-self:center;font-size:13px;color:var(--faint)}
+
+/* Sign-in page: clean and flat. No glow shapes or gradients. */
+.lx-orb{display:none}
+.lx-art{background:var(--art-bg);border-right:1px solid var(--line)}
+.lx-main{background:var(--bg)}
+.lx-hero h1 em{color:var(--accent)}
+.lx-eyebrow{box-shadow:none}
+.lx-gc{background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow-md);-webkit-backdrop-filter:none;backdrop-filter:none}
+:root[data-theme="dark"] .lx-gc{background:var(--n-800);border-color:var(--n-700);box-shadow:none}
+.lx-feats li>span{box-shadow:none}
+.lx-mlogo{display:none}
+@media (max-width:860px){
+  /* On a phone the sign-in page is only the form: no picture panel, no scrolling */
+  .lx{display:block;min-height:100dvh;height:100dvh;overflow:hidden}
+  .lx-art{display:none}
+  .lx-main{min-height:100dvh;height:100dvh;margin:0;padding:20px 16px;justify-content:center;gap:12px;overflow-y:auto}
+  .lx-main .th-fix{top:12px;right:16px}
+  .lx-card{padding:24px 20px 20px;box-shadow:var(--shadow-md);border-radius:var(--r-modal)!important}
+  .lx-mlogo{display:block;margin:0 0 20px}
+  .lx-mlogo .logo,.lx-mlogo img{display:block}
+  .lx-card h2{font-size:26px}
+  .lx-card>p{margin-bottom:0;font-size:15px}
+  .lx-card .lg-demo{margin-top:18px;padding-top:14px}
+  .lx-card .fld:first-of-type{margin-top:16px}
+  .lx-help{font-size:12.5px}
+}
+/* Collapsed board columns: a compact, equal height */
+.kc2.shut{min-height:208px;height:208px}
+@media (max-width:860px){
+  .lx-main{justify-content:flex-start;align-items:center}
+  .lx-main .th-fix{position:static;align-self:flex-end;margin:0}
+  .lx-card{margin:auto 0}
+  .lx-main>.lx-help{margin-bottom:0}
+}
+@media (max-width:860px) and (max-height:720px){.lx-help{display:none}.lx-mlogo{margin-bottom:12px}.lx-card{padding:18px 18px 16px}}
