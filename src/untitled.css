@@ -291,3 +291,19 @@ html{overflow-y:scroll}
 .cm-l button:disabled{opacity:1}
 .cm-l button:disabled .cm-n b,.cm-l button:disabled .av,.cm-l button:disabled .cm-pi{opacity:.55}
 @media (pointer:coarse),(max-width:860px){.cm-l button{min-height:48px}}
+
+/* Board page: spacing and alignment fixes */
+.pg-h p{margin-top:2px}
+.kbh{align-items:flex-start}
+@media (max-width:860px){.kbh{align-items:start}.kbh .new-m{align-self:start}}
+.h-i{width:40px;height:40px;border-radius:10px;margin-right:12px;vertical-align:middle;background:color-mix(in srgb,var(--c,var(--accent)) 12%,var(--card));color:color-mix(in srgb,var(--c,var(--accent)) var(--cx),var(--mix));box-shadow:0 0 0 1px color-mix(in srgb,var(--c,var(--accent)) 24%,transparent) inset}
+:root[data-theme="dark"] .h-i{background:color-mix(in srgb,var(--c,var(--accent)) 18%,var(--card));color:color-mix(in srgb,var(--c,var(--accent)) 100%,#fff 25%)}
+.pg-h h1{gap:0}
+.kbh-r .btn,.kbh-r .chip,.kbh-r .sel,.kbh-r .ibx{height:40px;min-height:40px}
+.kbh-r .ibx{width:40px}
+/* Collapsed columns: the same height and the same count badge, and no dark smear beside them */
+.kc2.shut{min-height:360px}
+.kc2.shut .kc-n{display:inline-grid;place-items:center;min-width:24px;padding:2px 8px;border-radius:999px;background:var(--fill);color:var(--text-2);font-size:12px;font-weight:500}
+.kc2.pin.shut .kc-n{background:color-mix(in srgb,var(--c) 18%,transparent);color:color-mix(in srgb,var(--c) var(--cx),var(--mix))}
+:root[data-theme="dark"] .kc2.pin,:root[data-theme="dark"] .kc2.pin.shut{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 32%,transparent)}
+:root[data-theme="light"] .kc2.pin,:root[data-theme="light"] .kc2.pin.shut{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 32%,transparent),var(--shadow-xs)}
