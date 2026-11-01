@@ -254,9 +254,9 @@ function App() {
   }, [auth]);
   const notif = useNotifications(auth ? auth.user.n : null);
   // Per-person settings (tour seen, tasks already announced) come from the database
-  const [ustate, setUstate] = useState(null);
+  const [ustate, setUstate] = useState(null), prefsReady = useRef(false);
   useEffect(() => {
-    if (!auth) { setUstate(null); return; }
+    if (!auth) { setUstate(null); prefsReady.current = false; return; }
     const n = auth.user.n; let live = true;
     loadUserState(n).then(st => {
       if (!live) return;
@@ -267,11 +267,22 @@ function App() {
         if (!st.seenTasks) { const old = JSON.parse(localStorage.getItem('mp-seen-tasks-' + n) || 'null'); if (Array.isArray(old)) { st.seenTasks = old; patch.seenTasks = old; } }
       } catch (e) { /* ignore */ }
       if (Object.keys(patch).length) saveUserState(n, patch).catch(() => {});
+      // Which board columns were open or closed, and the board filters, come back exactly as they were left
+      const pr = st.prefs || {};
+      if (pr.collapsed && typeof pr.collapsed === 'object') setCollapsed(pr.collapsed);
+      if (pr.view && typeof pr.view === 'object') setTf(v => ({ ...v, ...pr.view }));
+      prefsReady.current = true;
       setUstate(st);
-    }).catch(() => { if (live) setUstate({ tourDone: true, seenTasks: null, offline: true }); });   // if the settings cannot be read, do not nag with the tour
+    }).catch(() => { if (live) setUstate({ tourDone: true, seenTasks: null, prefs: {}, offline: true }); });   // if the settings cannot be read, do not nag with the tour
     return () => { live = false; };
   }, [auth && auth.user.n]);
   const saveState = patch => { if (auth) saveUserState(auth.user.n, patch).catch(() => {}); };
+  // Save the board layout choices a moment after the last change
+  useEffect(() => {
+    if (!auth || !prefsReady.current) return;
+    const t = setTimeout(() => saveState({ prefs: { collapsed, view: { dept: tf.dept, hideEmpty: tf.hideEmpty, labels: tf.labels, lfilter: tf.lfilter } } }), 700);
+    return () => clearTimeout(t);
+  }, [collapsed, tf]);
   useTaskAlerts(tasks, auth ? auth.user.n : null, notif.add, ustate, ustate && ustate.offline ? null : seen => saveState({ seenTasks: seen }));
   useEodReminder({ user: auth ? ((!IS_DEMO && BY[auth.user.n]) || auth.user) : null, role: auth ? auth.role : null, att, eodTick, onFire: n => notif.add([n]), has: notif.has });
   useEffect(() => { if (IS_DEMO) saveTasks(tasks); }, [tasks]);

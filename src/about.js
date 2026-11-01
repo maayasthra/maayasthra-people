@@ -4,6 +4,8 @@ export const BUILT = typeof __BUILD_DATE__ !== 'undefined' ? new Date(__BUILD_DA
 
 export const CHANGELOG = [
   { version: '1.6.0', date: '26 Oct 2026', title: 'End-of-day reports', items: [
+    'The board remembers which columns you opened and closed, on every login and device',
+    'The end-of-day report is saved as a draft while you type, so clicking away or closing the box never loses it',
     'A new look based on the Untitled UI design system: orange brand colour, flat cards with a hairline border, one radius and shadow scale, and a calmer navigation. The theme now follows your device until you choose',
     'Your notifications and whether you have seen the tour now follow you to any device',
     'A pass for phones: bigger tap targets, no zoom when a field is tapped, and screens that fit the visible area on iPhones and Android',
