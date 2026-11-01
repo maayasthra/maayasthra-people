@@ -3,7 +3,8 @@ import { html, Icon, Av, Tile, HI, Sel, downloadCSV } from '../ui.jsx';
 import { TODISO, TOD, MONL, HOL, DEPTS, fmtDay, fmtDM, pd, plural, awayList, activeEmps, searchPeople } from '../data.js';
 import { dayInfo, useNow, hm, clock, addDays, weekStart, monthDays, GRACE } from '../attendance.js';
 
-const hh = ms => hm(ms).replace(' ', '');
+const hh = ms => hm(ms);
+const hhc = ms => hm(ms).replace(' ', '');   // compact, for the narrow day cells in the month grid
 const STATUS = { in: 'Checked in', out: 'Checked out', notyet: 'Not in yet', absent: 'Absent', leave: 'On leave', off: 'Holiday or weekend' };
 const LEGEND = [['ok', 'On time'], ['late', 'Late'], ['short', 'Short day'], ['leave', 'On leave'], ['miss', 'Absent'], ['off', 'Holiday or weekend']];
 
@@ -23,7 +24,7 @@ function Matrix({ rows, days, wide, open }) {
         <button className="ov-p" onClick=${() => open(r.e.n, 'hours')}><${Av} e=${r.e} s=${28}/><span className="row-t"><b>${r.e.name}</b><span>${r.e.dept}</span></span></button>
         ${r.cells.map((c, k) => html`<button key=${k} className=${'ovc ' + cellClass(c)} onClick=${() => open(r.e.n, 'hours')}
           title=${r.e.name + ' · ' + fmtDay(pd(days[k])) + (c && c.sessions.length ? ' · ' + hh(c.worked) + (c.lateFlag ? ' · late ' + c.late + ' min' : '') : c && c.state ? ' · ' + (STATUS[c.state] || '') : '')}
-          aria-label=${r.e.name + ' ' + fmtDM(days[k])}>${wide && c && c.sessions.length ? hh(c.worked) : wide && c && c.state === 'leave' ? 'Leave' : wide && c && c.state === 'absent' ? 'Absent' : ''}</button>`)}
+          aria-label=${r.e.name + ' ' + fmtDM(days[k])}>${wide && c && c.sessions.length ? hhc(c.worked) : wide && c && c.state === 'leave' ? 'Leave' : wide && c && c.state === 'absent' ? 'Absent' : ''}</button>`)}
         <span className="ov-s ov-pres">${r.present}</span>
         <span className=${'ov-s ov-abs' + (r.absent ? ' has' : '')}>${r.absent}</span>
         <span className=${'ov-s' + (r.late ? ' at-late' : '')}>${r.late}</span>

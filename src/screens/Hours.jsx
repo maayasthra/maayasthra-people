@@ -52,8 +52,8 @@ export function HoursPanel({ emp, att, setAtt, leaves, canEdit, editor }) {
   return html`<div>
     <div className="tiles">
       <${Tile} icon="check" tone="blue" label="Days present" value=${present.length} sub=${'of ' + rows.filter(r => !['off', 'leave', 'na'].includes(r.i.state)).length}/>
-      <${Tile} icon="clock" tone="green" label="Total hours" value=${hm(total).replace(' ', '')} sub=${fmtTime(emp.shiftStart) + ' – ' + fmtTime(emp.shiftEnd)}/>
-      <${Tile} icon="timer" tone="purple" label="Average per day" value=${present.length ? hm(total / present.length).replace(' ', '') : '–'} sub="per day"/>
+      <${Tile} icon="clock" tone="green" label="Total hours" value=${hm(total)} sub=${fmtTime(emp.shiftStart) + ' – ' + fmtTime(emp.shiftEnd)}/>
+      <${Tile} icon="timer" tone="purple" label="Average per day" value=${present.length ? hm(total / present.length) : '–'} sub="per day"/>
       <${Tile} icon="bell" tone="orange" label="Late arrivals" value=${late} sub="20 min grace"/>
     </div>
     <div className="sec-h" style=${{ marginTop: 36 }}><h2>${MONL[mo.m]} ${mo.y}</h2>
