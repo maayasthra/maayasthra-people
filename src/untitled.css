@@ -9,7 +9,7 @@
   --n-500:#737373; --n-600:#525252; --n-700:#404040; --n-800:#262626; --n-900:#171717; --n-950:#0A0A0A;
   /* brand: the Maayasthra orange. Change only these to change the brand colour. */
   --brand-25:#FFFAF5; --brand-50:#FFF4EB; --brand-100:#FFE5D0; --brand-200:#FFCBA0; --brand-300:#FFA666; --brand-400:#FF8433;
-  --brand-500:#FE6D00; --brand-600:#D94A00; --brand-700:#B03A00; --brand-800:#8A2E05; --brand-900:#6E2808; --brand-950:#451603;
+  --brand-500:#FE6D00; --brand-600:#FE6D00; --brand-700:#E55F00; --brand-800:#8A2E05; --brand-900:#6E2808; --brand-950:#451603;
   --success-50:#ECFDF3; --success-200:#ABEFC6; --success-500:#17B26A; --success-600:#079455; --success-700:#067647;
   --warning-50:#FFFAEB; --warning-200:#FEDF89; --warning-500:#F79009; --warning-600:#DC6803; --warning-700:#B54708;
   --error-50:#FEF3F2; --error-200:#FECDCA; --error-500:#F04438; --error-600:#D92D20; --error-700:#B42318;
@@ -30,10 +30,10 @@
   --ink:23 23 23; --shade:10 13 18;
   --line:var(--n-200); --line-hi:var(--n-300);
   --fill:var(--n-100); --fill-hi:var(--n-200);
-  --accent:var(--brand-600); --accent-soft:var(--brand-100); --brand-tint:var(--brand-50); --brand-text:var(--brand-700);
-  --orange:var(--brand-600); --orange-soft:var(--brand-50); --orange-text:var(--brand-700);
-  --blue:var(--brand-600); --blue-soft:var(--brand-700); --blue-hi:var(--brand-700); --blue-tint:var(--brand-50);
-  --on-tint:var(--brand-700); --tint-line:var(--brand-200);
+  --accent:#FE6D00; --accent-hover:#E55F00; --on-accent:#1A0A00; --accent-soft:var(--brand-100); --brand-tint:var(--brand-50); --brand-text:#B03A00;
+  --orange:#FE6D00; --orange-soft:var(--brand-50); --orange-text:#B03A00;
+  --blue:#FE6D00; --blue-soft:#B03A00; --blue-hi:#B03A00; --blue-tint:var(--brand-50);
+  --on-tint:#B03A00; --tint-line:var(--brand-200);
   --ok:var(--success-600); --ok-text:var(--success-700); --red:var(--error-600); --err-text:var(--error-700); --err-bg:var(--error-50);
   --warn-text:var(--warning-700); --cx:72%; --mix:#000;
   --seg-on:#fff; --seg-on-text:var(--n-900); --pop:#fff; --menu-bg:#fff;
@@ -48,9 +48,9 @@
   --ink:250 250 250; --shade:0 0 0;
   --line:var(--n-800); --line-hi:var(--n-700);
   --fill:var(--n-800); --fill-hi:var(--n-700);
-  --accent:var(--brand-600); --accent-soft:rgba(217,74,0,.22); --brand-tint:rgba(217,74,0,.16); --brand-text:var(--brand-300);
+  --accent:#FE6D00; --accent-hover:#FF8433; --on-accent:#1A0A00; --accent-soft:rgba(254,109,0,.22); --brand-tint:rgba(254,109,0,.14); --brand-text:var(--brand-300);
   --orange:var(--brand-500); --orange-soft:rgba(254,109,0,.14); --orange-text:var(--brand-300);
-  --blue:var(--brand-500); --blue-soft:var(--brand-300); --blue-hi:var(--brand-300); --blue-tint:rgba(217,74,0,.16);
+  --blue:#FE6D00; --blue-soft:var(--brand-300); --blue-hi:var(--brand-300); --blue-tint:rgba(217,74,0,.16);
   --on-tint:var(--brand-200); --tint-line:rgba(255,166,102,.3);
   --ok:var(--success-500); --ok-text:#47CD89; --red:var(--error-500); --err-text:#F97066; --err-bg:rgba(217,45,32,.14);
   --warn-text:#FDB022; --cx:100%; --mix:#fff;
@@ -69,8 +69,8 @@ h1,h2,h3{letter-spacing:-.01em}
 /* Buttons */
 .btn{height:40px;padding:0 14px;border-radius:var(--r-ctl);font-size:14px;font-weight:600;letter-spacing:0;gap:6px;box-shadow:var(--shadow-xs);transition:background .1s linear,box-shadow .1s linear,color .1s linear,border-color .1s linear}
 .btn.sm{height:36px;padding:0 12px;border-radius:var(--r-ctl);font-size:14px}
-.btn.pri{background:var(--accent);color:#fff;border:0;box-shadow:0 0 0 1px rgba(10,13,18,.18) inset,0 -2px 0 rgba(10,13,18,.05) inset,var(--shadow-xs)}
-.btn.pri:hover:not(:disabled){background:var(--brand-700);filter:none}
+.btn.pri{background:var(--accent);color:var(--on-accent);border:0;box-shadow:0 0 0 1px rgba(10,13,18,.12) inset,0 -2px 0 rgba(10,13,18,.06) inset,var(--shadow-xs)}
+.btn.pri:hover:not(:disabled){background:var(--accent-hover);filter:none}
 .btn.sec2,.btn.ghost{background:var(--card);color:var(--text-2);border:1px solid var(--line-hi);box-shadow:var(--shadow-xs)}
 .btn.sec2:hover:not(:disabled),.btn.ghost:hover:not(:disabled){background:var(--card-hover);color:var(--text);border-color:var(--line-hi)}
 :root[data-theme="dark"] .btn.sec2,:root[data-theme="dark"] .btn.ghost{background:var(--n-900);color:var(--n-200)}
@@ -124,13 +124,13 @@ button.tile:hover{transform:none}
 .nav-b:hover{background:var(--card-hover);color:var(--text)}
 .nav-b.on{background:var(--card-hi);color:var(--text)}
 .nav-b.on svg{color:var(--accent)}
-.nav-b .cnt,.bnav .cnt{background:var(--accent);color:#fff;font-weight:500;font-size:12px;padding:0 8px;line-height:20px}
+.nav-b .cnt,.bnav .cnt{background:var(--accent);color:var(--on-accent);font-weight:500;font-size:12px;padding:0 8px;line-height:20px}
 .hdr{border-bottom:1px solid var(--line)}
 .tr-me{border-radius:999px;background:transparent;border:1px solid transparent}
 .tr-me:hover{background:var(--card-hover)}
 .nf-b{background:transparent;border-radius:var(--r-ctl)}
 .nf-b:hover{background:var(--card-hover)}
-.nf-n{background:var(--accent)}
+.nf-n{background:var(--accent);color:var(--on-accent)}
 .hdr .qs-in{height:40px;border-radius:var(--r-ctl);font-size:14px}
 
 /* Segmented controls, tabs and chips */
@@ -171,7 +171,7 @@ button.tile:hover{transform:none}
 /* Login */
 .lx-card{border-radius:var(--r-modal);box-shadow:var(--shadow-xl);border:1px solid var(--line)}
 :root[data-theme="light"] .lx-card{box-shadow:var(--shadow-xl)}
-.lx-card .btn.pri{border-radius:var(--r-ctl);height:44px;font-size:16px;box-shadow:0 0 0 1px rgba(10,13,18,.18) inset,0 -2px 0 rgba(10,13,18,.05) inset,var(--shadow-xs)}
+.lx-card .btn.pri{border-radius:var(--r-ctl);height:44px;font-size:16px;box-shadow:0 0 0 1px rgba(10,13,18,.12) inset,0 -2px 0 rgba(10,13,18,.06) inset,var(--shadow-xs)}
 .lx-hero h1 em{background:none;color:var(--accent);-webkit-text-fill-color:currentColor}
 .lx-eyebrow{border-radius:999px;background:var(--brand-tint);border:1px solid var(--brand-200);color:var(--brand-text)}
 .lx-feats li>span{background:var(--brand-tint);border:1px solid var(--brand-200);color:var(--brand-text);-webkit-backdrop-filter:none;backdrop-filter:none;border-radius:10px}
@@ -205,7 +205,7 @@ button.tile:hover{transform:none}
 /* Bugs found in review: toolbar buttons were still round, and the People icon kept its old blue */
 .ibx{width:40px;height:40px;border-radius:var(--r-ctl);background:var(--card);border:1px solid var(--line-hi);color:var(--text-2);box-shadow:var(--shadow-xs)}
 .ibx:hover{background:var(--card-hover);color:var(--text)}
-.ibx.on{background:var(--accent);border-color:transparent;color:#fff}
+.ibx.on{background:var(--accent);border-color:transparent;color:var(--on-accent)}
 .apps2 button svg,.apps2 button:not(.on) svg{color:var(--faint)!important}
 .apps2 button.on svg{color:var(--accent)!important}
 .hdr-b .apps2 button{border-radius:6px}
@@ -216,3 +216,47 @@ button.tile:hover{transform:none}
 .an-rm{background:var(--card);border:1px solid var(--line-hi);color:var(--text-2);box-shadow:var(--shadow-xs)}
 .an-rm:hover{background:var(--error-50);color:var(--error-700);border-color:var(--error-200)}
 .mb-f button.on{background:var(--brand-tint);color:var(--brand-text)}
+
+
+/* ---------- the exact brand orange, text on it, and one radius everywhere ---------- */
+/* Dark text on the orange: white on #FE6D00 is too faint to read */
+.cell.today .num,.ot-x.on,.oc3-p em,.td2-go,.td2-send,.sync-err.upd button,.lf-t.on .lf-ti,.chip.on small{color:var(--on-accent)!important}
+.cell.today .num,.ot-x.on,.oc3-p em,.td2-go,.td2-send,.lf-t.on .lf-ti{background:var(--accent)!important}
+.sw.on{background:var(--accent)}
+
+/* Radius: controls 8px, cards 12px, modals 16px, at every screen size. Avatars, toggles and badges stay round. */
+button:not(.sw):not(.av):not(.rq3-av):not(.tour-x):not(.nf-b):not(.tr-me),
+.btn,.ib,.ibx,.chip,.link-btn,input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea,.inp,.qs-in,.sel-i,label.sel-i,.pw-b,
+.nav-b,.bnav button,.menu button,.seg,.seg button,.apps2,.apps2 button,.th,.th button,.dm,.ps-i,.td2-chip,.td2-add,.kt-dots,.kt-c,.kc-new,.td2-comp,.td2-comp input{border-radius:var(--r-ctl)!important}
+.kt-c,.td2-tick,.td2-ck,.td2-send,.td2-go,.mt3-ok,.ck-c,.bg-ck{border-radius:50%!important}
+.card,.pn,.tile,.mg,.mx,.qd,.fm,.ps,.mt3-col,.an-pg,.an-new,.ef2-card,.kgrp,.ph3-r,.oc3-c,.oc3-lead,.rq3-c,.pc,.ab-hero,.ab-tile,.ab-rel,.ab-roles>div,.ab-help,.lg-sent,.tv,.ov-w,.lf-s,.lf-t,.mb-w,.pf2-hero,.pf2-card,.kc2,.kc2.shut,.kc2.pin,.kc2.pin.shut,.kc2.addcol,.menu,.nf-p,.qs-dd,.lm,.cm,.kt-menu,.tour-card,.lx-card,.lx-gc{border-radius:var(--r-card)!important}
+.dlg,.sh,.lx-card{border-radius:var(--r-modal)!important}
+.kt,.mt3-k,.kc2 .kt,.td2-side,.td2-desc,.eod-g,.bg-r,.mt3-e,.kc-e,.kc-compose{border-radius:var(--r-ctl)!important}
+.pill,.nf-n,.cnt,.sw,.sw i,.kt-st i,.tour-dots i{border-radius:999px}
+.av,.rq3-av,button.rq3-av{border-radius:50%!important}
+.bnav .cnt,.nav-b .cnt{border-radius:999px!important}
+.tour-x,.nf-b,.tr-me{border-radius:var(--r-ctl)!important}
+.tr-me{border-radius:999px!important}
+
+/* ---------- the same layout in People and Task ---------- */
+html{scrollbar-gutter:stable}
+@media (min-width:861px){
+  .app,.app.wide{grid-template-columns:232px minmax(0,1fr)!important}
+  .app.no-side,.app.wide.no-side{grid-template-columns:minmax(0,1fr)!important}
+  .main,.hdr,.app.wide .main,.app.wide .hdr{padding-left:var(--px)!important;padding-right:var(--px)!important}
+  .side,.app.wide .side{padding:32px 20px 24px 20px!important}
+}
+html{overflow-y:scroll}
+
+/* Alignment fixes */
+.hdr-b .apps2{display:inline-flex;width:max-content;gap:2px;padding:2px;flex:none}
+.hdr-b .apps2 button{flex:none;height:36px;padding:0 14px;gap:6px;white-space:nowrap}
+@media (max-width:560px){
+  .tv-r{grid-template-columns:minmax(0,1fr) 40px 74px 64px!important;column-gap:6px}
+  .tv-h{font-size:11px}
+  .tv-r>*{min-width:0}
+}
+/* Header icon buttons look the same: search and bell */
+.hs-b,.nf-b{display:grid;place-items:center;width:40px;height:40px;background:var(--card);border:1px solid var(--line-hi);box-shadow:var(--shadow-xs);color:var(--text-2)}
+.hs-b:hover,.nf-b:hover{background:var(--card-hover);color:var(--text)}
+@media (min-width:861px){.hs-b{display:none!important}}
