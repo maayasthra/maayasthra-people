@@ -5,6 +5,7 @@ import { DueChip } from '../task/parts.jsx';
 import { checkInSound } from '../alerts.js';
 import { AnnList, Composer } from './Announcements.jsx';
 import { ProfileSetup } from './ProfileSetup.jsx';
+import { CopyLeave } from '../CopyLeave.jsx';
 import { isOpen } from '../tasks.js';
 import { SessionList, useDay, dayNote } from '../Attendance.jsx';
 import { hm, lunchInfo, checkIn, checkOut, dayInfo, useNow, clock, minuteOfDay } from '../attendance.js';
@@ -26,7 +27,7 @@ function Panel({ title, sub, right, children }) {
 }
 
 /* ---------- Leave approvals: one request at a time, slide with the arrows ---------- */
-function ApprovalsCarousel({ queue, setLeaves, open, user }) {
+function ApprovalsCarousel({ queue, all, setLeaves, open, user }) {
   const pending = queue.filter(l => l.state === 'pending');
   const [i, setI] = useState(0); const [undo, setUndo] = useState(null);
   const track = useRef(null);
@@ -46,7 +47,7 @@ function ApprovalsCarousel({ queue, setLeaves, open, user }) {
           <span><b>${e.name}${e.n === user.n ? html` <em className="rq3-you">You</em>` : ''}</b><span>${e.role}</span></span></div>
         <div className="rq3-d"><span className="rq3-w"><b>${l.from === l.to ? fmtDay(pd(l.from)) : range(l.from, l.to)}</b><i></i><b>${l.half ? 'Half day' : plural(l.days, 'day')}</b></span><span className="rq3-t"><${Icon} n=${typeIcon(l.type)} s=${15}/>${l.type}</span></div>
         ${l.reason && html`<p className="rq3-r">${l.reason}</p>`}
-        <div className="ap-a" style=${{ margin: 0 }}><button className="btn pri sm" onClick=${() => decide(l, 'approved')}><${Icon} n="check" s=${15}/> Approve</button><button className="btn ghost sm" onClick=${() => decide(l, 'declined')}>Decline</button></div>
+        <div className="ap-a" style=${{ margin: 0 }}><button className="btn pri sm" onClick=${() => decide(l, 'approved')}><${Icon} n="check" s=${15}/> Approve</button><button className="btn ghost sm" onClick=${() => decide(l, 'declined')}>Decline</button><${CopyLeave} l=${l} all=${all}/></div>
       </div>`; })}</div>`}
     ${undo && html`<div className="toast" role="status"><span>${undo.state === 'approved' ? 'Approved' : 'Declined'} ${undo.name}'s request.</span>
       <button className="link" onClick=${() => { setLeaves(ls => ls.map(x => x.id === undo.id ? { ...x, state: 'pending' } : x)); setUndo(null); }}>Undo</button></div>`}
@@ -166,7 +167,7 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
         <${Tile} icon="check" tone="green" label="Checked in now" value=${inNow} sub=${expected ? 'of ' + expected : 'studio closed today'} onClick=${() => go('attendance')}/>
       </div>
       <section className="eq3 sec">
-        <${ApprovalsCarousel} queue=${queue} setLeaves=${setLeaves} open=${open} user=${user}/>
+        <${ApprovalsCarousel} queue=${queue} all=${leaves} setLeaves=${setLeaves} open=${open} user=${user}/>
         <${Reviews} people=${people} open=${open}/>
         <${Birthdays} open=${open}/>
       </section>

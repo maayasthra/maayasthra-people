@@ -391,3 +391,8 @@ html{overflow-y:scroll}
 .td2-rtag{display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:999px;font-size:13px;font-weight:500;color:var(--muted);background:var(--fill)}
 .td2-rtag.on{color:color-mix(in srgb,var(--ret) 80%,#000);background:color-mix(in srgb,var(--ret) 12%,var(--card));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ret) 30%,transparent)}
 :root[data-theme="dark"] .td2-rtag.on{color:#6CB2FF}
+
+/* Copy button on leave requests */
+.cpy.ok{color:var(--success-700);border-color:var(--success-200);background:var(--success-50)}
+:root[data-theme="dark"] .cpy.ok{color:#47CD89;background:rgba(7,148,85,.14);border-color:rgba(71,205,137,.35)}
+.rq3-a{flex-wrap:wrap;justify-content:flex-end}

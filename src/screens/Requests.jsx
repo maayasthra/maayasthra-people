@@ -4,6 +4,7 @@ import { downloadLeaveReport } from '../report.js';
 import { BY, TODISO, pd, fmtDay, fmtDM, plural, range, workDays, awayList, balances } from '../data.js';
 import { dayKey } from '../attendance.js';
 import { typeIcon } from './Home.jsx';
+import { CopyLeave } from '../CopyLeave.jsx';
 
 const STATE_C = { approved: '#30D158', declined: '#FF453A' };
 
@@ -37,8 +38,8 @@ export function Requests({ user, leaves: all, setLeaves, open }) {
           <span className=${peers.length ? 'warn' : ''}><${Icon} n="people" s=${13}/>${peers.length ? peers.join(' and ') + (peers.length === 1 ? ' is' : ' are') + ' also out' : 'No one else in ' + e.dept + ' is out'}</span>
           ${hol.length > 0 && html`<span><${Icon} n="calendar" s=${13}/>Skips ${hol.join(', ')}</span>`}</div>`}
       </div>
-      <div className="rq3-a">${pend ? html`<button className="btn pri sm" onClick=${() => decide(l, 'approved')}><${Icon} n="check" s=${15}/> Approve</button><button className="btn ghost sm" onClick=${() => decide(l, 'declined')}>Decline</button>`
-        : html`<span className="rq3-sw"><span className="rq3-st" style=${{ '--c': STATE_C[l.state] }}><i></i>${l.state === 'approved' ? 'Approved' : 'Declined'}</span>${decidedBy(l) && html`<small>by ${decidedBy(l)}</small>`}</span><button className="rq3-u" onClick=${() => decide(l, 'pending')}>Undo</button>`}</div>
+      <div className="rq3-a">${pend ? html`<button className="btn pri sm" onClick=${() => decide(l, 'approved')}><${Icon} n="check" s=${15}/> Approve</button><button className="btn ghost sm" onClick=${() => decide(l, 'declined')}>Decline</button><${CopyLeave} l=${l} all=${all}/>`
+        : html`<span className="rq3-sw"><span className="rq3-st" style=${{ '--c': STATE_C[l.state] }}><i></i>${l.state === 'approved' ? 'Approved' : 'Declined'}</span>${decidedBy(l) && html`<small>by ${decidedBy(l)}</small>`}</span><${CopyLeave} l=${l} all=${all}/><button className="rq3-u" onClick=${() => decide(l, 'pending')}>Undo</button>`}</div>
     </article>`;
   };
 
