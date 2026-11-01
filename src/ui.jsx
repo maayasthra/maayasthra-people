@@ -99,8 +99,8 @@ export function Portrait({ e }) {
     : style === 'curly' ? html`<g fill=${hc}><circle cx="40" cy="41" r="8"/><circle cx="52" cy="37" r="9"/><circle cx="62" cy="42" r="8"/></g>`
     : html`<path d="M32 56C31 33 69 33 68 56C62 44 54 41 50 41C46 41 38 44 32 56Z" fill=${hc}/>`;
   const gid = 'pg' + (++portraitId);
-  return html`<svg viewBox="0 0 100 125" preserveAspectRatio="xMidYMid slice" role="img" aria-label=${'Portrait of ' + e.name}>
-    <defs><linearGradient id=${gid} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor=${BGS[b][0]}/><stop offset="1" stopColor=${BGS[b][1]}/></linearGradient></defs>
+  return html`<svg className=${'pbg' + b} viewBox="0 0 100 125" preserveAspectRatio="xMidYMid slice" role="img" aria-label=${'Portrait of ' + e.name}>
+    <defs><linearGradient id=${gid} x1="0" y1="0" x2="1" y2="1"><stop offset="0" style=${{ stopColor: 'var(--pa)' }}/><stop offset="1" style=${{ stopColor: 'var(--pb)' }}/></linearGradient></defs>
     <rect width="100" height="125" fill=${'url(#' + gid + ')'}/>
     <circle cx="50" cy="48" r="52" fill="#fff" opacity=".04"/>
     ${back}
