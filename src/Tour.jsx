@@ -5,10 +5,6 @@ import { html, Icon } from './ui.jsx';
    can be skipped at any point, and can be run again from the account menu. */
 const seen = sels => { for (const s of sels) for (const el of document.querySelectorAll(s)) { const r = el.getBoundingClientRect(), cs = getComputedStyle(el); if (r.width > 8 && r.height > 8 && cs.visibility !== 'hidden' && cs.display !== 'none') return el; } return null; };
 
-export const tourKey = n => 'mp-tour-' + n;
-export const tourDone = n => { try { return localStorage.getItem(tourKey(n)) === '1'; } catch (x) { return false; } };
-export const markTour = n => { try { localStorage.setItem(tourKey(n), '1'); } catch (x) { /* private window: it will offer the tour again next time */ } };
-
 function stepsFor(name, role) {
   const mgr = role === 'admin' || role === 'pm';
   const s = [

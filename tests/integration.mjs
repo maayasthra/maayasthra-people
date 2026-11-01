@@ -329,6 +329,35 @@ const wr = await m.supabase.from('announcement_reads').insert({ announcement_id:
 as('karthik'); await m.loadStaff(); t('people only see their own read marks', ((await m.supabase.from('announcement_reads').select('announcement_id')).data || []).length === 0);
 as('vijay'); await m.loadStaff(); const allr = (await m.supabase.from('announcement_reads').select('announcement_id, employee_id, read_at')).data || []; t('an admin can see who has acknowledged an announcement', allr.some(r => r.employee_id === ids.abines && String(r.announcement_id) === String(aid)), allr.length);
 
+
+// ================= NOTIFICATIONS AND PERSONAL SETTINGS =================
+as('abines'); await m.loadStaff();
+let us = await m.loadUserState(ids.abines);
+t('a new person has not seen the tour and has no task list yet', us.tourDone === false && us.seenTasks === null);
+await m.saveUserState(ids.abines, { tourDone: true, seenTasks: ['t1', 't2'] });
+us = await m.loadUserState(ids.abines);
+t('the tour flag and the seen tasks are saved', us.tourDone === true && us.seenTasks.join() === 't1,t2');
+as('arunkumar'); await m.loadStaff();
+us = await m.loadUserState(ids.arunkumar);
+t('someone else does not see them', us.tourDone === false && us.seenTasks === null);
+t('and cannot write another person’s settings', !!(await tryit(() => m.saveUserState(ids.abines, { tourDone: false }))) || (await (async () => { as('abines'); return (await m.loadUserState(ids.abines)).tourDone === true; })()));
+as('abines'); await m.loadStaff();
+const nIns = await m.supabase.from('notifications').insert({ employee_id: ids.abines, key: 'task-x1', kind: 'task', title: 'New task: Poster', body: 'From Meera', ref: 'x1' });
+t('a person can add a notification for themselves', !nIns.error);
+const nDup = await m.supabase.from('notifications').insert({ employee_id: ids.abines, key: 'task-x1', kind: 'task', title: 'again', body: '', ref: 'x1' });
+t('the same notification is not added twice', !!nDup.error);
+const nOther = await m.supabase.from('notifications').insert({ employee_id: ids.arunkumar, key: 'task-x2', kind: 'task', title: 'For someone else', body: '', ref: 'x2' });
+t('nobody can put a notification in someone else’s bell', !!nOther.error);
+await m.supabase.from('notifications').update({ read: true }).eq('employee_id', ids.abines).eq('key', 'task-x1');
+t('a notification can be marked read', ((await m.supabase.from('notifications').select('key, read')).data || []).some(r => r.key === 'task-x1' && r.read === true));
+as('arunkumar'); await m.loadStaff();
+t('and is private to its owner', ((await m.supabase.from('notifications').select('key')).data || []).length === 0);
+for (let i = 0; i < 45; i++) await db.exec("insert into notifications (employee_id, key, kind, title, created_at) values (" + ids.abines + ", 'bulk-" + i + "', 'eod', 'Reminder " + i + "', now() + interval '" + (i + 1) + " seconds')");
+t('only the latest 40 are kept', (await q('select count(*)::int n from notifications where employee_id=$1', [ids.abines]))[0].n === 40);
+as('abines'); await m.loadStaff();
+await m.supabase.from('notifications').delete().eq('employee_id', ids.abines).eq('kind', 'eod');
+t('clearing one kind leaves the others', ((await m.supabase.from('notifications').select('key, kind')).data || []).every(r => r.kind !== 'eod'));
+
 console.log('--- done ---');
 
 if (process.exitCode) console.log('SOME CHECKS FAILED');

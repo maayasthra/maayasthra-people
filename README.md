@@ -61,6 +61,7 @@ Run these in the Supabase SQL Editor, in order. Each file can be run again safel
 | `0026_eod_pm_no_hours.sql` | Admins and project managers send EOD reports without hours (description only) |
 | `0027_checkout_no_eod_for_managers.sql` | Admins and project managers check out without an EOD report |
 | `0028_emergency_relationship.sql` | Emergency contact gets its own relationship field |
+| `0029_notifications_and_user_state.sql` | The notification bell, the tour flag and the tasks already announced are kept per person in the database |
 
 ## Tests
 

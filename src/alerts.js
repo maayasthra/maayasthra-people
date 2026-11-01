@@ -152,33 +152,31 @@ export function notifyDesktop(title, body, tag) {
 }
 
 /* ---------- a sound and a bell entry when a task is given to you ---------- */
-// What has already been seen is remembered, so a task given while you were away is announced on your next visit.
-export function useTaskAlerts(tasks, n, onNew) {
-  const seen = useRef(null);
+// What has already been seen is remembered with the person's settings, so a task given while they were away is announced
+// on their next visit, on whichever device they use. `state` is { seenTasks: string[] | null } once loaded.
+export function useTaskAlerts(tasks, n, onNew, state, saveSeen) {
+  const seen = useRef(null), saved = useRef('');
   useEffect(() => {
-    if (n == null) { seen.current = null; return; }
-    if (!(tasks || []).length) return;
-    const key = 'mp-seen-tasks-' + n;
+    if (n == null) { seen.current = null; saved.current = ''; return; }
+    if (!state || !(tasks || []).length) return;
     const mine = tasks.filter(t => !t.done && (t.cols || []).includes(n));
-    if (seen.current === null) {
-      let stored = null; try { stored = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { /* ignore */ }
-      seen.current = new Set(Array.isArray(stored) ? stored : mine.map(t => t.id)); // the very first visit sets the starting point
-    }
+    if (seen.current === null) seen.current = new Set(state.seenTasks || mine.map(t => t.id)); // the very first visit sets the starting point
     const fresh = mine.filter(t => !seen.current.has(t.id) && t.by !== n);
     mine.forEach(t => seen.current.add(t.id));
-    try { localStorage.setItem(key, JSON.stringify([...seen.current].slice(-500))); } catch (e) { /* ignore */ }
+    const out = JSON.stringify([...seen.current].slice(-500));
+    if (out !== saved.current) { saved.current = out; if (saveSeen) saveSeen(JSON.parse(out)); }
     if (!fresh.length) return;
     newTaskSound();
     if (onNew) onNew(fresh.map(t => ({ id: 'task-' + t.id, kind: 'task', title: 'New task: ' + t.title, body: (BY[t.by] ? 'From ' + BY[t.by].name : 'Given to you') + (t.due ? ' · due ' + dueText(t.due) : ''), ref: t.id })));
     notifyDesktop(fresh.length > 1 ? fresh.length + ' new tasks for you' : 'New task: ' + fresh[0].title, fresh.length > 1 ? fresh.map(t => t.title).join(', ') : 'Open Maayasthra Task to see it.', 'new-task');
-  }, [tasks, n]);
+  }, [tasks, n, state]);
 }
 
 /* ---------- end-of-day report reminders ---------- */
 // Employees get a nudge 30 minutes and 15 minutes before their shift ends (5:30 and 5:45 PM on a 6 PM shift),
 // if they are still checked in and have not sent today's report.
 const toMin = hhmm => { const [h, m] = String(hhmm || '18:00').split(':').map(Number); return h * 60 + (m || 0); };
-export function useEodReminder({ user, role, att, eodTick, onFire }) {
+export function useEodReminder({ user, role, att, eodTick, onFire, has }) {
   useEffect(() => {
     if (!user || role !== 'employee') return;
     let live = true;
@@ -192,6 +190,7 @@ export function useEodReminder({ user, role, att, eodTick, onFire }) {
       let sent = false; try { sent = (await loadEods(dk, dk)).some(r => r.emp === user.n && r.rows.length); } catch (e) { return; }
       if (!live || sent) return;
       try { localStorage.setItem(key, '1'); } catch (e) { /* ignore */ }
+      if (has && has('eod-' + dk + '-' + due[1])) return;                       // another device has already told them
       const second = due[1] === '2', left = Math.max(0, Math.round(end - now));
       const title = second ? 'Reminder: send your end-of-day report' : 'Time for your end-of-day report';
       const body = (left > 0 ? 'Your shift ends in ' + left + ' minutes. ' : 'Your shift has ended. ') + 'Write what you worked on, then check out.';

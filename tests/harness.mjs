@@ -23,7 +23,7 @@ export async function setup() {
 }
 globalThis.__as = 'abines';
 export const as = n => { globalThis.__as = n; };
-const pk = { employee_private: 'employee_id', holidays: 'day', board_groups: 'id' };
+const pk = { employee_private: 'employee_id', holidays: 'day', board_groups: 'id', user_state: 'employee_id', notifications: 'employee_id,key' };
 const fix = v => v instanceof Date ? (isNaN(v) ? null : v.toISOString()) : v;
 globalThis.__q = async (sql, params) => { const u = U[globalThis.__as]; await db.exec('begin'); await db.exec("set local role authenticated; select set_config('request.uid','" + u + "',true)"); try { const r = await db.query(sql, params); await db.exec('commit'); return { rows: r.rows, error: null }; } catch (e) { await db.exec('rollback'); return { rows: [], error: { message: e.message } }; } };
 export const shimSrc = `
@@ -35,7 +35,7 @@ function builder(t) {
   const add = (c, op, v) => { q.conds.push({ c, op, v }); return api; };
   const api = {
     select: (c) => { q.cols = c || '*'; if (q.op !== 'select') q.ret = true; return api; },
-    insert: b => { q.op = 'insert'; q.body = b; return api; }, update: b => { q.op = 'update'; q.body = b; return api; }, upsert: b => { q.op = 'upsert'; q.body = b; return api; }, delete: () => { q.op = 'delete'; return api; },
+    insert: b => { q.op = 'insert'; q.body = b; return api; }, update: b => { q.op = 'update'; q.body = b; return api; }, upsert: (b, o) => { q.op = 'upsert'; q.body = b; q.ignore = !!(o && o.ignoreDuplicates); return api; }, delete: () => { q.op = 'delete'; return api; },
     eq: (c, v) => add(c, '=', v), neq: (c, v) => add(c, '<>', v), gte: (c, v) => add(c, '>=', v), lte: (c, v) => add(c, '<=', v),
     in: (c, vs) => add(c, 'in', vs),
     order: (c, o) => { q.order = c + (o && o.ascending === false ? ' desc' : ''); return api; }, range: (a, b) => { q.range = [a, b]; return api; }, limit: n => { q.limit = n; return api; },
@@ -54,7 +54,7 @@ async function run(q) {
   else if (q.op === 'insert' || q.op === 'upsert') {
     const rows = Array.isArray(q.body) ? q.body : [q.body], ks = keys(rows[0]);
     const tuples = rows.map(r => '(' + ks.map(k => P(r[k])).join(',') + ')');
-    sql = 'insert into ' + q.t + ' (' + ks.join(',') + ') values ' + tuples.join(',') + (q.op === 'upsert' ? ' on conflict (' + pk[q.t] + ') do update set ' + ks.filter(k => k !== pk[q.t]).map(k => k + ' = excluded.' + k).join(',') : '') + ' returning *';
+    sql = 'insert into ' + q.t + ' (' + ks.join(',') + ') values ' + tuples.join(',') + (q.op === 'upsert' ? (q.ignore ? ' on conflict (' + pk[q.t] + ') do nothing' : ' on conflict (' + pk[q.t] + ') do update set ' + ks.filter(k => !pk[q.t].split(',').includes(k)).map(k => k + ' = excluded.' + k).join(',')) : '') + ' returning *';
   } else if (q.op === 'update') { const ks = keys(q.body); const sets = ks.map(k => k + ' = ' + P(q.body[k])).join(','); sql = 'update ' + q.t + ' set ' + sets + where() + ' returning *'; }
   else if (q.op === 'delete') sql = 'delete from ' + q.t + where() + ' returning *';
   const r = await __q(sql, params);
@@ -77,7 +77,7 @@ const mock = { name: 'mock', setup(b) {
 }};
 export async function load() {
   const OUT = path.join(HERE, '.build'); fs.mkdirSync(OUT, { recursive: true });
-  await build({ stdin: { contents: "export * from '" + P + "/src/staff.js'; export * from '" + P + "/src/leave.js'; export * from '" + P + "/src/tasksDb.js'; export * from '" + P + "/src/attendanceDb.js'; export * from '" + P + "/src/eodDb.js'; export * from '" + P + "/src/groupsDb.js'; export { supabase } from './auth.js'; export * as att from '" + P + "/src/attendance.js'; export * as data from '" + P + "/src/data.js'; export * as tasks from '" + P + "/src/tasks.js';", resolveDir: P + '/src', loader: 'js' }, bundle: true, format: 'esm', outfile: OUT + '/app.mjs', plugins: [mock], logLevel: 'error', define: { 'import.meta.env': '{}' }, external: ['react'] });
+  await build({ stdin: { contents: "export * from '" + P + "/src/staff.js'; export * from '" + P + "/src/leave.js'; export * from '" + P + "/src/tasksDb.js'; export * from '" + P + "/src/attendanceDb.js'; export * from '" + P + "/src/eodDb.js'; export * from '" + P + "/src/groupsDb.js'; export * from '" + P + "/src/userState.js'; export { supabase } from './auth.js'; export * as att from '" + P + "/src/attendance.js'; export * as data from '" + P + "/src/data.js'; export * as tasks from '" + P + "/src/tasks.js';", resolveDir: P + '/src', loader: 'js' }, bundle: true, format: 'esm', outfile: OUT + '/app.mjs', plugins: [mock], logLevel: 'error', define: { 'import.meta.env': '{}' }, external: ['react'] });
   fs.writeFileSync(OUT + '/react.mjs', 'export const useState=()=>[0,()=>{}]; export const useEffect=()=>{};');
   fs.writeFileSync(OUT + '/app.mjs', fs.readFileSync(OUT + '/app.mjs', 'utf8').replace(/from "react"/g, 'from "./react.mjs"'));
   return await import(OUT + '/app.mjs?' + Date.now());

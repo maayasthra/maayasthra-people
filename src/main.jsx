@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { html, Icon, Av, Logo } from './ui.jsx';
 import { ThemeSwitch } from './ThemeSwitch.jsx';
-import { Tour, tourDone, markTour } from './Tour.jsx';
+import { Tour } from './Tour.jsx';
+import { loadUserState, saveUserState } from './userState.js';
 import { applyTheme } from './theme.js';
 import { LEAVES0, HIST0, TODISO, TOD, DAY, isoOf, BY, ROLEMAP } from './data.js';
 import { loadLeaves, persistLeaves } from './leave.js';
@@ -251,8 +252,27 @@ function App() {
     return () => { unsub(); clearInterval(poll); clearTimeout(t); document.removeEventListener('visibilitychange', vis); };
   }, [auth]);
   const notif = useNotifications(auth ? auth.user.n : null);
-  useTaskAlerts(tasks, auth ? auth.user.n : null, notif.add);
-  useEodReminder({ user: auth ? ((!IS_DEMO && BY[auth.user.n]) || auth.user) : null, role: auth ? auth.role : null, att, eodTick, onFire: n => notif.add([n]) });
+  // Per-person settings (tour seen, tasks already announced) come from the database
+  const [ustate, setUstate] = useState(null);
+  useEffect(() => {
+    if (!auth) { setUstate(null); return; }
+    const n = auth.user.n; let live = true;
+    loadUserState(n).then(st => {
+      if (!live) return;
+      // Settings kept in this browser before they moved to the database are carried over once
+      const patch = {};
+      try {
+        if (!st.tourDone && localStorage.getItem('mp-tour-' + n) === '1') { st.tourDone = true; patch.tourDone = true; }
+        if (!st.seenTasks) { const old = JSON.parse(localStorage.getItem('mp-seen-tasks-' + n) || 'null'); if (Array.isArray(old)) { st.seenTasks = old; patch.seenTasks = old; } }
+      } catch (e) { /* ignore */ }
+      if (Object.keys(patch).length) saveUserState(n, patch).catch(() => {});
+      setUstate(st);
+    }).catch(() => { if (live) setUstate({ tourDone: true, seenTasks: null, offline: true }); });   // if the settings cannot be read, do not nag with the tour
+    return () => { live = false; };
+  }, [auth && auth.user.n]);
+  const saveState = patch => { if (auth) saveUserState(auth.user.n, patch).catch(() => {}); };
+  useTaskAlerts(tasks, auth ? auth.user.n : null, notif.add, ustate, ustate && ustate.offline ? null : seen => saveState({ seenTasks: seen }));
+  useEodReminder({ user: auth ? ((!IS_DEMO && BY[auth.user.n]) || auth.user) : null, role: auth ? auth.role : null, att, eodTick, onFire: n => notif.add([n]), has: notif.has });
   useEffect(() => { if (IS_DEMO) saveTasks(tasks); }, [tasks]);
   useEffect(() => { saveCollapsed(collapsed); }, [collapsed]);
   useEffect(() => { if (IS_DEMO) saveCustom(custom); }, [custom]);
@@ -262,10 +282,10 @@ function App() {
 
   // A new person is offered the walkthrough once; after that it is only on request from the account menu
   useEffect(() => {
-    if (!auth || tourDone(auth.user.n)) return;
+    if (!auth || !ustate || ustate.tourDone) return;
     const t = setTimeout(() => { setAppState('people'); setNav({ view: 'home' }); setTour(true); }, 1600);
     return () => clearTimeout(t);
-  }, [auth && auth.user.n]);
+  }, [auth && auth.user.n, ustate && ustate.tourDone, !!ustate]);
 
   if (booting) return html`<div className="boot"><span className="mark"></span></div>`;
   if (bootErr && !auth) return html`<div className="boot"><span className="mark"></span><p className="boot-t">${bootErr}</p><button className="btn sec2" onClick=${() => location.reload()}>Try again</button></div>`;
@@ -343,7 +363,7 @@ function App() {
       ${updateReady && html`<div className="sync-err upd" role="status"><span>A new version of Maayasthra People is ready.</span><button onClick=${() => location.reload()}>Refresh</button></div>`}
       ${syncErr && html`<div className="sync-err" role="alert"><span>${syncErr}</span><button onClick=${() => setSyncErr('')} aria-label="Dismiss">Dismiss</button></div>`}
     </div>
-    ${tour && html`<${Tour} name=${user.name.split(' ')[0]} role=${role} onClose=${() => { markTour(user.n); setTour(false); }}/>`}
+    ${tour && html`<${Tour} name=${user.name.split(' ')[0]} role=${role} onClose=${() => { setUstate(st => ({ ...(st || {}), tourDone: true })); saveState({ tourDone: true }); setTour(false); }}/>`}
     ${pwOpen && html`<${ChangePassword} user=${user} onClose=${() => setPwOpen(false)}/>`}
     ${alerts.current && html`<${AnnouncementAlert} a=${alerts.current} count=${alerts.count} perm=${alerts.perm} askPerm=${alerts.askPerm} onClose=${() => alerts.dismiss(alerts.current.id)}/>`}
     ${eodAsk && html`<${EodDialog} user=${user} tasks=${tasks} worked=${workedMs(sessionsOf(att, user.n), Date.now())} mode=${eodAsk} noHours=${isMgr} onSend=${sendEod} onCancel=${() => setEodAsk(null)}/>`}
