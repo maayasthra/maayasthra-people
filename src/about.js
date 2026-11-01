@@ -4,6 +4,8 @@ export const BUILT = typeof __BUILD_DATE__ !== 'undefined' ? new Date(__BUILD_DA
 
 export const CHANGELOG = [
   { version: '1.6.0', date: '26 Oct 2026', title: 'End-of-day reports', items: [
+    'Your notifications and whether you have seen the tour now follow you to any device',
+    'A pass for phones: bigger tap targets, no zoom when a field is tapped, and screens that fit the visible area on iPhones and Android',
     'A notification bell in the top bar: it tells employees when a task is given to them, and reminds them 30 and 15 minutes before their shift ends to send their end-of-day report',
     'The light and dark switch now lives in the profile menu, no longer on the home page',
     'A short step-by-step tour of the workspace for new people. It can be skipped, and run again from the account menu (Take the tour)',

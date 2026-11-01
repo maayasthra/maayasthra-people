@@ -2629,3 +2629,51 @@ button:focus:not(:focus-visible){outline:none}
 .lx-faces{top:222px}
 .lx-stage{height:262px}
 .lx-card .lg-row .link{padding:0}
+
+/* =====================================================================
+   Phone pass: touch sizes, no zoom on focus, iOS browser bars
+   ===================================================================== */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+button,a,.btn,.ib,.chip,.seg button,.nav-b{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+/* The browser's address bar moves on phones, so size to the visible screen where that is supported */
+@supports (height:100dvh){
+  .side,.lx-art{height:100dvh}
+  .lx,.lx-main,.lg-wrap,.boot{min-height:100dvh}
+  .dlg{max-height:calc(100dvh - 48px)}
+  .dlg.bg-d{height:min(740px,calc(100dvh - 40px))}
+  .app.wide .kb2{height:calc(100dvh - 250px)}
+}
+@media (pointer:coarse),(max-width:860px){
+  /* A finger needs about 40px: the small buttons were 32px */
+  .btn.sm{min-height:40px;padding-left:16px;padding-right:16px}
+  .ib{min-width:40px;min-height:40px}
+  .link{display:inline-flex;align-items:center;min-height:36px}
+  .an-rm{height:38px}
+  .th button{width:40px;height:36px}
+  .pw-b{height:40px;top:5px}
+  .lx-card .pw-b{top:5px}
+  .tour-x{width:36px;height:36px}
+  .nf-i{padding-top:14px;padding-bottom:14px}
+  .chip{min-height:38px}
+  /* 16px stops iPhones zooming in when a field is tapped */
+  input,select,textarea,.inp,.lx-card .inp,.lg-box .inp{font-size:16px}
+  /* the page should never scroll sideways; only the board and tables scroll inside their own box */
+  .kb2{overscroll-behavior-x:contain}
+}
+@media (pointer:coarse),(max-width:860px){
+  .menu .th button,.th button{width:40px;height:36px}
+  button.lg{min-height:38px}
+}
+@media (pointer:coarse),(max-width:860px){
+  .td2-tick{width:36px;height:36px}
+  .td2-add{min-height:40px}
+  .td2-comp input{min-height:44px}
+  .td2-send{width:40px;height:40px}
+  .td2-go{width:34px;height:34px}
+  .kc-new{min-height:40px}
+  .mt3-t{min-height:36px}
+  .mt3-rm{width:40px;height:40px}
+}
+@media (pointer:coarse),(max-width:860px){
+  input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select,textarea{font-size:16px!important}
+}
