@@ -201,3 +201,18 @@ button.tile:hover{transform:none}
 .apps2 button{background:transparent!important;box-shadow:none;color:var(--muted)}
 .apps2 button:hover:not(.on){color:var(--text)}
 .apps2{box-shadow:none}
+
+/* Bugs found in review: toolbar buttons were still round, and the People icon kept its old blue */
+.ibx{width:40px;height:40px;border-radius:var(--r-ctl);background:var(--card);border:1px solid var(--line-hi);color:var(--text-2);box-shadow:var(--shadow-xs)}
+.ibx:hover{background:var(--card-hover);color:var(--text)}
+.ibx.on{background:var(--accent);border-color:transparent;color:#fff}
+.apps2 button svg,.apps2 button:not(.on) svg{color:var(--faint)!important}
+.apps2 button.on svg{color:var(--accent)!important}
+.hdr-b .apps2 button{border-radius:6px}
+.ps-i,.an-rm,.mb-f button,button.lg,.sel-i,.sel-i select,.ck-t{border-radius:var(--r-ctl)}
+.lf-t{border-radius:var(--r-card)}
+.ps-i{background:var(--card);border:1px solid var(--line-hi);box-shadow:var(--shadow-xs)}
+.ps-i.on{background:var(--fill);box-shadow:none}
+.an-rm{background:var(--card);border:1px solid var(--line-hi);color:var(--text-2);box-shadow:var(--shadow-xs)}
+.an-rm:hover{background:var(--error-50);color:var(--error-700);border-color:var(--error-200)}
+.mb-f button.on{background:var(--brand-tint);color:var(--brand-text)}
