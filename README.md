@@ -68,3 +68,7 @@ Run these in the Supabase SQL Editor, in order. Each file can be run again safel
 `npm run test:db` runs the real application code against a real Postgres (in memory) with every migration applied.
 It checks who can see and change what, the leave rules, check-ins, and people editing the same card at once.
 Run it after any change to `supabase/migrations` or to the files in `src/` that talk to the database.
+
+## Design
+
+The visual rules (colours, type, spacing, components) are in [DESIGN.md](DESIGN.md). Styling lives in `src/styles.css` and `src/untitled.css`; new work uses the tokens in `untitled.css`.

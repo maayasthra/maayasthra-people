@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react';
 /* Light and dark. The choice (light, dark or follow the device) is kept in this browser.
    public/theme-boot.js applies it before the page paints so there is no flash. */
 const KEY = 'mp-theme';
-const DEFAULT = 'dark';
-const COLORS = { dark: '#000000', light: '#F2F2F7' };
+const DEFAULT = 'system';
+const COLORS = { dark: '#0A0A0A', light: '#FAFAFA' };
 const query = () => typeof matchMedia === 'function' ? matchMedia('(prefers-color-scheme: light)') : null;
 
 export function getPref() {

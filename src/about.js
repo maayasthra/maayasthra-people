@@ -4,6 +4,7 @@ export const BUILT = typeof __BUILD_DATE__ !== 'undefined' ? new Date(__BUILD_DA
 
 export const CHANGELOG = [
   { version: '1.6.0', date: '26 Oct 2026', title: 'End-of-day reports', items: [
+    'A new look based on the Untitled UI design system: orange brand colour, flat cards with a hairline border, one radius and shadow scale, and a calmer navigation. The theme now follows your device until you choose',
     'Your notifications and whether you have seen the tour now follow you to any device',
     'A pass for phones: bigger tap targets, no zoom when a field is tapped, and screens that fit the visible area on iPhones and Android',
     'A notification bell in the top bar: it tells employees when a task is given to them, and reminds them 30 and 15 minutes before their shift ends to send their end-of-day report',
