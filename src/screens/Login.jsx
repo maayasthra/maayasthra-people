@@ -54,23 +54,38 @@ export function Login({ onLogin }) {
     setErr(''); setBusy(true);
     signUp(email, pw).then(() => { setSent(true); setBusy(false); }).catch(e => { setErr(e.message); setBusy(false); });
   };
-  return html`<div className="lg-wrap">
-    <section className="lg-art">
-      <div className="brand" style=${{ padding: 0 }}><${Logo} w=${168} h=${50}/></div>
-      <div className="lg-copy"><h1>Everyone at Maayasthra, in one place.</h1><p>Your team, your time off, your hours and your tasks. Sign in with your work email.</p></div>
-      <div><div className="lg-mos" aria-hidden="true">${FACES.map(f => html`<div key=${f.n}><${Photo} e=${f}/></div>`)}</div>
-        <div className="lg-url">people.maayasthra.com</div></div>
+  return html`<div className="lx">
+    <section className="lx-art">
+      <i className="lx-orb a" aria-hidden="true"></i><i className="lx-orb b" aria-hidden="true"></i><i className="lx-orb c" aria-hidden="true"></i>
+      <div className="lx-top"><${Logo} w=${168} h=${50}/></div>
+      <div className="lx-hero">
+        <span className="lx-eyebrow"><i></i>Your workspace</span>
+        <h1>Everything your team needs, <em>in one place.</em></h1>
+        <p>Leave, attendance, tasks and announcements for everyone at Maayasthra. Sign in with your work email.</p>
+        <ul className="lx-feats">
+          <li><span><${Icon} n="attendance" s=${18}/></span><div><b>Time and leave</b><small>Check in, apply for leave and see your hours.</small></div></li>
+          <li><span><${Icon} n="board" s=${18}/></span><div><b>Tasks that stay clear</b><small>A shared board, your own list and a quick end-of-day report.</small></div></li>
+          <li><span><${Icon} n="megaphone" s=${18}/></span><div><b>Nothing gets missed</b><small>Announcements and reminders reach everyone.</small></div></li>
+        </ul>
+      </div>
+      <div className="lx-stage" aria-hidden="true">
+        <div className="lx-gc lx-today"><div className="lx-gh"><b>Today</b><span><i></i>Checked in</span></div><div className="lx-big">6h 42m</div><div className="lx-bar"><i></i></div><small>Shift 10:00 AM – 6:00 PM</small></div>
+        <div className="lx-gc lx-leave"><span className="lx-ok"><${Icon} n="check" s=${14}/></span><div><b>Leave approved</b><small>28 – 30 Oct · 3 days</small></div></div>
+        <div className="lx-gc lx-tasks"><div className="lx-gh"><b>My tasks</b><small>5 of 8</small></div><p className="done"><i></i>Festive ad creatives</p><p className="done"><i></i>Brand asset requests</p><p><i></i>Quarterly strategy note</p></div>
+        <div className="lx-faces">${FACES.map(f => html`<span key=${f.n}><${Av} e=${f} s=${34}/></span>`)}<small>Join your teammates</small></div>
+      </div>
+      <div className="lx-foot">people.maayasthra.com</div>
     </section>
-    <section className="lg-form"><div className="th-fix"><${ThemeSwitch}/></div><div className="lg-box">
+    <section className="lx-main"><div className="th-fix"><${ThemeSwitch}/></div><div className="lx-card lg-box">
       ${view === 'signin' ? html`<${React.Fragment}>
-        <h2>Sign in</h2>${authEnabled && html`<p>Welcome back. Use your work email.</p>`}
+        <h2>Welcome back</h2><p>Sign in with your work email to pick up where you left off.</p>
         ${!authEnabled && html`<div className="seg" role="group" aria-label="Sign in as"><button type="button" className=${mode === 'employee' ? 'on' : ''} onClick=${() => { setMode('employee'); setErr(''); }}>Employee</button><button type="button" className=${mode === 'admin' ? 'on' : ''} onClick=${() => { setMode('admin'); setErr(''); }}>Admin</button></div>`}
         <form onSubmit=${submit} noValidate>
-          <div className="fld"><label htmlFor="login-email">Work email</label><input id="login-email" className="inp" type="email" autoComplete="username" placeholder="name@maayasthra.com" value=${email} onChange=${ev => setEmail(ev.target.value)}/></div>
-          <div className="fld"><label htmlFor="login-pw">Password</label><div className="pw"><input id="login-pw" className="inp" type=${show ? 'text' : 'password'} autoComplete="current-password" value=${pw} onChange=${ev => setPw(ev.target.value)}/><button type="button" className="pw-b" onClick=${() => setShow(!show)}>${show ? 'Hide' : 'Show'}</button></div></div>
+          <div className="fld"><label htmlFor="login-email">Work email</label><div className="lx-in"><${Icon} n="user" s=${17}/><input id="login-email" className="inp" type="email" autoComplete="username" placeholder="name@maayasthra.com" value=${email} onChange=${ev => setEmail(ev.target.value)}/></div></div>
+           <div className="fld"><label htmlFor="login-pw">Password</label><div className="pw lx-in"><${Icon} n="lock" s=${17}/><input id="login-pw" className="inp" type=${show ? 'text' : 'password'} autoComplete="current-password" value=${pw} onChange=${ev => setPw(ev.target.value)}/><button type="button" className="pw-b" onClick=${() => setShow(!show)}>${show ? 'Hide' : 'Show'}</button></div></div>
           <div className="lg-row"><button type="button" className="link" onClick=${() => { setView('forgot'); setErr(''); setSent(false); }}>Forgot password?</button></div>
           ${err && html`<div className="lg-err" role="alert">${err}</div>`}
-          <button className="btn pri" type="submit" disabled=${busy}>${busy ? 'Signing in…' : !authEnabled && mode === 'admin' ? 'Sign in as Admin' : 'Sign in'}</button>
+          <button className="btn pri" type="submit" disabled=${busy}>${busy ? 'Signing in…' : !authEnabled && mode === 'admin' ? 'Sign in as Admin' : 'Sign in'}${!busy && html`<${Icon} n="arrow" s=${17}/>`}</button>
         </form>
         ${!authEnabled && html`<div className="lg-demo"><h3>Try a demo account</h3>
           <button className="dm" onClick=${() => demo(2, 'admin')} disabled=${busy}><${Av} e=${BY[2]} s=${38}/><span className="row-t"><b>Meera Iyer</b><span>Admin · approves leave</span></span><span className="go"><${Icon} n="arrow" s=${16}/></span></button>
@@ -97,7 +112,7 @@ export function Login({ onLogin }) {
           <button className="btn pri" type="submit" disabled=${busy}>Send reset link</button>
           ${sent && html`<div className="lg-ok" role="status"><${Icon} n="check" s=${16}/> If that email has an account, a reset link is on its way.</div>`}
         </form><//>`}
-    </div></section>
+    </div><p className="lx-help">Trouble signing in? Ask an admin to check your access.</p></section>
   </div>`;
 }
 
