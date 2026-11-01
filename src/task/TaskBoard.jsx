@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { html, Icon, HI } from '../ui.jsx';
+import { html, Icon, HI, Av } from '../ui.jsx';
 import { BY, activeEmps } from '../data.js';
 import { BoardGroups } from './BoardGroups.jsx';
 import { PINNED, DONE, LABELS, LABEL_C, moveCard, copyCard, duplicateCard, deleteCard, completeCard, reopenCard, dropColumn, mkTask, colName, statusOf } from '../tasks.js';
@@ -18,7 +18,7 @@ function CardMenu({ m, user, custom, setTasks, openTask, close }) {
   };
   const blocked = to => (stage === 'move' && to === col) || (stage === 'copy' && (t.done || t.cols.includes(to)));
   const L = { move: 'Move to', copy: 'Copy to', dup: 'Duplicate to' };
-  const style = { left: Math.max(12, Math.min(m.x, window.innerWidth - 228)), top: Math.max(12, Math.min(m.y, window.innerHeight - 330)) };
+  const style = { left: Math.max(12, Math.min(m.x, window.innerWidth - 296)), top: Math.max(12, Math.min(m.y, window.innerHeight - 470)) };
   return html`<div className="cm" style=${style} role="menu" onMouseDown=${ev => ev.stopPropagation()}>
     ${stage === 'root' ? html`
       <button role="menuitem" onClick=${() => { close(); openTask(t.id); }}><${Icon} n="edit" s=${15}/> Open details</button>
@@ -30,10 +30,12 @@ function CardMenu({ m, user, custom, setTasks, openTask, close }) {
         : html`<button role="menuitem" className="cm-d" onClick=${() => setSure(true)}><${Icon} n="trash" s=${15}/> Delete this card</button>`}`
     : html`
       <div className="cm-h"><button className="ib" onClick=${() => { setStage('root'); setQ(''); }} aria-label="Back"><${Icon} n="chevL" s=${14}/></button><b>${L[stage]}</b></div>
-      <input autoFocus className="inp" value=${q} onChange=${ev => setQ(ev.target.value)} placeholder="Find a column or person" aria-label="Find a column or person"/>
+      <div className="cm-q"><${Icon} n="search" s=${15}/><input autoFocus className="inp" value=${q} onChange=${ev => setQ(ev.target.value)} placeholder="Find a column or person" aria-label="Find a column or person"/></div>
       <div className="cm-l">
-        ${pins.map(p => html`<button key=${p[0]} role="menuitem" disabled=${blocked(p[0])} onClick=${() => pick(p[0])}><span className="cm-pi" style=${{ '--c': p[2] }}></span><span><b>${p[1]}</b></span></button>`)}
-        ${people.map(e => html`<button key=${e.n} role="menuitem" disabled=${blocked(e.n)} onClick=${() => pick(e.n)}><span><b>${e.name}</b></span></button>`)}
+        ${pins.length > 0 && html`<div className="cm-sec">Columns</div>`}
+        ${pins.map(p => html`<button key=${p[0]} role="menuitem" disabled=${blocked(p[0])} onClick=${() => pick(p[0])}><span className="cm-pi" style=${{ '--c': p[2] }}></span><span className="cm-n"><b>${p[1]}</b></span>${blocked(p[0]) && html`<em className="cm-cur">${stage === 'move' ? 'Current' : 'Already there'}</em>`}</button>`)}
+        ${people.length > 0 && html`<div className="cm-sec">People</div>`}
+        ${people.map(e => html`<button key=${e.n} role="menuitem" disabled=${blocked(e.n)} onClick=${() => pick(e.n)}><${Av} e=${e} s=${24}/><span className="cm-n"><b>${e.name}</b><small>${e.role}</small></span>${blocked(e.n) && html`<em className="cm-cur">${stage === 'move' ? 'Current' : 'Already there'}</em>`}</button>`)}
         ${people.length === 0 && pins.length === 0 && html`<div className="cm-s">No match.</div>`}
       </div>`}
   </div>`;

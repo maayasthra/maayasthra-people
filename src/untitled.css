@@ -270,3 +270,24 @@ html{overflow-y:scroll}
 .btn.danger{box-shadow:0 0 0 1px rgba(10,13,18,.14) inset,0 1px 0 rgba(255,255,255,.2) inset,0 -2px 0 rgba(10,13,18,.08) inset,var(--shadow-xs)!important;border:0}
 .btn.sec2,.btn.ghost{box-shadow:0 -2px 0 rgba(10,13,18,.04) inset,var(--shadow-xs)}
 :root[data-theme="dark"] .btn.sec2,:root[data-theme="dark"] .btn.ghost{box-shadow:var(--shadow-xs)}
+
+/* Card menu: Move to / Copy to / Duplicate to */
+.cm{width:280px;padding:8px;border-radius:var(--r-card)!important}
+.cm>button{min-height:40px;border-radius:var(--r-ctl)!important;font-size:14px;font-weight:500}
+.cm-h{display:flex;align-items:center;gap:10px;padding:2px 2px 10px}
+.cm-h .ib{width:32px;height:32px;min-width:32px;min-height:32px;background:var(--card);border:1px solid var(--line-hi);box-shadow:var(--shadow-xs)}
+.cm-h b{font-size:15px;font-weight:600}
+.cm-q{position:relative;margin:0 0 8px}
+.cm-q>svg{position:absolute;left:12px;top:50%;margin-top:-7.5px;color:var(--faint);pointer-events:none;z-index:1}
+.cm-q .inp,.cm>.cm-q>.inp{height:40px;padding-left:36px;margin:0;width:100%;font-size:14px}
+.cm-l{max-height:320px;margin:0 -4px;padding:0 4px}
+.cm-sec{padding:10px 8px 4px;font-size:12px;font-weight:500;color:var(--faint)}
+.cm-l button{min-height:44px;padding:6px 8px;gap:10px;border-radius:var(--r-ctl)!important}
+.cm-l .cm-pi{flex:none;width:12px!important;height:12px!important;margin:0 6px;border-radius:50%!important;background:var(--c)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 22%,transparent)!important}
+.cm-n{min-width:0;flex:1;display:flex;flex-direction:column}
+.cm-l .cm-n b{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cm-l .cm-n small{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cm-cur{flex:none;font-style:normal;font-size:12px;font-weight:500;color:var(--muted);background:var(--fill);padding:2px 8px;border-radius:999px}
+.cm-l button:disabled{opacity:1}
+.cm-l button:disabled .cm-n b,.cm-l button:disabled .av,.cm-l button:disabled .cm-pi{opacity:.55}
+@media (pointer:coarse),(max-width:860px){.cm-l button{min-height:48px}}
