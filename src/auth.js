@@ -27,6 +27,15 @@ export async function sendReset(email) {
   const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: window.location.origin });
   if (error) throw new Error(friendly(error.message));
 }
+// The reset email carries a 6-digit code. Checking it signs the person in for the moment it takes to choose a new password.
+// While the code flow is choosing a password, the app must not also open its "choose a password" screen for the same event
+export const resetFlow = { active: false };
+export const endResetFlow = () => { resetFlow.active = false; };
+export async function verifyResetCode(email, code) {
+  resetFlow.active = true;
+  const { error } = await supabase.auth.verifyOtp({ email: email.trim().toLowerCase(), token: String(code).replace(/\D/g, ''), type: 'recovery' });
+  if (error) { resetFlow.active = false; throw new Error(/expired|invalid|token/i.test(error.message) ? 'That code is wrong or has expired. Check it, or ask for a new one.' : friendly(error.message)); }
+}
 // A signed-in person changes their own password. The current one is checked first.
 export async function changePassword(email, current, next) {
   const { error: e1 } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password: current });

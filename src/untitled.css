@@ -420,3 +420,8 @@ body{overflow-x:clip!important}
   .side .nav{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
   .side .nav::-webkit-scrollbar{display:none}
 }
+
+/* One-time code field */
+.lx-code{font-size:24px;letter-spacing:.5em;text-align:center;font-weight:600;font-variant-numeric:tabular-nums;padding-left:.5em}
+.lx-code::placeholder{letter-spacing:.5em;color:var(--n-300)}
+.lg-alt .link:disabled{color:var(--faint);cursor:default;text-decoration:none}

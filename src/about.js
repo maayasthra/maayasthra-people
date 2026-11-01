@@ -4,6 +4,7 @@ export const BUILT = typeof __BUILD_DATE__ !== 'undefined' ? new Date(__BUILD_DA
 
 export const CHANGELOG = [
   { version: '1.6.0', date: '26 Oct 2026', title: 'End-of-day reports', items: [
+    'Forgot password now emails a 6-digit one-time code. Enter it with a new password to get back in; the code works once and expires in 10 minutes',
     'A Copy button on every leave request copies it as text (name, type, dates, reason, balance and who else is out) to paste into WhatsApp',
     'Retainer tasks keep their blue tint wherever they are moved, so they stay easy to spot. Managers can mark or unmark a task in its details',
     'The board remembers which columns you opened and closed, on every login and device',

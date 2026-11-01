@@ -11,7 +11,7 @@ import { loadAttendance, mergeAtt, persistAtt } from './attendanceDb.js';
 import { loadBoard, persistBoard, loadAnnouncements, persistAnnouncements, subscribeBoard, subscribeTables } from './tasksDb.js';
 import { loadStaff } from './staff.js';
 import { Login, SetPassword } from './screens/Login.jsx';
-import { authEnabled, currentSession, resolveUser, onAuthChange, signOutAuth, isLinkFlow } from './auth.js';
+import { authEnabled, currentSession, resolveUser, onAuthChange, signOutAuth, isLinkFlow, resetFlow } from './auth.js';
 import { Home } from './screens/Home.jsx';
 import { EmployeeForm } from './screens/EmployeeForm.jsx';
 import { Profile } from './screens/Profile.jsx';
@@ -218,7 +218,7 @@ function App() {
       }
       if (live) setBooting(false);
     })();
-    const sub = onAuthChange((ev, sess) => { if (ev === 'SIGNED_OUT') setAuth(null); if (ev === 'PASSWORD_RECOVERY') setLinkFlow(true); });
+    const sub = onAuthChange((ev, sess) => { if (ev === 'SIGNED_OUT') setAuth(null); if (ev === 'PASSWORD_RECOVERY' && !resetFlow.active) setLinkFlow(true); });
     return () => { live = false; sub.unsubscribe(); };
   }, []);
   // The board is shared. Changes are saved half a second after the last edit, and other people's changes arrive live.

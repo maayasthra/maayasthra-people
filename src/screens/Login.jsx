@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import React from 'react';
 import { html, Icon, Av, Photo, Logo } from '../ui.jsx';
 import { ThemeSwitch } from '../ThemeSwitch.jsx';
 import { EMP, BY, DEMO_PW, isAdminRole, ROLEMAP } from '../data.js';
 import { IS_DEMO } from '../env.js';
-import { authEnabled, signIn, signUp, sendReset, setNewPassword, resolveUser, currentSession, signOutAuth } from '../auth.js';
+import { authEnabled, signIn, signUp, sendReset, verifyResetCode, endResetFlow, setNewPassword, resolveUser, currentSession, signOutAuth } from '../auth.js';
 
 /* ---------- Login ---------- */
 // Illustrated portraits for the sign-in art. They are drawings, not staff records.
@@ -13,6 +13,9 @@ export function Login({ onLogin }) {
   const [mode, setMode] = useState('employee'); const [view, setView] = useState('signin');
   const [pw2, setPw2] = useState(''); const [email, setEmail] = useState(''); const [pw, setPw] = useState(''); const [show, setShow] = useState(false);
   const [err, setErr] = useState(''); const [busy, setBusy] = useState(false); const [sent, setSent] = useState(false);
+  // Forgot password: step 'email' asks for the address, step 'code' takes the emailed 6-digit code and a new password
+  const [step, setStep] = useState('email'), [code, setCode] = useState(''), [verified, setVerified] = useState(false), [cool, setCool] = useState(0), [done, setDone] = useState(false);
+  useEffect(() => { if (cool <= 0) return; const t = setTimeout(() => setCool(c => c - 1), 1000); return () => clearTimeout(t); }, [cool]);
   const check = (em, p, md) => {
     const e = EMP.find(x => x.email === em.trim().toLowerCase());
     if (!em.trim()) return 'Enter your work email.';
@@ -41,10 +44,29 @@ export function Login({ onLogin }) {
       onLogin(r.user, r.role);
     }).catch(e => { setErr(e.message); setBusy(false); });
   };
-  const forgot = ev => {
-    ev.preventDefault(); if (!email.trim()) { setErr('Enter your work email.'); return; } setErr('');
-    if (!authEnabled) { setSent(true); return; }
-    setBusy(true); sendReset(email).then(() => { setSent(true); setBusy(false); }).catch(e => { setErr(e.message); setBusy(false); });
+  // Send (or send again) the code
+  const sendCode = ev => {
+    if (ev) ev.preventDefault(); if (busy || cool > 0) return;
+    if (!email.trim()) { setErr('Enter your work email.'); return; } setErr('');
+    const next = () => { setStep('code'); setCode(''); setPw(''); setPw2(''); setVerified(false); setCool(45); setBusy(false); };
+    if (!authEnabled) { next(); return; }
+    setBusy(true); sendReset(email).then(next).catch(e => { setErr(e.message); setBusy(false); });
+  };
+  const resetWithCode = ev => {
+    ev.preventDefault(); if (busy) return;
+    const digits = code.replace(/\D/g, '');
+    if (digits.length !== 6) { setErr('Enter the 6-digit code from the email.'); return; }
+    if (pw.length < 8) { setErr('Use at least 8 characters for the new password.'); return; }
+    if (pw !== pw2) { setErr('The two passwords do not match.'); return; }
+    setErr('');
+    if (!authEnabled) { if (digits !== '123456') { setErr('That code is wrong. In this demo it is 123456.'); return; } setDone(true); return; }
+    setBusy(true);
+    // The code works once, so if choosing the password fails (too weak, say) it is not asked for again
+    (verified ? Promise.resolve() : verifyResetCode(email, digits).then(() => setVerified(true)))
+      .then(() => setNewPassword(pw)).then(() => currentSession()).then(sess => sess ? resolveUser(sess) : { error: 'Your password was changed. Please sign in.' })
+      .then(r => { if (r.error) { signOutAuth(); setErr(r.error); setBusy(false); setDone(true); return; } onLogin(r.user, r.role); })
+      .catch(e => { setErr(e.message); setBusy(false); })
+      .finally(endResetFlow);
   };
   const register = ev => {
     ev.preventDefault(); if (busy) return;
@@ -84,7 +106,7 @@ export function Login({ onLogin }) {
         <form onSubmit=${submit} noValidate>
           <div className="fld"><label htmlFor="login-email">Work email</label><div className="lx-in"><${Icon} n="user" s=${17}/><input id="login-email" className="inp" type="email" autoComplete="username" placeholder="name@maayasthra.com" value=${email} onChange=${ev => setEmail(ev.target.value)}/></div></div>
            <div className="fld"><label htmlFor="login-pw">Password</label><div className="pw lx-in"><${Icon} n="lock" s=${17}/><input id="login-pw" className="inp" type=${show ? 'text' : 'password'} autoComplete="current-password" value=${pw} onChange=${ev => setPw(ev.target.value)}/><button type="button" className="pw-b" onClick=${() => setShow(!show)}>${show ? 'Hide' : 'Show'}</button></div></div>
-          <div className="lg-row"><button type="button" className="link" onClick=${() => { setView('forgot'); setErr(''); setSent(false); }}>Forgot password?</button></div>
+          <div className="lg-row"><button type="button" className="link" onClick=${() => { setView('forgot'); setStep('email'); setDone(false); setErr(''); setSent(false); }}>Forgot password?</button></div>
           ${err && html`<div className="lg-err" role="alert">${err}</div>`}
           <button className="btn pri" type="submit" disabled=${busy}>${busy ? 'Signing in…' : !authEnabled && mode === 'admin' ? 'Sign in as Admin' : 'Sign in'}${!busy && html`<${Icon} n="arrow" s=${17}/>`}</button>
         </form>
@@ -105,14 +127,26 @@ export function Login({ onLogin }) {
           <button className="btn pri" type="submit" disabled=${busy}>${busy ? 'Creating…' : 'Create account'}</button>
         </form>`}
       <//>` : html`<${React.Fragment}>
-        <button className="back" onClick=${() => { setView('signin'); setErr(''); }}><${Icon} n="back" s=${16}/> Back to sign in</button>
-        <h2>Reset your password</h2><p>Enter your work email and we will send a reset link.</p>
-        <form onSubmit=${forgot} noValidate>
-          <div className="fld"><label htmlFor="reset-email">Work email</label><input id="reset-email" className="inp" type="email" placeholder="name@maayasthra.com" value=${email} onChange=${ev => { setEmail(ev.target.value); setSent(false); }}/></div>
-          ${err && html`<div className="lg-err" role="alert">${err}</div>`}
-          <button className="btn pri" type="submit" disabled=${busy}>Send reset link</button>
-          ${sent && html`<div className="lg-ok" role="status"><${Icon} n="check" s=${16}/> If that email has an account, a reset link is on its way.</div>`}
-        </form><//>`}
+        <button className="back" onClick=${() => { if (step === 'code' && !done) { setStep('email'); setErr(''); } else { setView('signin'); setStep('email'); setErr(''); setDone(false); setPw(''); setPw2(''); } }}><${Icon} n="back" s=${16}/> ${step === 'code' && !done ? 'Use a different email' : 'Back to sign in'}</button>
+        ${done ? html`<h2>Password changed</h2><p>You can sign in with your new password.</p>
+          <button className="btn pri" type="button" onClick=${() => { setView('signin'); setStep('email'); setDone(false); setPw(''); setPw2(''); setErr(''); }}>Go to sign in</button>`
+        : step === 'email' ? html`<h2>Forgot your password?</h2><p>Enter your work email. We will send you a 6-digit code to reset it.</p>
+          <form onSubmit=${sendCode} noValidate>
+            <div className="fld"><label htmlFor="reset-email">Work email</label><div className="lx-in"><${Icon} n="user" s=${17}/><input id="reset-email" className="inp" type="email" autoComplete="username" placeholder="name@maayasthra.com" value=${email} onChange=${ev => setEmail(ev.target.value)}/></div></div>
+            ${err && html`<div className="lg-err" role="alert">${err}</div>`}
+            <button className="btn pri" type="submit" disabled=${busy}>${busy ? 'Sending…' : 'Send code'}</button>
+          </form>`
+        : html`<h2>Enter your code</h2><p>We sent a 6-digit code to <b>${email.trim()}</b>. It works once and expires in 10 minutes. Check your spam folder if it does not arrive.</p>
+          ${!authEnabled && html`<div className="lg-note" style=${{ marginTop: 0 }}>Demo: the code is 123456.</div>`}
+          <form onSubmit=${resetWithCode} noValidate>
+            <div className="fld"><label htmlFor="rs-code">6-digit code</label><input id="rs-code" className="inp lx-code" inputMode="numeric" autoComplete="one-time-code" maxLength="7" placeholder="000000" value=${code} onChange=${ev => { setCode(ev.target.value.replace(/\D/g, '').slice(0, 6)); setErr(''); }} autoFocus/></div>
+            <div className="fld"><label htmlFor="rs-pw">New password</label><div className="pw lx-in"><${Icon} n="lock" s=${17}/><input id="rs-pw" className="inp" type=${show ? 'text' : 'password'} autoComplete="new-password" placeholder="At least 8 characters" value=${pw} onChange=${ev => setPw(ev.target.value)}/><button type="button" className="pw-b" onClick=${() => setShow(!show)}>${show ? 'Hide' : 'Show'}</button></div></div>
+            <div className="fld"><label htmlFor="rs-pw2">Repeat the new password</label><div className="lx-in"><${Icon} n="lock" s=${17}/><input id="rs-pw2" className="inp" type=${show ? 'text' : 'password'} autoComplete="new-password" value=${pw2} onChange=${ev => setPw2(ev.target.value)}/></div></div>
+            ${err && html`<div className="lg-err" role="alert">${err}</div>`}
+            <button className="btn pri" type="submit" disabled=${busy}>${busy ? 'Resetting…' : 'Reset password'}</button>
+          </form>
+          <div className="lg-alt"><span>Did not get it?</span><button type="button" className="link" disabled=${cool > 0 || busy} onClick=${() => sendCode()}>${cool > 0 ? 'Send a new code in ' + cool + 's' : 'Send a new code'}</button></div>`}
+      <//>`}
     </div><p className="lx-help">Trouble signing in? Ask an admin to check your access.</p></section>
   </div>`;
 }

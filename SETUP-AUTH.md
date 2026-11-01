@@ -37,3 +37,16 @@ Use a **company email**, not a personal one, so the owner can take over later.
   on the server and not only on screen.
 - Inviting people from inside the app (needs a small server function, since invites use the secret key).
 - The staff directory is still the sample list. Real emails must match it until it moves to the database.
+
+
+## Forgot password with a one-time code
+"Forgot password?" emails a 6-digit code. The person types the code and a new password in the app. One-time set-up in Supabase:
+
+1. **Authentication > Emails > Templates > Reset password**: set the subject to `Your Maayasthra People reset code` and paste
+   the body from `supabase/email-templates/reset-password.html`. It must contain `{{ .Token }}`: that is the code.
+2. **Authentication > Sign In / Providers > Email**: set *Email OTP Expiration* to `600` (10 minutes) and *Email OTP Length* to `6`.
+3. **Authentication > Emails > SMTP Settings**: set up your own SMTP sender (for example Brevo, Resend or Google Workspace).
+   Supabase's built-in sender only allows a few emails an hour, so a team resetting passwords will hit the limit.
+4. Test it with your own address: Forgot password, check the inbox and spam, enter the code and a new password.
+
+The code works once. A wrong or expired code shows "That code is wrong or has expired", and "Send a new code" is available after 45 seconds.
