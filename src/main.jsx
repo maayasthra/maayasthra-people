@@ -37,7 +37,9 @@ import { Announcements } from './screens/Announcements.jsx';
 import { ChangePassword } from './screens/ChangePassword.jsx';
 import { VERSION } from './about.js';
 import { useUpdateAvailable } from './updates.js';
-import { useAnnouncementAlerts, useTaskAlerts, checkOutSound } from './alerts.js';
+import { useAnnouncementAlerts, useTaskAlerts, useEodReminder, checkOutSound } from './alerts.js';
+import { useNotifications } from './notifications.js';
+import { NotificationBell } from './NotificationBell.jsx';
 import { AnnouncementAlert } from './AnnouncementAlert.jsx';
 import { TaskDetail } from './task/TaskDetail.jsx';
 import { isDoing, stopFor, loadTasks, saveTasks, loadCollapsed, saveCollapsed, loadCustom, saveCustom, loadLayout, saveLayout, loadView, saveView } from './tasks.js';
@@ -248,7 +250,9 @@ function App() {
     document.addEventListener('visibilitychange', vis);
     return () => { unsub(); clearInterval(poll); clearTimeout(t); document.removeEventListener('visibilitychange', vis); };
   }, [auth]);
-  useTaskAlerts(tasks, auth ? auth.user.n : null);
+  const notif = useNotifications(auth ? auth.user.n : null);
+  useTaskAlerts(tasks, auth ? auth.user.n : null, notif.add);
+  useEodReminder({ user: auth ? ((!IS_DEMO && BY[auth.user.n]) || auth.user) : null, role: auth ? auth.role : null, att, eodTick, onFire: n => notif.add([n]) });
   useEffect(() => { if (IS_DEMO) saveTasks(tasks); }, [tasks]);
   useEffect(() => { saveCollapsed(collapsed); }, [collapsed]);
   useEffect(() => { if (IS_DEMO) saveCustom(custom); }, [custom]);
@@ -277,13 +281,15 @@ function App() {
   const stopMyTimers = at => setTasks(ts => ts.map(t => isDoing(t, user.n) ? { ...t, time: stopFor(t.time, user.n, at) } : t));
   const requestOut = () => { if (isMgr) { setAtt(a => checkOut(a, user.n)); stopMyTimers(Date.now()); checkOutSound(); } else setEodAsk('out'); };
   const sendEod = async rows => {
-    await submitEod(rows, user.n);
+    await submitEod(rows, user.n); notif.clearKind('eod');
     if (eodAsk === 'out') { setAtt(a => checkOut(a, user.n)); stopMyTimers(Date.now()); checkOutSound(); }
     setEodAsk(null); setEodTick(t => t + 1);
   };
   const keys = app === 'task' ? (isMgr ? ['board', 'mytasks', 'eod', 'team'] : ['mytasks', 'eod']) : peopleKeys;
   const setApp = a => { setAppState(a); setNav({ view: a === 'task' ? (isMgr ? 'board' : 'mytasks') : 'home' }); setTaskSel(null); setSOpen(false); window.scrollTo({ top: 0 }); };
   const openTask = (id, ctx) => setTaskSel({ id, ctx });
+  // Where a bell entry takes you: a new task opens it, an EOD reminder opens today's report
+  const onNotif = i => { if (i.kind === 'task') { if (tasks.some(t => t.id === i.ref)) { if (app !== 'task') setAppState('task'); setTaskSel({ id: i.ref }); } } else if (i.kind === 'eod') setEodAsk('save'); };
   const goTask = id => { setAppState('task'); setNav({ view: 'mytasks' }); setTaskSel(id ? { id } : null); window.scrollTo({ top: 0 }); };
   const top = () => window.scrollTo({ top: 0 });
   const startTour = () => { setAppState('people'); setNav({ view: 'home' }); setTaskSel(null); setTimeout(() => setTour(true), 150); };
@@ -330,6 +336,7 @@ function App() {
         <div className=${'hs' + (sOpen ? ' open' : '')}>${app === 'task' ? html`<div className="qs"><${Icon} n="search"/><input id="quick-search" className="qs-in" value=${tq} placeholder="Search tasks" onChange=${ev => setTq(ev.target.value)} aria-label="Search tasks"/></div>` : html`<${QuickSearch} open=${id => { setSOpen(false); open(id); }}/>`}</div>
         <button className="ib hs-b" onClick=${() => { setSOpen(o => !o); setTimeout(() => { const el = document.getElementById('quick-search'); if (el) el.focus(); }, 30); }} aria-label="Search"><${Icon} n="search" s=${17}/></button>
         <div className="ck-d"><${CheckWidget} user=${user} att=${att} setAtt=${setAtt} onOut=${requestOut}/></div>
+        <${NotificationBell} notif=${notif} onOpen=${onNotif}/>
         <${TopRight} user=${user} role=${role} open=${open} openForm=${openForm} signOut=${signOut} goAbout=${() => go('about')} isNew=${!seenNow} onPassword=${() => setPwOpen(true)} onTour=${startTour}/></header>
       <div className="ck-m"><${CheckWidget} user=${user} att=${att} setAtt=${setAtt} onOut=${requestOut}/></div>
       <main className="main" key=${app + nav.view + (nav.id || '')}>${screen}</main>

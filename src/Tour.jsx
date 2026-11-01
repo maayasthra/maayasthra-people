@@ -18,9 +18,9 @@ function stepsFor(name, role) {
     { sel: ['.side .nav', '.bnav'], title: 'Find your way around', body: role === 'admin' ? 'Announcements, Members, the Org chart, Calendar, Attendance, leave Requests and Settings are all here.' : mgr ? 'Announcements, the Org chart, Calendar, your hours and your leaves are all here.' : 'Announcements, the Org chart, Calendar, your hours and your leaves are all here. Tap one to open it.' },
     { sel: ['.side .apps2', '.hdr-b .apps2', '.apps2'], title: 'Two apps in one', body: mgr ? 'People is for the team, leave and attendance. Task is the Kanban board, your own tasks, end-of-day reports and the team view.' : 'People is for the team, leave and attendance. Task is where your tasks live. Start one when you begin it, and finish it when it is done.' },
     { sel: ['.ps'], title: 'Finish your profile', body: 'Add a photo, a line about you, your phone number and an emergency contact. This card goes away once everything is filled in.' },
+    { sel: ['.nf-b'], title: 'Notifications', body: 'The bell tells you when a new task is given to you, and reminds you to write your end-of-day report before you finish.' },
     { sel: ['.hdr .qs', '.qs'], title: 'Search', body: 'Find a colleague, a page or a task from anywhere. Press the slash key to jump straight to it.' },
-    { sel: ['.dl-row .th'], title: 'Light or dark', body: 'Pick the look you like, or let it follow your device. It is remembered on this browser.' },
-    { sel: ['.tr-me'], title: 'Your account', body: 'View or edit your profile, change your password, see what is new in About, and take this tour again whenever you like.' },
+    { sel: ['.tr-me'], title: 'Your account', body: 'View or edit your profile, switch between light and dark, change your password, and take this tour again whenever you like.' },
     { title: 'You are all set', body: 'That is everything. If you get stuck, ask an admin, and quote the version number in About.' }
   ];
   return s;

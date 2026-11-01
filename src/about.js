@@ -4,6 +4,8 @@ export const BUILT = typeof __BUILD_DATE__ !== 'undefined' ? new Date(__BUILD_DA
 
 export const CHANGELOG = [
   { version: '1.6.0', date: '26 Oct 2026', title: 'End-of-day reports', items: [
+    'A notification bell in the top bar: it tells employees when a task is given to them, and reminds them 30 and 15 minutes before their shift ends to send their end-of-day report',
+    'The light and dark switch now lives in the profile menu, no longer on the home page',
     'A short step-by-step tour of the workspace for new people. It can be skipped, and run again from the account menu (Take the tour)',
     'Light and dark mode: pick Light, Dark or match your device from the account menu (or the sign-in page). The choice is remembered on this browser',
     'The profile form now has your phone number, and an emergency contact with a name, a relationship and one phone number',

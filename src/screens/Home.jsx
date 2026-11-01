@@ -5,7 +5,6 @@ import { DueChip } from '../task/parts.jsx';
 import { checkInSound } from '../alerts.js';
 import { AnnList, Composer } from './Announcements.jsx';
 import { ProfileSetup } from './ProfileSetup.jsx';
-import { ThemeSwitch } from '../ThemeSwitch.jsx';
 import { isOpen } from '../tasks.js';
 import { SessionList, useDay, dayNote } from '../Attendance.jsx';
 import { hm, lunchInfo, checkIn, checkOut, dayInfo, useNow, clock, minuteOfDay } from '../attendance.js';
@@ -154,7 +153,7 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
     const inNow = infos.filter(i => i.state === 'in').length;
     const expected = infos.filter(i => !['leave', 'off'].includes(i.state)).length;
     return html`<div>
-      <div className="dl-row"><div className="date-l">${dateL}</div><${ThemeSwitch}/></div>
+      <div className="date-l">${dateL}</div>
       <div className="home-h"><div>
       <h1 className="h-greet">${greet}, ${first(user)}.</h1></div>
       <${Actions} leaves=${leaves} go=${go} openForm=${openForm} compose=${compose}/></div>
@@ -187,7 +186,7 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
   const myOpen = (tasks || []).filter(t => t.cols.includes(user.n) && isOpen(t)).sort((a, b) => (a.due || '9').localeCompare(b.due || '9'));
   const recent = [...mine].filter(l => !l.past).sort((a, b) => b.from.localeCompare(a.from)).slice(0, 4);
   return html`<div>
-    <div className="dl-row"><div className="date-l">${dateL}</div><${ThemeSwitch}/></div>
+    <div className="date-l">${dateL}</div>
     <h1 className="h-greet">${greet}, ${first(user)}.</h1>
     <p className="lede"><span>${hols[0] ? html`Next holiday: <b>${HOL[hols[0]]}</b>, ${fmtDay(pd(hols[0]))}` : 'No holidays coming up'}</span></p>
     <${ProfileSetup} user=${user} openForm=${openForm}/>

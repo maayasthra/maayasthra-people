@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { supabase } from './auth.js';
 import { subscribeTables } from './tasksDb.js';
 import { IS_DEMO } from './env.js';
-import { HOL, pd } from './data.js';
-import { dayKey, addDays, minuteOfDay } from './attendance.js';
+import { HOL, pd, BY } from './data.js';
+import { dayKey, addDays, minuteOfDay, sessionsOf, isIn } from './attendance.js';
+import { loadEods } from './eodDb.js';
 
 /* Announcement alerts. A new announcement pops up for everyone who is on shift, with a chime, until they close it.
    Until they press Got it the chime repeats every minute (and a system notification too when the page is in the background).
@@ -142,20 +143,62 @@ export const checkInSound = () => sfx([[659.3, 0, 0.22], [987.8, 0.11, 0.38]]); 
 export const newTaskSound = () => sfx([[880, 0, 0.18], [1174.7, 0.12, 0.18], [1568, 0.24, 0.45]]);  // up: a three-note ping
 export const checkOutSound = () => sfx([[783.99, 0, 0.22], [587.33, 0.13, 0.22], [440, 0.26, 0.42]]); // down: a calm three-note fall
 
-/* ---------- a sound when a task is given to you ---------- */
-export function useTaskAlerts(tasks, n) {
+const dueText = iso => { const [, m, d] = String(iso).split('-').map(Number); return d + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m - 1]; };
+
+/* ---------- a desktop notification, only when the page is in the background ---------- */
+export function notifyDesktop(title, body, tag) {
+  if (!document.hidden || notifyState() !== 'granted') return;
+  try { const x = new Notification(title, { body: (body || '').slice(0, 180), tag, renotify: true, icon: '/apple-touch-icon.png' }); x.onclick = () => { window.focus(); x.close(); }; } catch (e) { /* some browsers only allow it from a service worker */ }
+}
+
+/* ---------- a sound and a bell entry when a task is given to you ---------- */
+// What has already been seen is remembered, so a task given while you were away is announced on your next visit.
+export function useTaskAlerts(tasks, n, onNew) {
   const seen = useRef(null);
   useEffect(() => {
     if (n == null) { seen.current = null; return; }
-    const mine = (tasks || []).filter(t => !t.done && (t.cols || []).includes(n));
-    const ids = new Set(mine.map(t => t.id));
-    if (seen.current === null) { if (!(tasks || []).length) return; seen.current = ids; return; } // first load: nothing is new
+    if (!(tasks || []).length) return;
+    const key = 'mp-seen-tasks-' + n;
+    const mine = tasks.filter(t => !t.done && (t.cols || []).includes(n));
+    if (seen.current === null) {
+      let stored = null; try { stored = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { /* ignore */ }
+      seen.current = new Set(Array.isArray(stored) ? stored : mine.map(t => t.id)); // the very first visit sets the starting point
+    }
     const fresh = mine.filter(t => !seen.current.has(t.id) && t.by !== n);
-    seen.current = ids;
+    mine.forEach(t => seen.current.add(t.id));
+    try { localStorage.setItem(key, JSON.stringify([...seen.current].slice(-500))); } catch (e) { /* ignore */ }
     if (!fresh.length) return;
     newTaskSound();
-    if (document.hidden && notifyState() === 'granted') {
-      try { const x = new Notification(fresh.length > 1 ? fresh.length + ' new tasks for you' : 'New task: ' + fresh[0].title, { body: fresh.length > 1 ? fresh.map(t => t.title).join(', ').slice(0, 180) : 'Open Maayasthra Task to see it.', tag: 'new-task', renotify: true, icon: '/apple-touch-icon.png' }); x.onclick = () => { window.focus(); x.close(); }; } catch (e) { /* ignore */ }
-    }
+    if (onNew) onNew(fresh.map(t => ({ id: 'task-' + t.id, kind: 'task', title: 'New task: ' + t.title, body: (BY[t.by] ? 'From ' + BY[t.by].name : 'Given to you') + (t.due ? ' · due ' + dueText(t.due) : ''), ref: t.id })));
+    notifyDesktop(fresh.length > 1 ? fresh.length + ' new tasks for you' : 'New task: ' + fresh[0].title, fresh.length > 1 ? fresh.map(t => t.title).join(', ') : 'Open Maayasthra Task to see it.', 'new-task');
   }, [tasks, n]);
+}
+
+/* ---------- end-of-day report reminders ---------- */
+// Employees get a nudge 30 minutes and 15 minutes before their shift ends (5:30 and 5:45 PM on a 6 PM shift),
+// if they are still checked in and have not sent today's report.
+const toMin = hhmm => { const [h, m] = String(hhmm || '18:00').split(':').map(Number); return h * 60 + (m || 0); };
+export function useEodReminder({ user, role, att, eodTick, onFire }) {
+  useEffect(() => {
+    if (!user || role !== 'employee') return;
+    let live = true;
+    const check = async () => {
+      const dk = dayKey(), now = minuteOfDay(Date.now()), end = toMin(user.shiftEnd);
+      const due = [[end - 15, '2'], [end - 30, '1']].find(([at]) => now >= at);   // the latest one that is due
+      if (!due || now > end + 120) return;
+      const key = 'mp-eodrem-' + user.n + '-' + dk + '-' + due[1];
+      try { if (localStorage.getItem(key)) return; } catch (e) { /* ignore */ }
+      if (!isIn(sessionsOf(att, user.n))) return;                               // not checked in, or already checked out
+      let sent = false; try { sent = (await loadEods(dk, dk)).some(r => r.emp === user.n && r.rows.length); } catch (e) { return; }
+      if (!live || sent) return;
+      try { localStorage.setItem(key, '1'); } catch (e) { /* ignore */ }
+      const second = due[1] === '2', left = Math.max(0, Math.round(end - now));
+      const title = second ? 'Reminder: send your end-of-day report' : 'Time for your end-of-day report';
+      const body = (left > 0 ? 'Your shift ends in ' + left + ' minutes. ' : 'Your shift has ended. ') + 'Write what you worked on, then check out.';
+      chime(); notifyDesktop(title, body, 'eod-reminder');
+      onFire({ id: 'eod-' + dk + '-' + due[1], kind: 'eod', title, body });
+    };
+    check(); const t = setInterval(check, 30000);
+    return () => { live = false; clearInterval(t); };
+  }, [user && user.n, user && user.shiftEnd, role, att, eodTick]);
 }

@@ -77,8 +77,8 @@ export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel
   return html`<div className="dlg-bg" onClick=${() => !busy && onCancel()}></div>
     <div className=${'dlg eod' + (noHours ? ' nh' : '')} role="dialog" aria-modal="true" aria-labelledby="eod-t">
       <div className="eod-h"><div className="dlg-i"><${Icon} n="timer" s=${22}/></div>
-        <div><h2 id="eod-t">${mode === 'out' ? 'End-of-day report' : 'Update today’s report'}</h2>
-          <p>${mode === 'out' ? 'Fill in what you worked on today' + (noHours ? '' : ', with the time') + '. You can check out once it is sent.' : 'Changes replace the report you sent earlier today.'}</p></div></div>
+        <div><h2 id="eod-t">${mode === 'out' ? 'End-of-day report' : 'Today’s report'}</h2>
+          <p>${mode === 'out' ? 'Fill in what you worked on today' + (noHours ? '' : ', with the time') + '. You can check out once it is sent.' : 'Save it now, then check out when you are done. A later save replaces this one.'}</p></div></div>
       <div className="eod-t" role="table" aria-label="Today's work">
         <div className="eod-hd" role="row"><span>Project</span><span>Description</span>${!noHours && html`<span>Time</span>`}<span></span></div>
         ${rows.map((r, i) => {
