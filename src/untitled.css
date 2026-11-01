@@ -246,7 +246,6 @@ html{scrollbar-gutter:stable}
   .main,.hdr,.app.wide .main,.app.wide .hdr{padding-left:var(--px)!important;padding-right:var(--px)!important}
   .side,.app.wide .side{padding:32px 20px 24px 20px!important}
 }
-html{overflow-y:scroll}
 
 /* Alignment fixes */
 .hdr-b .apps2{display:inline-flex;width:max-content;gap:2px;padding:2px;flex:none}
@@ -410,3 +409,14 @@ html{overflow-y:scroll}
 .kb2.moved .kc2.pin,:root[data-theme="dark"] .kb2.moved .kc2.pin{box-shadow:10px 0 22px -10px rgb(var(--shade) / .28)!important}
 :root[data-theme="dark"] .kb2.moved .kc2.pin{box-shadow:10px 0 22px -10px rgb(0 0 0 / .7)!important}
 .kb2.moved .kc2.pin::after{content:"";position:absolute;top:0;bottom:0;right:-13px;width:12px;background:var(--bg);pointer-events:none}
+
+/* The page scrolls as one document: the left bar stays put, and there is no scrollbar unless one is needed.
+   (overflow-x:clip, not hidden, so the body is not a scroll container of its own and sticky keeps working.) */
+html{overflow-y:auto;scrollbar-gutter:stable}
+body{overflow-x:clip!important}
+@media (min-width:861px){
+  .app{align-items:start}
+  .side,.app.wide .side{position:sticky;top:0;height:100vh;height:100dvh;max-height:100dvh;overflow:hidden;align-self:start}
+  .side .nav{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
+  .side .nav::-webkit-scrollbar{display:none}
+}
