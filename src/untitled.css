@@ -363,3 +363,19 @@ html{overflow-y:scroll}
 /* Fill the 12px gap between pinned columns with the page colour, so columns sliding underneath never show through it */
 .kb2.moved .kc2.pin{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 22%,transparent),12px 0 0 0 var(--bg),18px 0 26px -8px rgb(var(--shade) / .22)!important}
 :root[data-theme="dark"] .kb2.moved .kc2.pin{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 30%,transparent),12px 0 0 0 var(--bg),18px 0 26px -8px rgb(0 0 0 / .6)!important}
+
+/* ---------- Blue leftovers: interface chrome is neutral or brand, never blue ---------- */
+.rq3-w{padding:4px 12px;border-radius:var(--r-ctl)!important;background:var(--fill);color:var(--text);gap:10px;box-shadow:inset 0 0 0 1px var(--line)}
+.rq3-w b{font-size:13px;font-weight:600;color:var(--text)}
+.rq3-w i{width:1px;height:12px;border-radius:0;background:var(--line-hi)}
+.lf-t.on{border-color:var(--accent);background:var(--brand-tint)}
+.lf-s{background:var(--brand-tint);border:1px solid var(--brand-200);border-radius:var(--r-card)!important}
+:root[data-theme="dark"] .lf-s{border-color:rgba(255,166,102,.28)}
+.lf-s>span{background:var(--card);color:var(--brand-text);box-shadow:inset 0 0 0 1px var(--brand-200);border-radius:10px}
+.kc-e:hover{border-color:var(--accent);background:var(--brand-tint)}
+.sel-i:focus-within,.sel:focus,.search input:focus{border-color:var(--brand-500);box-shadow:0 0 0 4px var(--brand-tint)}
+
+/* Collapsed pinned columns: no spare space. Same padding, same height, label area sized to its text. */
+.kc2.shut,.kc2.pin.shut{height:175px;min-height:175px;padding:12px 0!important}
+.kc2.shut .kc2-s{height:100%;justify-content:flex-start;gap:8px}
+.kc2.shut .kc2-v{min-height:100px}
