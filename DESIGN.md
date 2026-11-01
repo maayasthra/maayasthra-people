@@ -79,7 +79,7 @@ Labels are sentence case, medium weight, never upper-case. Fields use 16px on ph
 ## 5. Components
 
 **Button** (`.btn`). Height 40px (`.sm` 36px, 40px on touch), radius 8px, 14px semibold, icon 20px with 8px gap.
-- `pri`: brand orange `#FE6D00` fill, white text, a thin inner highlight, hover `#E55F00`.
+- `pri`: brand orange `#FE6D00` fill, white text, **flat: no inner highlight, bottom edge or shadow** (the kit's embossed look does not suit our orange), hover `#E55F00`.
 - `sec2` / `ghost` (secondary): white fill, 1px `--line-hi` border, secondary text, shadow-xs, hover neutral-50.
 - `tertiary`: no fill or border, tertiary text, hover neutral-50.
 - `danger`: error-600 fill, white text. Disabled is 50% opacity.

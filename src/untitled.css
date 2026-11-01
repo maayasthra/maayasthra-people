@@ -264,3 +264,8 @@ html{overflow-y:scroll}
 /* Check-in widget: outer 12px, inner button 8px (outer radius minus the 4px padding) */
 .ck{border-radius:var(--r-card)!important;padding:4px 4px 4px 14px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow-xs)}
 .ck .btn{border-radius:var(--r-ctl)!important;height:36px}
+
+/* Flat solid buttons: no inner highlight or bottom edge. The embossed look is nice on purple, not on our orange. */
+.btn.pri,.btn.danger,.lx-card .btn.pri{box-shadow:none!important;border:0}
+.btn.pri:focus-visible,.btn.danger:focus-visible{box-shadow:none}
+.btn.sec2,.btn.ghost{box-shadow:none}
