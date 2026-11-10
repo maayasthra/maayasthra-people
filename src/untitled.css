@@ -436,7 +436,14 @@ body{overflow-x:clip!important}
 button.btn:disabled[title]{cursor:not-allowed}
 
 /* Departments view: the group box must be as tall as the board so a long column scrolls inside it instead of spilling out the bottom */
-@media (min-width:861px){.kb2>.kgrp:not(.shut){align-self:stretch}.kgrp-c{align-items:stretch}.kgrp .kc2{max-height:100%;align-self:flex-start}}
+/* The box fits its cards. A column taller than the board is capped by an absolute height so it scrolls inside instead of spilling out. */
+@media (min-width:861px){
+  .kb2{--bh:calc(100vh - 290px)}
+  .app.wide .kb2{--bh:calc(100dvh - 250px)}
+  .kgrp{align-self:flex-start;height:auto}
+  .kgrp-c{align-items:flex-start}
+  .kgrp .kc2{max-height:calc(max(var(--bh), 420px) - 112px)}
+}
 
 /* Who is in (admin Home) */
 .wi-bar{display:flex;gap:3px;height:8px;border-radius:999px;overflow:hidden;margin-bottom:16px}
