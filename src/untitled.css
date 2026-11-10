@@ -515,3 +515,7 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{display:none;width:0;height:0}
 .sw,.sw i{transition:background-color .2s ease,transform .2s var(--ease)}
 .wi-bar i{transition:flex-grow .5s var(--ease)}
 @media (prefers-reduced-motion:reduce){.kc2,.kgrp,.kc2-b,.kgrp-c,.kt,.mt3-k,.df-p,.cm,.kt-menu,.nf-p,.qs-dd,.lm{animation:none!important}}
+
+/* Home: the same 24px gap between every block */
+.ps,.tiles,.sec{margin-top:24px!important}
+@media (max-width:860px){.ps,.tiles,.sec{margin-top:16px!important}}
