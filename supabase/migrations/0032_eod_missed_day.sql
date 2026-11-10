@@ -38,3 +38,13 @@ end;
 $$;
 revoke all on function public.submit_eod_for(date, jsonb) from public, anon;
 grant execute on function public.submit_eod_for(date, jsonb) to authenticated;
+
+-- Which recent days do I already have a report for? Returns only the dates, never the report itself. Employees cannot read old
+-- reports (0025), so the Home alert asks this instead.
+create or replace function public.my_eod_days(p_from date, p_to date)
+returns setof date language sql stable security definer set search_path = public as $$
+  select day from public.eod_reports
+  where employee_id = public.my_employee_id() and public.is_staff() and day between p_from and p_to
+$$;
+revoke all on function public.my_eod_days(date, date) from public, anon;
+grant execute on function public.my_eod_days(date, date) to authenticated;

@@ -397,4 +397,6 @@ function App() {
 
 applyTheme();
 startExitMotion();
-createRoot(document.getElementById('root')).render(html`<${App}/>`);
+const rootEl = document.getElementById('root');
+const root = rootEl.__root || (rootEl.__root = createRoot(rootEl));   // reused when the dev server reloads this file
+root.render(html`<${App}/>`);

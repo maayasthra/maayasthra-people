@@ -26,6 +26,14 @@ export async function loadEods(from, to) {
   return out;
 }
 
+// The days in a range that I already sent a report for (dates only: employees cannot read old reports)
+export async function myEodDays(from, to, emp) {
+  if (IS_DEMO) return readDemo().filter(r => r.emp === emp && r.day >= from && r.day <= to).map(r => r.day);
+  const { data, error } = await supabase.rpc('my_eod_days', { p_from: from, p_to: to });
+  if (error) throw new Error('Could not check your reports.');
+  return (data || []).map(d => typeof d === 'string' ? d.slice(0, 10) : d);
+}
+
 export async function submitEod(rows, emp, day) {
   const clean = rows.map(r => ({
     project: String(r.project || '').trim(), task: r.task || null, desc: String(r.desc || '').trim(), hours: Number(r.hours) || 0,

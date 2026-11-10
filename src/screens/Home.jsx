@@ -9,7 +9,7 @@ import { CopyLeave } from '../CopyLeave.jsx';
 import { isOpen } from '../tasks.js';
 import { SessionList, useDay, dayNote } from '../Attendance.jsx';
 import { hm, lunchInfo, checkIn, checkOut, dayInfo, useNow, clock, minuteOfDay, getDay, addDays } from '../attendance.js';
-import { loadEods } from '../eodDb.js';
+import { myEodDays } from '../eodDb.js';
 import {
   TOD, DAY, WDL, MONL, pd, fmtDM, fmtDay, rel, plural, range, addMonths, isoOf, TODISO, HOL, BY,
   balances, awayList, isAway, activeEmps, fmtTime, nextOcc, EMP
@@ -91,7 +91,7 @@ function useMissedEod(user, att, tick, on) {
   const [have, setHave] = useState(null);
   useEffect(() => {
     if (!on) return; let live = true;
-    loadEods(addDays(TODISO, -LATE_DAYS), addDays(TODISO, -1)).then(l => live && setHave(l.filter(r => r.emp === user.n).map(r => r.day))).catch(() => live && setHave(null));
+    myEodDays(addDays(TODISO, -LATE_DAYS), addDays(TODISO, -1), user.n).then(l => live && setHave(l)).catch(() => live && setHave(null));
     return () => { live = false; };
   }, [user.n, tick, on]);
   if (!on || have === null) return [];

@@ -385,6 +385,11 @@ t('the same missed day cannot be sent twice', /already sent/.test(await tryit(as
 t('a day more than 7 days back is refused', /Not allowed/.test(await tryit(async () => m.submitEod(rowsOk, ids.abines, (await q("select (public.today_ist() - 9)::text d"))[0].d))));
 t('a future day is refused', /Not allowed/.test(await tryit(async () => m.submitEod(rowsOk, ids.abines, (await q("select (public.today_ist() + 1)::text d"))[0].d))));
 
+// 0032: an employee can see which recent days they already reported, without reading the reports
+t('an employee sees which past days they have reported', JSON.stringify(await m.myEodDays(await q("select (public.today_ist() - 5)::text d").then(r => r[0].d), await q("select (public.today_ist() - 1)::text d").then(r => r[0].d), ids.abines)).includes((await q("select (public.today_ist() - 3)::text d"))[0].d));
+const d3 = (await q("select (public.today_ist() - 3)::text d"))[0].d;
+t('they still cannot read the old report itself', (await m.loadEods(d3, d3)).length === 0);
+
 console.log('--- done ---');
 
 if (process.exitCode) console.log('SOME CHECKS FAILED');
