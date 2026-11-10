@@ -30,7 +30,7 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close
   const renameSub = (sid, v) => { const val = v.trim(); setEditSub(null); if (val && val !== (t.subs.find(x => x.id === sid) || {}).t) upd({ subs: t.subs.map(x => x.id === sid ? { ...x, t: val } : x) }); };
   // A subtask becomes its own card, titled "Main card: subtask", and goes to the chosen person
   const makeMain = (sub, person) => {
-    const title = t.title.trim() + ': ' + sub.t;
+    const title = t.title.trim() + ' : ' + sub.t;
     setTasks(ts => { const nt = mkTask({ title, client: t.client, prio: t.prio, labels: t.labels, cols: [person] }, user); return [...(keepSub ? ts : ts.map(x => x.id === t.id ? { ...x, subs: x.subs.filter(q => q.id !== sub.id) } : x)), nt]; });
     setMade('Made “' + title + '” and gave it to ' + (BY[person] ? BY[person].name : 'them') + '.'); setSm(null); setSmQ('');
   };
@@ -57,7 +57,7 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close
             ${mgr && !isNew && html`<button role="menuitem" onClick=${() => setSm({ ...sm, stage: 'assign' })}><${Icon} n="next" s=${15}/> Make it a main card…</button>`}
             <button role="menuitem" className="cm-d" onClick=${() => { upd({ subs: t.subs.filter(x => x.id !== sub.id) }); setSm(null); }}><${Icon} n="trash" s=${15}/> Remove subtask</button>`
         : html`<div className="cm-h"><button className="ib" onClick=${() => setSm({ ...sm, stage: 'root' })} aria-label="Back"><${Icon} n="chevL" s=${14}/></button><b>Give it to…</b></div>
-            <div className="td2-mm"><small>New card</small><b>${t.title.trim()}: ${sub.t}</b></div>
+            <div className="td2-mm"><small>New card</small><b>${t.title.trim()} : ${sub.t}</b></div>
             <div className="cm-q"><${Icon} n="search" s=${15}/><input autoFocus className="inp" value=${smQ} onChange=${ev => setSmQ(ev.target.value)} placeholder="Find a person" aria-label="Find a person"/></div>
             <div className="cm-l">${people.filter(e => e.name.toLowerCase().includes(smQ.trim().toLowerCase())).map(e => html`<button key=${e.n} role="menuitem" onClick=${() => makeMain(sub, e.n)}><${Av} e=${e} s=${24}/><span className="cm-n">${e.name}</span></button>`)}</div>
             <label className="td2-keep"><input type="checkbox" checked=${keepSub} onChange=${ev => setKeepSub(ev.target.checked)}/> Also keep it on this card</label>`}
