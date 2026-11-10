@@ -576,3 +576,12 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{display:none;width:0;height:0}
 :root[data-theme="dark"] .pn{padding:0 20px 16px!important;overflow:hidden}
 :root[data-theme="dark"] .pn-h{margin:0 -20px 14px;padding:16px 20px;background:#14141a;border-bottom:1px solid var(--line)}
 :root[data-theme="dark"] .pn-h .btn.sec2{background:var(--card)}
+
+/* Thin, equal title bands: every panel and every board column */
+:root[data-theme="dark"] .pn-h{box-sizing:border-box;height:46px;min-height:46px;padding:0 20px;margin:0 -20px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+:root[data-theme="dark"] .pn-h h2{font-size:15px;line-height:20px;margin:0}
+:root[data-theme="dark"] .pn-h .ib{width:28px;height:28px}
+:root[data-theme="dark"] .pn-h .btn.sm{height:30px;min-height:30px;padding:0 10px}
+:root[data-theme="dark"] .pn-h>div{display:flex;align-items:center;gap:8px}
+:root[data-theme="dark"] .kc2:not(.shut) .kc2-h{box-sizing:border-box;height:46px;margin:-10px -8px 8px;padding:0 12px 0 14px;background:#1a1a20;border-bottom:1px solid var(--line);border-radius:11px 11px 0 0}
+:root[data-theme="dark"] .mt3-col>header{box-sizing:border-box;height:46px;margin:-12px -12px 10px;padding:0 14px;display:flex;align-items:center;gap:8px;background:#1a1a20;border-bottom:1px solid var(--line);border-radius:11px 11px 0 0}
