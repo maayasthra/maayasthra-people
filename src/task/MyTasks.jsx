@@ -40,16 +40,16 @@ export function MyTasks({ tasks, setTasks, user, tq, openTask, canDelete }) {
   };
   const Col = ({ id, label, list, empty }) => html`<section key=${id} className=${'mt3-col' + (over === id ? ' over' : '')} onDragOver=${ev => { if (drag) { ev.preventDefault(); setOver(id); } }} onDragLeave=${ev => { if (!ev.currentTarget.contains(ev.relatedTarget)) setOver(o => o === id ? null : o); }} onDrop=${ev => drop(ev, id)}>
     <header><b>${label}</b><span className="kc-n">${list.length}</span></header>
-    <div className="mt3-b">${list.map(t => html`<${Card} key=${t.id} t=${t} col=${id}/>`)}${list.length === 0 && html`<div className="mt3-e">${empty}</div>`}
+    <div className="mt3-b">${list.map(t => html`<${Card} key=${t.id} t=${t} col=${id}/>`)}${list.length === 0 && !(id === 'todo' && adding) && (id === 'todo' ? html`<button className="mt3-e mt3-add" onClick=${() => setAdding(true)}><span className="a1">${empty}</span><span className="a2"><${Icon} n="plus" s=${16}/> Add a new task</span></button>` : html`<div className="mt3-e">${empty}</div>`)}
       ${id === 'todo' && (adding
         ? html`<div className="kc-compose"><textarea autoFocus rows="2" value=${title} placeholder="What needs doing? One task per line." aria-label="New task" onChange=${ev => setTitle(ev.target.value)} onKeyDown=${ev => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); add(); } if (ev.key === 'Escape') { setAdding(false); setTitle(''); } }} onBlur=${() => { if (!title.trim()) setAdding(false); }}></textarea>
             <div className="kc-compose-a"><small>Enter to add</small><span style=${{ flex: 1 }}></span><button className="ib" onMouseDown=${ev => ev.preventDefault()} onClick=${() => { setAdding(false); setTitle(''); }} aria-label="Cancel"><${Icon} n="x" s=${13}/></button><button className="btn pri sm" onMouseDown=${ev => ev.preventDefault()} onClick=${add}>Add</button></div></div>`
-        : html`<button className="kc-new mt3-new" onClick=${() => setAdding(true)}><${Icon} n="plus" s=${15}/>New task</button>`)}
+        : list.length > 0 ? html`<button className="mt3-e mt3-add slim" onClick=${() => setAdding(true)}><span className="a2"><${Icon} n="plus" s=${16}/> Add a new task</span></button>` : null)}
       ${id === 'done' && done.length > 12 && html`<button className="link" onClick=${() => setAllDone(a => !a)}>${allDone ? 'Show fewer' : 'Show all ' + done.length}</button>`}</div></section>`;
 
   return html`<div>
     <div className="pg-h"><div><h1><${HI} n="mytasks" tone="blue"/>My Tasks</h1><p>${doing.length ? doing.length + ' in progress' : 'Nothing in progress'}</p></div>
-      <button className="btn pri" onClick=${() => openTask('new', { col: user.n })}><${Icon} n="plus" s=${16}/> New</button></div>
+</div>
     <div className="mt3">
       ${Col({ id: 'todo', label: 'Pending', list: todo, empty: 'Nothing waiting.' })}
       ${Col({ id: 'doing', label: 'In progress', list: doing, empty: 'Drag a card here, or press Start, to mark what you are on.' })}

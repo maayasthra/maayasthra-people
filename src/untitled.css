@@ -592,3 +592,14 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{display:none;width:0;height:0}
 /* Whole card is the click target */
 .kt,.mt3-k{cursor:pointer}
 .kt.dragging,.mt3-k.dragging{cursor:grabbing}
+
+/* My Tasks: the dashed box in Pending is the add button */
+.mt3-add{display:grid;place-items:center;width:100%;cursor:pointer;color:var(--faint);font:inherit;transition:background-color .18s ease,border-color .18s ease,color .18s ease}
+.mt3-add .a1,.mt3-add .a2{grid-area:1/1;transition:opacity .18s ease,transform .18s var(--ease)}
+.mt3-add .a2{display:inline-flex;align-items:center;gap:6px;font-weight:600;opacity:0;transform:translateY(4px)}
+.mt3-add:hover,.mt3-add:focus-visible{background:var(--brand-tint);border-color:var(--accent);color:var(--brand-text);outline:none}
+.mt3-add:hover .a1,.mt3-add:focus-visible .a1{opacity:0;transform:translateY(-4px)}
+.mt3-add:hover .a2,.mt3-add:focus-visible .a2{opacity:1;transform:none}
+.mt3-add.slim{min-height:44px;margin-top:2px}
+.mt3-add.slim .a2{opacity:1;transform:none;color:var(--faint)}
+.mt3-add.slim:hover .a2{color:var(--brand-text)}
