@@ -625,3 +625,12 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{display:none;width:0;height:0}
 .mt3-k.isdone .mt3-t{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--faint)}
 .mt3-k.run{box-shadow:none!important;border-color:color-mix(in srgb,var(--ok) 45%,var(--line))}
 .mt3-k.dragging{opacity:.45}
+
+/* My Tasks cards: compact, like the board */
+.mt3-k{min-height:0;padding:10px 12px;gap:2px}
+.mt3-k .mt3-f{min-height:28px;margin-top:6px}
+.mt3-b{gap:8px}
+.mt3-k .btn.sm{height:28px;min-height:28px;padding:0 10px}
+.mt3-k .mt3-ok{width:28px;height:28px}
+.mt3-t{padding:0}
+.mt3-st{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
