@@ -778,3 +778,5 @@ body{font-size:13.5px;line-height:1.5}
 /* Sizes in multiples of 4px stay whole device pixels on 1.25x, 1.5x, 1.75x and 2x screens, so gaps never look uneven */
 .kc2 .kc2-b{gap:8px}
 .kc2 .kc2-b>.kt{min-height:84px}
+.kt-p{display:block;line-height:16px;margin-top:0}
+.kt-open{gap:0}
