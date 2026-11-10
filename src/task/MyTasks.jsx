@@ -1,4 +1,6 @@
 import { useState } from 'react';
+
+import { startSound, pendingSound, doneSound, deleteSound } from '../alerts.js';
 import { html, Icon, HI } from '../ui.jsx';
 import { mkTask, completeCard, reopenCard, startTimer, pauseTimer, isDoing, myTasksOf } from '../tasks.js';
 
@@ -14,9 +16,9 @@ export function MyTasks({ tasks, setTasks, user, tq, openTask, canDelete }) {
   const shownDone = allDone ? done : done.slice(0, 12);
 
   // The three moves. Any number of cards can be Doing at once.
-  const toDoing = id => setTasks(ts => startTimer(ts, id, user.n));
-  const toTodo = id => setTasks(ts => { const t = ts.find(x => x.id === id); return t && t.done ? reopenCard(ts, id, user.n) : pauseTimer(ts, id, user.n); });
-  const toDone = id => setTasks(ts => completeCard(ts, id));
+  const toDoing = id => { startSound(); setTasks(ts => startTimer(ts, id, user.n)); };
+  const toTodo = id => { pendingSound(); setTasks(ts => { const t = ts.find(x => x.id === id); return t && t.done ? reopenCard(ts, id, user.n) : pauseTimer(ts, id, user.n); }); };
+  const toDone = id => { doneSound(); setTasks(ts => completeCard(ts, id)); };
   const drop = (ev, col) => { ev.preventDefault(); if (drag) { (col === 'doing' ? toDoing : col === 'todo' ? toTodo : toDone)(drag); } setDrag(null); setOver(null); };
   // Paste or type one task per line; Enter adds them
   const add = () => { const lines = title.split('\n').map(l => l.trim()).filter(Boolean); if (!lines.length) { setAdding(false); return; } setTasks(ts => [...ts, ...lines.map(l => mkTask({ title: l, cols: [user.n] }, user))]); setTitle(''); setAdding(false); };
@@ -25,7 +27,7 @@ export function MyTasks({ tasks, setTasks, user, tq, openTask, canDelete }) {
     return html`<article className=${'mt3-k' + (t.retainer ? ' is-ret' : '') + (col === 'doing' ? ' run' : '') + (drag === t.id ? ' dragging' : '')} draggable="true" onClick=${ev => { if (!ev.target.closest('button, a, input, textarea')) openTask(t.id); }} onDragStart=${ev => { setDrag(t.id); ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', t.id); }} onDragEnd=${() => { setDrag(null); setOver(null); }}>
       <button className="mt3-t" onClick=${() => openTask(t.id)}>${t.title}</button>
       ${t.client && html`<small className="mt3-c">${t.client}</small>`}
-      ${canDelete && ask === t.id && html`<div className="mt3-del" role="alert"><span>Delete this task?</span><button className="btn ghost sm" onClick=${() => setAsk(null)}>Keep</button><button className="btn danger sm" onClick=${() => { setTasks(ts => ts.filter(x => x.id !== t.id)); setAsk(null); }}>Delete</button></div>`}
+      ${canDelete && ask === t.id && html`<div className="mt3-del" role="alert"><span>Delete this task?</span><button className="btn ghost sm" onClick=${() => setAsk(null)}>Keep</button><button className="btn danger sm" onClick=${() => { deleteSound(); setTasks(ts => ts.filter(x => x.id !== t.id)); setAsk(null); }}>Delete</button></div>`}
       <div className="mt3-f">
         <span className="mt3-tm">${col === 'doing' ? 'In progress' : col === 'done' ? 'Completed' : ''}</span>
         <span className="mt3-a">

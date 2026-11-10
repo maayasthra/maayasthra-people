@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { moveSound, deleteSound, pendingSound, doneSound } from '../alerts.js';
 import { html, Icon, HI, Av } from '../ui.jsx';
 import { BY, activeEmps } from '../data.js';
 import { BoardGroups } from './BoardGroups.jsx';
@@ -11,7 +12,7 @@ function CardMenu({ m, user, custom, setTasks, openTask, close }) {
   const people = activeEmps().sort((a, b) => a.name.localeCompare(b.name)).filter(e => e.name.toLowerCase().includes(ql));
   const pins = [...PINNED.map(p => [p[0], p[1], p[2]]), ...custom.map(c => [c.id, c.name, '#8E8E93'])].filter(p => p[1].toLowerCase().includes(ql));
   const pick = to => {
-    if (stage === 'move') setTasks(ts => moveCard(ts, t.id, col, to));
+    if (stage === 'move') { moveSound(); setTasks(ts => moveCard(ts, t.id, col, to)); }
     else if (stage === 'copy') setTasks(ts => copyCard(ts, t.id, to));
     else setTasks(ts => duplicateCard(ts, t.id, to, user));
     close();
@@ -26,7 +27,7 @@ function CardMenu({ m, user, custom, setTasks, openTask, close }) {
       <button role="menuitem" onClick=${() => setStage('copy')}><${Icon} n="copy" s=${15}/> Copy to…</button>
       <button role="menuitem" onClick=${() => setStage('dup')}><${Icon} n="plus" s=${15}/> Duplicate to…</button>
       <hr/>
-      ${sure ? html`<div className="cm-s">Delete this card?</div><div className="cm-a"><button className="btn ghost sm" onClick=${() => setSure(false)}>Cancel</button><button className="btn sm danger" onClick=${() => { setTasks(ts => deleteCard(ts, t.id, col)); close(); }}>Delete</button></div>`
+      ${sure ? html`<div className="cm-s">Delete this card?</div><div className="cm-a"><button className="btn ghost sm" onClick=${() => setSure(false)}>Cancel</button><button className="btn sm danger" onClick=${() => { deleteSound(); setTasks(ts => deleteCard(ts, t.id, col)); close(); }}>Delete</button></div>`
         : html`<button role="menuitem" className="cm-d" onClick=${() => setSure(true)}><${Icon} n="trash" s=${15}/> Delete this card</button>`}`
     : html`
       <div className="cm-h"><button className="ib" onClick=${() => { setStage('root'); setQ(''); }} aria-label="Back"><${Icon} n="chevL" s=${14}/></button><b>${L[stage]}</b></div>
@@ -160,9 +161,9 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
 
   /* Completing: the tick shows straight away, the card moves to Completed Tasks after 2 seconds. */
   const complete = t => {
-    if (t.done) { setTasks(ts => reopenCard(ts, t.id, user.n)); return; }
+    if (t.done) { pendingSound(); setTasks(ts => reopenCard(ts, t.id, user.n)); return; }
     if (pending[t.id]) { clearTimeout(timers.current[t.id]); setPending(p => { const n = { ...p }; delete n[t.id]; return n; }); return; }
-    setPending(p => ({ ...p, [t.id]: true }));
+    doneSound(); setPending(p => ({ ...p, [t.id]: true }));
     timers.current[t.id] = setTimeout(() => { setTasks(ts => completeCard(ts, t.id)); setPending(p => { const n = { ...p }; delete n[t.id]; return n; }); }, 2000);
   };
 
@@ -173,7 +174,7 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
   const onDrop = (ev, col) => {
     ev.preventDefault();
     if (colDrag != null) { if (colOver && colOver.key === col) moveCol(colDrag, col, colOver.after); if (role === 'admin' && groupableKey(colDrag) && groupableKey(col)) { const from = gOf(colDrag), to = gOf(col), key = colDrag; if ((from && from.id) !== (to && to.id)) setGroups(gs => gs.map(x => ({ ...x, members: x.members.filter(m => m !== key) })).map(x => to && x.id === to.id ? { ...x, members: [...x.members, key] } : x)); } setColDrag(null); setColOver(null); return; }
-    if (drag) setTasks(ts => moveCard(ts, drag.id, drag.col, col, over && over.col === col ? over.before : null)); setDrag(null); setOver(null); };
+    if (drag) { moveSound(); setTasks(ts => moveCard(ts, drag.id, drag.col, col, over && over.col === col ? over.before : null)); } setDrag(null); setOver(null); };
   // Scroll sideways on its own while a card is dragged near either edge
   const edge = ev => { const s = scroller.current; if ((!drag && colDrag == null) || !s) return; const r = s.getBoundingClientRect(); if (ev.clientX < r.left + 90) s.scrollLeft -= 26; else if (ev.clientX > r.right - 90) s.scrollLeft += 26; };
   const add = col => {

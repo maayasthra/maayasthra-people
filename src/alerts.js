@@ -143,6 +143,13 @@ export const checkInSound = () => sfx([[659.3, 0, 0.22], [987.8, 0.11, 0.38]]); 
 export const newTaskSound = () => sfx([[880, 0, 0.18], [1174.7, 0.12, 0.18], [1568, 0.24, 0.45]]);  // up: a three-note ping
 export const checkOutSound = () => sfx([[783.99, 0, 0.22], [587.33, 0.13, 0.22], [440, 0.26, 0.42]]); // down: a calm three-note fall
 
+// Board and task sounds: short and soft. Each move has its own shape so you can tell them apart without looking.
+export const startSound = () => sfx([[523.25, 0, 0.14], [783.99, 0.09, 0.3]]);                    // to working: a light step up
+export const pendingSound = () => sfx([[587.33, 0, 0.14], [440, 0.09, 0.28]]);                   // back to pending: a gentle step down
+export const doneSound = () => sfx([[659.25, 0, 0.16], [830.61, 0.1, 0.16], [987.77, 0.2, 0.16], [1318.5, 0.3, 0.5]]); // completed: a bright rising run
+export const moveSound = () => sfx([[698.46, 0, 0.1], [880, 0.07, 0.2]]);                         // moved to another column: a soft double tick
+export const deleteSound = () => sfx([[311.13, 0, 0.1], [233.08, 0.07, 0.12], [155.56, 0.14, 0.3]]); // deleted: a low falling thud
+
 const dueText = iso => { const [, m, d] = String(iso).split('-').map(Number); return d + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m - 1]; };
 
 /* ---------- a desktop notification, only when the page is in the background ---------- */

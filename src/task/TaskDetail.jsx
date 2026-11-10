@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { pendingSound, doneSound, deleteSound } from '../alerts.js';
 import { html, Icon, Av, Switch } from '../ui.jsx';
 import { Sheet } from './parts.jsx';
 import { BY, activeEmps } from '../data.js';
@@ -24,10 +25,10 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close
   const create = () => { if (!t.title.trim()) { setErr('Give the card a title.'); return; } setTasks(ts => [...ts, { ...draft, title: draft.title.trim() }]); close(); };
   const addComment = () => { if (!comment.trim()) return; upd({ comments: [...t.comments, { id: Date.now(), by: user.n, text: comment.trim(), at: Date.now() }] }); setComment(''); };
   const addSub = () => { if (!newSub.trim()) return; upd({ subs: [...t.subs, { id: Date.now() + t.subs.length, t: newSub.trim(), done: false }] }); setNewSub(''); };
-  const toggleDone = () => setTasks(ts => t.done ? reopenCard(ts, t.id, user.n) : completeCard(ts, t.id));
+  const toggleDone = () => { t.done ? pendingSound() : doneSound(); setTasks(ts => t.done ? reopenCard(ts, t.id, user.n) : completeCard(ts, t.id)); };
 
   const footer = isNew ? html`<button className="btn ghost" onClick=${close}>Cancel</button><span style=${{ flex: 1 }}></span><button className="btn pri" onClick=${create}>Create card</button>`
-    : mgr ? (confirm ? html`<span className="sh-c">Delete this card?</span><button className="btn ghost" onClick=${() => setConfirm(false)}>Keep</button><button className="btn danger" onClick=${() => { setTasks(ts => ts.filter(x => x.id !== t.id)); close(); }}>Delete</button>`
+    : mgr ? (confirm ? html`<span className="sh-c">Delete this card?</span><button className="btn ghost" onClick=${() => setConfirm(false)}>Keep</button><button className="btn danger" onClick=${() => { deleteSound(); setTasks(ts => ts.filter(x => x.id !== t.id)); close(); }}>Delete</button>`
       : html`<button className="btn ghost td2-del" onClick=${() => setConfirm(true)}><${Icon} n="trash" s=${15}/> Delete</button><span style=${{ flex: 1 }}></span><button className="btn pri" onClick=${close}>Done</button>`)
     : html`<span style=${{ flex: 1 }}></span><button className="btn pri" onClick=${close}>${canEdit ? 'Done' : 'Close'}</button>`;
 
