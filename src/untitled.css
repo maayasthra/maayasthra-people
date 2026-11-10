@@ -588,3 +588,7 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{display:none;width:0;height:0}
 
 /* Board columns: plain titles again, no band (Home panels keep theirs) */
 :root[data-theme="dark"] .kc2:not(.shut) .kc2-h{background:transparent;border-bottom:0;border-radius:0;height:auto;margin:0;padding:2px 6px 10px}
+
+/* Whole card is the click target */
+.kt,.mt3-k{cursor:pointer}
+.kt.dragging,.mt3-k.dragging{cursor:grabbing}
