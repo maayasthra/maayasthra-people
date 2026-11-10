@@ -747,3 +747,11 @@ body{font-size:13.5px;line-height:1.5}
 .td2-keep{display:flex;align-items:center;gap:8px;padding:8px 8px 4px;margin-top:6px;border-top:1px solid var(--line);font-size:12.5px;color:var(--muted);cursor:pointer}
 .td2-made{display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px 12px;border-radius:var(--r-ctl);background:rgba(7,148,85,.12);border:1px solid rgba(71,205,137,.35);color:var(--ok-text);font-size:13px}
 .td2-made span{flex:1;min-width:0;overflow-wrap:anywhere}
+
+/* Retainer colour swatches */
+.td2-ret{flex-wrap:wrap}
+.td2-sw{display:flex;gap:8px;width:100%;margin-top:6px}
+.td2-sw-b{width:22px;height:22px;border-radius:50%;background:var(--c);box-shadow:inset 0 0 0 1px rgb(0 0 0 / .18);padding:0}
+.td2-sw-b:hover{transform:scale(1.1)}
+.td2-sw-b.on{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--c)}
+.td2-rtag.on{color:color-mix(in srgb,var(--ret) 80%,#000)}

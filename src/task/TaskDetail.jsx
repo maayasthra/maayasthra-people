@@ -6,6 +6,7 @@ import { Sheet } from './parts.jsx';
 import { BY, activeEmps } from '../data.js';
 import { PRIO, LABELS, PINNED, mkTask, colName, completeCard, reopenCard, statusOf } from '../tasks.js';
 
+const RET_COLORS = ['#0A84FF', '#BF5AF2', '#FF375F', '#FF9F0A', '#FFD60A', '#30D158', '#30B0C7', '#8E8E93'];
 const ago = t => { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'Just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' d ago'; };
 
 export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close }) {
@@ -98,7 +99,7 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close
           ${mgr && !t.done && html`<label className="td2-add"><${Icon} n="plus" s=${14}/>Add<select value="" onChange=${ev => { const v = ev.target.value; if (v) upd({ cols: [...t.cols, /^\d+$/.test(v) ? Number(v) : v] }); }} aria-label="Add a person or column"><option value="">Add…</option>${addablePins.map(p => html`<option key=${p[0]} value=${p[0]}>${p[1]}</option>`)}${addable.map(e => html`<option key=${e.n} value=${e.n}>${e.name}</option>`)}</select></label>`}
         </div></div>
       <div className="td2-r"><span className="td2-k"><${Icon} n="star" s=${16}/>Retainer</span>
-        <div className="td2-v">${mgr ? html`<div className="td2-ret"><${Switch} on=${!!t.retainer} set=${v => { if (!t.cols.includes('retainer')) upd({ retainer: v }); }} label="Retainer task"/><small>${t.cols.includes('retainer') ? 'In the Retainer column. Move it out first to unmark it.' : t.retainer ? 'Keeps its blue tint wherever it is moved.' : 'Mark it to keep a blue tint wherever it goes.'}</small></div>` : html`<span className=${'td2-rtag' + (t.retainer ? ' on' : '')}>${t.retainer ? 'Retainer task' : 'Not a retainer task'}</span>`}</div></div>
+        <div className="td2-v">${mgr ? html`<div className="td2-ret"><${Switch} on=${!!t.retainer} set=${v => { if (!t.cols.includes('retainer')) upd({ retainer: v }); }} label="Retainer task"/><small>${t.cols.includes('retainer') ? 'In the Retainer column. Move it out first to unmark it.' : t.retainer ? 'Keeps its blue tint wherever it is moved.' : 'Mark it to keep a blue tint wherever it goes.'}</small>${t.retainer && html`<div className="td2-sw" role="radiogroup" aria-label="Retainer colour">${RET_COLORS.map(c => html`<button key=${c} role="radio" aria-checked=${(t.rcolor || RET_COLORS[0]) === c} className=${'td2-sw-b' + ((t.rcolor || RET_COLORS[0]) === c ? ' on' : '')} style=${{ '--c': c }} title=${c} aria-label=${'Colour ' + c} onClick=${() => upd({ rcolor: c === RET_COLORS[0] ? '' : c })}></button>`)}</div>`}</div>` : html`<span className=${'td2-rtag' + (t.retainer ? ' on' : '')}>${t.retainer ? 'Retainer task' : 'Not a retainer task'}</span>`}</div></div>
       <div className="td2-r"><span className="td2-k"><${Icon} n="flag" s=${16}/>Priority</span>
         <div className="td2-v"><div className="seg s3" role="group" aria-label="Priority">${Object.entries(PRIO).map(([k, v]) => html`<button key=${k} disabled=${!canEdit} className=${t.prio === k ? 'on' : ''} onClick=${() => upd({ prio: k })}>${v[0]}</button>`)}</div></div></div>
       <div className="td2-r"><span className="td2-k"><${Icon} n="tag" s=${16}/>Labels</span>

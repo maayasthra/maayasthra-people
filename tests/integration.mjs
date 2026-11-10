@@ -390,6 +390,18 @@ t('an employee sees which past days they have reported', JSON.stringify(await m.
 const d3 = (await q("select (public.today_ist() - 3)::text d"))[0].d;
 t('they still cannot read the old report itself', (await m.loadEods(d3, d3)).length === 0);
 
+// 0033: a retainer card can have its own colour; only managers can change it
+as('vijay'); await m.loadStaff();
+let cb = await m.loadBoard();
+const cid = m.tasks.mkTask({ title: 'Coloured retainer', cols: ['retainer'] }, { n: ids.vijay }).id;
+await m.persistBoard(cb, { ...cb, tasks: [...cb.tasks, { ...m.tasks.mkTask({ title: 'Coloured retainer', cols: ['retainer'] }, { n: ids.vijay }), id: cid, retainer: true, rcolor: '#BF5AF2' }] });
+cb = await m.loadBoard();
+t('a manager can give a retainer card a colour', (cb.tasks.find(x => x.id === cid) || {}).rcolor === '#BF5AF2');
+as('abines'); await m.loadStaff();
+const cb2 = await m.loadBoard();
+await tryit(() => m.persistBoard(cb2, { ...cb2, tasks: cb2.tasks.map(x => x.id === cid ? { ...x, rcolor: '#FF375F' } : x) }));
+t('an employee cannot change a retainer colour', (await q("select retainer_color from tasks where id = '" + cid + "'"))[0].retainer_color === '#BF5AF2');
+
 console.log('--- done ---');
 
 if (process.exitCode) console.log('SOME CHECKS FAILED');

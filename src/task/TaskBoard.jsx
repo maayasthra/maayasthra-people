@@ -200,7 +200,7 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
       </header>
       <div className="kc2-b">
         ${list.map(t => { const isDone = t.done || pending[t.id], can = canMove(t), ls = t.labels.filter(l => tf.labels.includes(l));
-          return html`<article key=${t.id + key} data-id=${t.id} className=${'kt' + (t.retainer ? ' is-ret' : '') + (drag && drag.id === t.id && drag.col === key ? ' dragging' : '') + (over && over.col === key && over.before === t.id ? ' drop-before' : '') + (isDone ? ' isdone' : '')}
+          return html`<article key=${t.id + key} data-id=${t.id} style=${t.retainer && t.rcolor ? { '--ret': t.rcolor } : undefined} className=${'kt' + (t.retainer ? ' is-ret' : '') + (drag && drag.id === t.id && drag.col === key ? ' dragging' : '') + (over && over.col === key && over.before === t.id ? ' drop-before' : '') + (isDone ? ' isdone' : '')}
             draggable=${can} onClick=${ev => { if (!ev.target.closest('button, a, input, textarea')) openTask(t.id); }} onDragStart=${ev => { setDrag({ id: t.id, col: key }); ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', t.id); }} onDragEnd=${() => { setDrag(null); setOver(null); }}>
             <div className="kt-top">
               <button className="kt-open" onClick=${() => openTask(t.id)} aria-label=${'Open ' + t.title}>
