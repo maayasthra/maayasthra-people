@@ -104,14 +104,13 @@ function WhoIsIn({ att, leaves, open }) {
   const by = st => rows.filter(x => x.i.state === st).sort((a, b) => a.e.name.localeCompare(b.e.name));
   const inn = by('in'), out = by('out'), wait = rows.filter(x => x.i.state === 'absent' || x.i.state === 'notyet').sort((a, b) => a.e.name.localeCompare(b.e.name)), leave = by('leave');
   const total = inn.length + out.length + wait.length;
+  const [sel, setSel] = useState('in');
   if (!total) return null;
-  const cols = [['in', 'Checked in', inn, x => 'Since ' + clock(x.i.first)], ['out', 'Checked out', out, x => 'Out ' + clock(x.i.last)], ['wait', 'Not in yet', wait, x => x.i.state === 'absent' ? 'Late' : 'Starts ' + fmtTime(x.e.shiftStart)]];
-  return html`<${Panel} title="Who is in" sub=${inn.length + ' of ' + total + ' checked in now' + (leave.length ? ' · ' + leave.length + ' on leave' : '')}>
-    <div className="wi-bar" role="img" aria-label=${inn.length + ' checked in, ' + out.length + ' checked out, ' + wait.length + ' not in yet'}>${cols.map(([k, , l]) => l.length > 0 && html`<i key=${k} className=${'wi-' + k} style=${{ flex: l.length }}></i>`)}</div>
-    <div className="wi-g">${cols.map(([k, label, l, note]) => html`<div key=${k} className="wi-c">
-      <h3><span className=${'wi-d wi-' + k}></span>${label}<b>${l.length}</b></h3>
-      ${l.length === 0 ? html`<p className="wi-n">Nobody</p>` : html`<div className="wi-l">${l.map(x => html`<button key=${x.e.n} className="wi-p" onClick=${() => open(x.e.n, 'hours')} title=${x.e.name + ' · ' + note(x)}><span className="wi-a"><${Av} e=${x.e} s=${32}/><i className=${'wi-' + k}></i></span><span className="row-t"><b>${x.e.name.split(' ')[0]}</b><span>${note(x)}</span></span></button>`)}</div>`}
-    </div>`)}</div>
+  const tabs = [['in', 'In now', inn, x => 'Since ' + clock(x.i.first)], ['out', 'Checked out', out, x => 'Out ' + clock(x.i.last)], ['wait', 'Not in yet', wait, x => x.i.state === 'absent' ? 'Late' : 'Starts ' + fmtTime(x.e.shiftStart)]];
+  const cur = tabs.find(t => t[0] === sel) || tabs[0];
+  return html`<${Panel} title="Who is in">
+    <div className="wi-t" role="tablist">${tabs.map(([k, label, l]) => html`<button key=${k} role="tab" aria-selected=${sel === k} className=${'wi-tab' + (sel === k ? ' on' : '')} onClick=${() => setSel(k)}><span className=${'wi-d wi-' + k}></span><b>${l.length}</b><span>${label}</span></button>`)}</div>
+    ${cur[2].length === 0 ? html`<p className="wi-n">Nobody here right now.</p>` : html`<div className="wi-l" role="tabpanel">${cur[2].map(x => html`<button key=${x.e.n} className="wi-p" onClick=${() => open(x.e.n, 'hours')}><${Av} e=${x.e} s=${36}/><span className="row-t"><b>${x.e.name.split(' ')[0]}</b><span>${cur[3](x)}</span></span></button>`)}</div>`}
   <//>`;
 }
 

@@ -536,3 +536,12 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{display:none;width:0;height:0}
 /* My Tasks: add a task at the foot of Pending */
 .mt3-new{margin-top:0;padding:10px 12px;min-height:40px}
 .mt3-b .kc-compose{margin-top:2px}
+
+/* Who is in, simple version: three counts you can tap, one list below */
+.wi-t{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.wi-tab{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid var(--line-hi);border-radius:var(--r-ctl);background:var(--card);color:var(--text-2);font-size:14px}
+.wi-tab b{font-size:16px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+.wi-tab:hover{background:var(--fill)}
+.wi-tab.on{background:var(--fill);border-color:var(--text-2);color:var(--text)}
+.wi-s .wi-l{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:4px 12px;max-height:none;overflow:visible}
+.wi-s .wi-p{padding:8px}
