@@ -201,13 +201,14 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
       <div className="kc2-b">
         ${list.map(t => { const isDone = t.done || pending[t.id], can = canMove(t), ls = t.labels.filter(l => tf.labels.includes(l));
           return html`<article key=${t.id + key} data-id=${t.id} className=${'kt' + (t.retainer ? ' is-ret' : '') + (drag && drag.id === t.id && drag.col === key ? ' dragging' : '') + (over && over.col === key && over.before === t.id ? ' drop-before' : '') + (isDone ? ' isdone' : '')}
-            draggable=${can} onContextMenu=${can ? (ev => { ev.preventDefault(); setMenu(menu && menu.t.id === t.id && menu.col === key ? null : { t, col: key, x: Math.min(ev.clientX, window.innerWidth - 232), y: Math.min(ev.clientY, window.innerHeight - 260) }); }) : undefined} onClick=${ev => { if (!ev.target.closest('button, a, input, textarea')) openTask(t.id); }} onDragStart=${ev => { setDrag({ id: t.id, col: key }); ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', t.id); }} onDragEnd=${() => { setDrag(null); setOver(null); }}>
+            draggable=${can} onClick=${ev => { if (!ev.target.closest('button, a, input, textarea')) openTask(t.id); }} onDragStart=${ev => { setDrag({ id: t.id, col: key }); ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', t.id); }} onDragEnd=${() => { setDrag(null); setOver(null); }}>
             <div className="kt-top">
               <button className="kt-open" onClick=${() => openTask(t.id)} aria-label=${'Open ' + t.title}>
                 ${ls.length > 0 && html`<span className="kt-l">${ls.map(l => html`<span key=${l} style=${{ '--c': LABEL_C[l] }}>${l}</span>`)}</span>`}
                 <b className="kt-t">${t.title}</b>
                 ${key === DONE && t.prev && html`<span className="kt-p">From ${t.prev.map(c => colName(c, BY, custom)).filter(Boolean).join(', ')}</span>`}
               </button>
+              ${can && html`<button className="kt-dots" onMouseDown=${ev => ev.stopPropagation()} onClick=${ev => { const r = ev.currentTarget.getBoundingClientRect(); setMenu(menu && menu.t.id === t.id && menu.col === key ? null : { t, col: key, x: r.right - 216, y: r.bottom + 6 }); }} aria-label=${'Card actions for ' + t.title} aria-haspopup="menu"><${Icon} n="dots" s=${18}/></button>`}
             </div>
             <div className="kt-f">
               ${can ? html`<button className=${'kt-c' + (isDone ? ' on' : '')} onClick=${() => complete(t)} title=${t.done ? 'Reopen' : isDone ? 'Undo' : 'Mark complete'} aria-label=${t.done ? 'Reopen ' + t.title : isDone ? 'Undo complete' : 'Complete ' + t.title}><${Icon} n="check" s=${13}/></button>` : html`<span></span>`}
