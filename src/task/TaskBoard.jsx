@@ -226,7 +226,7 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
 
   const lcount = tf.labels.length;
   return html`<div>
-    <div className="pg-h kbh"><div><h1><${HI} n="board" tone="purple"/>Board</h1><p>${openCount} open</p></div>
+    <div className="pg-h kbh"><div><h1><${HI} n="board" tone="purple"/>Board</h1></div>
       <button className="btn pri new-m" onClick=${() => openTask('new', { col: 'priority' })}><${Icon} n="plus" s=${16}/> New</button>
       <div className="kbh-r">
         <button className="ibx" title="Jump to a person" aria-label="Jump to a person" onMouseDown=${ev => ev.stopPropagation()} onClick=${ev => { const r = ev.currentTarget.getBoundingClientRect(); setJmenu(jmenu ? null : { x: r.right - 260, y: r.bottom + 8 }); }}><${Icon} n="jump" s=${18}/></button>
