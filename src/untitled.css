@@ -585,3 +585,6 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{display:none;width:0;height:0}
 :root[data-theme="dark"] .pn-h>div{display:flex;align-items:center;gap:8px}
 :root[data-theme="dark"] .kc2:not(.shut) .kc2-h{box-sizing:border-box;height:46px;margin:-10px -8px 8px;padding:0 12px 0 14px;background:#1a1a20;border-bottom:1px solid var(--line);border-radius:11px 11px 0 0}
 :root[data-theme="dark"] .mt3-col>header{box-sizing:border-box;height:46px;margin:-12px -12px 10px;padding:0 14px;display:flex;align-items:center;gap:8px;background:#1a1a20;border-bottom:1px solid var(--line);border-radius:11px 11px 0 0}
+
+/* Board columns: plain titles again, no band (Home panels keep theirs) */
+:root[data-theme="dark"] .kc2:not(.shut) .kc2-h{background:transparent;border-bottom:0;border-radius:0;height:auto;margin:0;padding:2px 6px 10px}
