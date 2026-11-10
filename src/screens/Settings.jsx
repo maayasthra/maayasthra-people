@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { html, Icon, Av, Switch, HI } from '../ui.jsx';
+import { DateField } from '../DateField.jsx';
 import { IS_DEMO } from '../env.js';
 import { saveRole } from '../staff.js';
 import { saveHoliday, deleteHoliday, savePolicy } from '../leave.js';
@@ -74,7 +75,7 @@ function Holidays({ onChange }) {
   return html`<div className="st-w">
     <h2 className="st-h">Holidays · ${keys.length}</h2>
     <form className="hol-add" onSubmit=${add}>
-      <div className="fld"><label htmlFor="hol-d">Date</label><input id="hol-d" className="inp" type="date" value=${d} onChange=${ev => setD(ev.target.value)}/></div>
+      <div className="fld"><label htmlFor="hol-d">Date</label><${DateField} id="hol-d" value=${d} onChange=${v => setD(v)}/></div>
       <div className="fld"><label htmlFor="hol-n">Name</label><input id="hol-n" className="inp" value=${n} onChange=${ev => setN(ev.target.value)} placeholder="Name"/></div>
       <button className="btn pri" type="submit" disabled=${!d || !n.trim()}><${Icon} n="plus" s=${16}/> Add</button></form>
     ${herr && html`<div className="lg-err" role="alert">${herr}</div>`}

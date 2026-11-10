@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { html, Icon, Photo } from '../ui.jsx';
+import { DateField } from '../DateField.jsx';
 import { IS_DEMO } from '../env.js';
 import { saveEmployee, saveMyProfile } from '../staff.js';
 import { EMP, BY, DEPTS, STATUSES, TODISO, ROLE_NAMES, ROLEMAP, defaultStart, activeEmps, addEmployee, updateEmployee, emailFor, fmt, fmtTime } from '../data.js';
@@ -92,8 +93,8 @@ export function EmployeeForm({ id, role, user, done, bump }) {
             <${Fld} id="ef-city" label="City"><input id="ef-city" className="inp" value=${f.city} onChange=${ev => set({ city: ev.target.value })}/><//></div>
           <div className="two"><${Fld} id="ef-mgr" label="Reports to"><select id="ef-mgr" className="inp" value=${f.mgr} onChange=${ev => set({ mgr: ev.target.value })}><option value="0">No one</option>${mgrs.map(m => html`<option key=${m.n} value=${m.n}>${m.name}</option>`)}</select><//>
             <${Fld} id="ef-status" label="Status"><select id="ef-status" className="inp" value=${f.status} onChange=${ev => set({ status: ev.target.value })}>${STATUSES.map(s => html`<option key=${s} value=${s}>${s}</option>`)}</select><//></div>
-          <div className="two"><${Fld} id="ef-join" label="Joined"><input id="ef-join" className="inp" type="date" value=${f.join} onChange=${ev => set({ join: ev.target.value })}/><//>
-            <${Fld} id="ef-dob" label="Birthday"><input id="ef-dob" className="inp" type="date" value=${f.dob} onChange=${ev => set({ dob: ev.target.value })}/><//></div>
+          <div className="two"><${Fld} id="ef-join" label="Joined"><${DateField} id="ef-join" value=${f.join} onChange=${v => set({ join: v })}/><//>
+            <${Fld} id="ef-dob" label="Birthday"><${DateField} id="ef-dob" value=${f.dob} onChange=${v => set({ dob: v })}/><//></div>
           <div className="two"><${Fld} id="ef-ss" label="Login time"><input id="ef-ss" className="inp" type="time" value=${f.shiftStart} onChange=${ev => set({ shiftStart: ev.target.value })}/><//>
             <${Fld} id="ef-se" label="Logout time"><input id="ef-se" className="inp" type="time" value=${f.shiftEnd} onChange=${ev => set({ shiftEnd: ev.target.value })}/><//></div>
           <div className="two"><${Fld} id="ef-acc" label="App access"><select id="ef-acc" className="inp" value=${access} onChange=${ev => { const r = ev.target.value; if (f.shiftStart === defaultStart(access)) set({ shiftStart: defaultStart(r) }); setAccess(r); }}>${ROLE_NAMES.map(r => html`<option key=${r} value=${r}>${r}</option>`)}</select><//>

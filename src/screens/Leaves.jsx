@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { html, Icon, Tile, HI, Switch } from '../ui.jsx';
+import { DateField } from '../DateField.jsx';
 import { typeIcon, typeTone } from './Home.jsx';
 import { TOD, DAY, TODISO, BY, POLICY, isoOf, pd, fmtDay, plural, range, workDays, balances, noticeDays, TEAM_LEAVES, HOL } from '../data.js';
 
@@ -45,8 +46,8 @@ export function MyLeaves({ leaves, setLeaves, user }) {
         <div className="lf-types" role="radiogroup" aria-label="Leave type">${bal.map(b => html`<button type="button" role="radio" aria-checked=${f.type === b.t} key=${b.t} className=${'lf-t' + (f.type === b.t ? ' on' : '')} onClick=${() => up({ type: b.t })}>
           <span className="lf-ti"><${Icon} n=${typeIcon(b.t)} s=${17}/></span><b>${b.t.replace(' leave', '')}</b><small>${Math.max(b.left - b.pend, 0)} days left</small></button>`)}</div>
         <div className="two">
-          <div className="fld"><label htmlFor="lv-from">From</label><input id="lv-from" className="inp" type="date" min=${TODISO} value=${f.from} onChange=${ev => up({ from: ev.target.value })}/></div>
-          <div className="fld"><label htmlFor="lv-to">To</label><input id="lv-to" className="inp" type="date" min=${f.from || TODISO} value=${f.to} onChange=${ev => up({ to: ev.target.value })}/></div>
+          <div className="fld"><label htmlFor="lv-from">From</label><${DateField} id="lv-from" min=${TODISO} value=${f.from} onChange=${v => up({ from: v })}/></div>
+          <div className="fld"><label htmlFor="lv-to">To</label><${DateField} id="lv-to" min=${f.from || TODISO} value=${f.to} onChange=${v => up({ to: v })}/></div>
         </div>
         ${POLICY.half && html`<div className=${'lf-row' + (f.from !== f.to ? ' dis' : '')}><span><b>Half day</b><small>${f.from !== f.to ? 'Only for a single day' : 'Take half of the day off'}</small></span><${Switch} on=${f.half} set=${v => f.from === f.to && up({ half: v })} label="Half day"/></div>`}
         <div className="fld"><label htmlFor="lv-why">Note for the approver ${POLICY.note ? '' : '(optional)'}</label><textarea id="lv-why" className="inp" value=${f.reason} onChange=${ev => up({ reason: ev.target.value })} placeholder="Why are you taking leave?"></textarea></div>

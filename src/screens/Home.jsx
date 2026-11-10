@@ -97,6 +97,24 @@ function NotYet({ att, leaves, open }) {
   <//>`;
 }
 
+/* Admin: who is in the studio right now, who has finished, who has not started */
+function WhoIsIn({ att, leaves, open }) {
+  const now = useNow(30000), away = awayList(leaves);
+  const rows = activeEmps().map(e => ({ e, i: dayInfo(att, e, TODISO, now, away) }));
+  const by = st => rows.filter(x => x.i.state === st).sort((a, b) => a.e.name.localeCompare(b.e.name));
+  const inn = by('in'), out = by('out'), wait = rows.filter(x => x.i.state === 'absent' || x.i.state === 'notyet').sort((a, b) => a.e.name.localeCompare(b.e.name)), leave = by('leave');
+  const total = inn.length + out.length + wait.length;
+  if (!total) return null;
+  const cols = [['in', 'Checked in', inn, x => 'Since ' + clock(x.i.first)], ['out', 'Checked out', out, x => 'Out ' + clock(x.i.last)], ['wait', 'Not in yet', wait, x => x.i.state === 'absent' ? 'Late' : 'Starts ' + fmtTime(x.e.shiftStart)]];
+  return html`<${Panel} title="Who is in" sub=${inn.length + ' of ' + total + ' checked in now' + (leave.length ? ' · ' + leave.length + ' on leave' : '')}>
+    <div className="wi-bar" role="img" aria-label=${inn.length + ' checked in, ' + out.length + ' checked out, ' + wait.length + ' not in yet'}>${cols.map(([k, , l]) => l.length > 0 && html`<i key=${k} className=${'wi-' + k} style=${{ flex: l.length }}></i>`)}</div>
+    <div className="wi-g">${cols.map(([k, label, l, note]) => html`<div key=${k} className="wi-c">
+      <h3><span className=${'wi-d wi-' + k}></span>${label}<b>${l.length}</b></h3>
+      ${l.length === 0 ? html`<p className="wi-n">Nobody</p>` : html`<div className="wi-l">${l.map(x => html`<button key=${x.e.n} className="wi-p" onClick=${() => open(x.e.n, 'hours')} title=${x.e.name + ' · ' + note(x)}><span className="wi-a"><${Av} e=${x.e} s=${32}/><i className=${'wi-' + k}></i></span><span className="row-t"><b>${x.e.name.split(' ')[0]}</b><span>${note(x)}</span></span></button>`)}</div>`}
+    </div>`)}</div>
+  <//>`;
+}
+
 function AwayWeek({ leaves, open }) {
   const end = isoOf(TOD + 6 * DAY);
   const rows = awayList(leaves).filter(l => BY[l.emp] && BY[l.emp].status !== 'Exited' && l.from <= end && l.to >= TODISO).sort((a, b) => a.from.localeCompare(b.from));
@@ -166,6 +184,7 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
         <${Tile} icon="requests" tone="orange" hot=${pending > 0} label="Waiting for you" value=${pending} sub="to review" onClick=${() => go('requests')}/>
         <${Tile} icon="check" tone="green" label="Checked in now" value=${inNow} sub=${expected ? 'of ' + expected : 'studio closed today'} onClick=${() => go('attendance')}/>
       </div>
+      <section className="sec wi-s"><${WhoIsIn} att=${att} leaves=${leaves} open=${open}/></section>
       <section className="eq3 sec">
         <${ApprovalsCarousel} queue=${queue} all=${leaves} setLeaves=${setLeaves} open=${open} user=${user}/>
         <${Reviews} people=${people} open=${open}/>

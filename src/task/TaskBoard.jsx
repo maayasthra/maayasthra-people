@@ -99,7 +99,7 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
   // Every column, its look, and the saved order. Retainer first, then Priority, then people A to Z, then added columns.
   const everyone = activeEmps().sort((a, b) => a.name.localeCompare(b.name));
   const defs = {};
-  PINNED.forEach(p => { defs[p[0]] = { kind: p[0] === 'retainer' ? 'pin' : 'norm', label: p[1], color: p[2] }; });
+  PINNED.forEach(p => { defs[p[0]] = { kind: 'norm', label: p[1], color: p[2] }; });
   everyone.forEach(e => { defs[e.n] = { kind: 'person', label: e.name }; });
   custom.forEach(c => { defs[c.id] = { kind: 'cust', label: c.name }; });
   const baseKeys = [...PINNED.map(p => p[0]), ...everyone.map(e => e.n), ...custom.map(c => c.id)];
@@ -117,10 +117,10 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
   groups.forEach(g => { const cols = visible.filter(k => gOf(k) === g); if (cols.length) segs.push({ g, cols }); });  // then the departments, in the order set up for them
   visible.filter(k => groupableKey(k) && !gOf(k)).forEach(k => segs.push({ cols: [k] }));               // then columns that are in no department
   const groupable = ordered.filter(k => defs[k].kind === 'person' || defs[k].kind === 'cust').map(k => ({ key: k, label: defs[k].label, sub: defs[k].kind === 'person' ? (BY[k] || {}).role || '' : 'Custom column' }));
-  // The first columns stay in view while the board scrolls sideways, as long as they are Retainer and Priority
-  const lead = []; for (const k of visible) { if (k === 'retainer' || k === 'priority' || k === 'pending') lead.push(k); else break; }
-  const stickyLeft = k => { let l = 0; for (const x of lead) { if (x === k) return l; l += (collapsed[x] ? 46 : 280) + 12; } return null; };
-  const pinW = () => lead.reduce((sum, k) => sum + (collapsed[k] ? 46 : 280) + 12, 0);
+  // Every column scrolls with the board; none is pinned
+  const lead = [];
+  const stickyLeft = () => null;
+  const pinW = () => 0;
   const moveCol = (key, target, after) => {
     if (key === target) return;
     setLayout(l => { const order = ordered.filter(k => k !== key), i = order.indexOf(target); order.splice(i < 0 ? order.length : i + (after ? 1 : 0), 0, key); return { ...l, order }; });

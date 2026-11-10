@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { html, Icon, Av, Tile, HI } from '../ui.jsx';
 import { dayKey, addDays, weekStart, monthDays, getDay } from '../attendance.js';
-import { activeEmps, plural, HOL, fmtDM, pd, TODISO } from '../data.js';
+import { activeEmps, plural, HOL, fmtDM, pd, TODISO, ROLEMAP } from '../data.js';
 import { loadEods, fmtH } from '../eodDb.js';
 import { subscribeTables } from '../tasksDb.js';
 import { IS_DEMO } from '../env.js';
@@ -40,7 +40,7 @@ export function EodReports({ user, role, tick, onEditToday, checkedIn, att }) {
   const rows = people.filter(e => by[e.n]).map(e => ({ e, reps: by[e.n].sort((a, b) => b.day.localeCompare(a.day)), total: by[e.n].reduce((t, r) => t + r.total, 0) }))
     .sort((a, b) => b.total - a.total || a.e.name.localeCompare(b.e.name));
   // Only people who checked in that day are expected to send one
-  const missing = view === 'day' && mgr && day <= TODISO ? people.filter(e => (e.access || 'Employee') === 'Employee' && !by[e.n] && getDay(att, e.n, day).sessions.length > 0) : [];
+  const missing = view === 'day' && mgr && day <= TODISO ? people.filter(e => (ROLEMAP[e.n] || 'Employee') === 'Employee' && !by[e.n] && getDay(att, e.n, day).sessions.length > 0) : [];
   const total = rows.reduce((t, r) => t + r.total, 0);
   const step = n => setDay(d => view === 'day' ? addDays(d, n) : view === 'week' ? addDays(d, 7 * n) : (() => { const t = new Date(pd(d)); return new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + n, 1)).toISOString().slice(0, 10); })());
   const title = view === 'day' ? (day === dayKey() ? 'Today' : dayLabel(day)) : view === 'week' ? fmtDM(from) + ' – ' + fmtDM(to) : new Date(pd(from)).toLocaleDateString('en-IN', { month: 'long', year: 'numeric', timeZone: 'UTC' });
