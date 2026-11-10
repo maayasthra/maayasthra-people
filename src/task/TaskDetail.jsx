@@ -11,7 +11,7 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close
   const isNew = id === 'new';
   const existing = isNew ? null : tasks.find(t => t.id === id);
   const [draft, setDraft] = useState(() => mkTask({ cols: [ctx && ctx.col != null ? ctx.col : user.n] }, user));
-  const [newSub, setNewSub] = useState(''), [addingSub, setAddingSub] = useState(false), [comment, setComment] = useState(''), [confirm, setConfirm] = useState(false), [err, setErr] = useState('');
+  const [newSub, setNewSub] = useState(''), [addingSub, setAddingSub] = useState(false), [dragSub, setDragSub] = useState(null), [overSub, setOverSub] = useState(null), [comment, setComment] = useState(''), [confirm, setConfirm] = useState(false), [err, setErr] = useState('');
   const t = isNew ? draft : existing;
   if (!t) return null;
   const mgr = role === 'admin' || role === 'pm';
@@ -46,7 +46,12 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close
     <section className="td2-sec">
       <div className="td2-h"><b>Subtasks</b>${t.subs.length > 0 && html`<span className="td2-n">${done} of ${t.subs.length}</span>`}</div>
       <div className="td2-list">
-        ${t.subs.map(s => html`<div className="td2-sub" key=${s.id}>
+        ${t.subs.map(s => html`<div className=${'td2-sub' + (dragSub === s.id ? ' dragging' : '') + (overSub === s.id && dragSub && dragSub !== s.id ? ' drop' : '')} key=${s.id} draggable=${canEdit && t.subs.length > 1}
+          onDragStart=${ev => { if (ev.target.closest('button,input')) { ev.preventDefault(); return; } setDragSub(s.id); ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', 'sub:' + s.id); }}
+          onDragOver=${ev => { if (dragSub) { ev.preventDefault(); setOverSub(s.id); } }}
+          onDrop=${ev => { ev.preventDefault(); if (dragSub && dragSub !== s.id) { const from = t.subs.findIndex(x => x.id === dragSub), to = t.subs.findIndex(x => x.id === s.id), arr = [...t.subs], [m] = arr.splice(from, 1); arr.splice(to, 0, m); upd({ subs: arr }); } setDragSub(null); setOverSub(null); }}
+          onDragEnd=${() => { setDragSub(null); setOverSub(null); }}>
+          ${canEdit && t.subs.length > 1 && html`<span className="td2-grip" aria-hidden="true" title="Drag to reorder"><${Icon} n="grip" s=${16}/></span>`}
           <button className=${'td2-ck' + (s.done ? ' on' : '')} disabled=${!canEdit} onClick=${() => upd({ subs: t.subs.map(x => x.id === s.id ? { ...x, done: !x.done } : x) })} aria-label=${(s.done ? 'Mark not done: ' : 'Mark done: ') + s.t}><${Icon} n="check" s=${12}/></button>
           <span className=${'td2-st' + (s.done ? ' dn' : '')}>${s.t}</span>
           ${canEdit && html`<button className="td2-x" onClick=${() => upd({ subs: t.subs.filter(x => x.id !== s.id) })} aria-label=${'Remove ' + s.t} title="Remove"><${Icon} n="x" s=${13}/></button>`}</div>`)}
