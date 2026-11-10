@@ -519,3 +519,10 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{display:none;width:0;height:0}
 /* Home: the same 24px gap between every block */
 .ps,.tiles,.sec{margin-top:24px!important}
 @media (max-width:860px){.ps,.tiles,.sec{margin-top:16px!important}}
+
+/* Closing: shrink to the narrow strip while the content fades, then the strip takes over */
+@keyframes colClosing{from{width:var(--w);max-width:var(--w);height:var(--h)}to{width:46px;max-width:46px;min-width:46px;flex-basis:46px;height:175px;opacity:.6}}
+@keyframes grpClosing{from{width:var(--w);max-width:var(--w)}to{width:46px;max-width:46px;min-width:46px;flex-basis:46px;opacity:.6}}
+.kc2.closing{animation:colClosing .25s var(--ease) forwards!important;overflow:hidden!important;pointer-events:none;min-height:0}
+.kgrp.closing{animation:grpClosing .25s var(--ease) forwards!important;overflow:hidden!important;pointer-events:none}
+.kc2.closing>*,.kgrp.closing>*{opacity:0;transition:opacity .12s ease;animation:none!important}
