@@ -545,3 +545,9 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{display:none;width:0;height:0}
 .wi-tab.on{background:var(--fill);border-color:var(--text-2);color:var(--text)}
 .wi-s .wi-l{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:4px 12px;max-height:none;overflow:visible}
 .wi-s .wi-p{padding:8px}
+
+/* No scrollbars anywhere (everything still scrolls). Only the board's sideways bar stays, thin, because it is the one cue that the board goes on. */
+*{scrollbar-width:none}
+*::-webkit-scrollbar{display:none;width:0;height:0}
+.kb2{scrollbar-width:thin}
+.kb2::-webkit-scrollbar{display:block;height:6px}
