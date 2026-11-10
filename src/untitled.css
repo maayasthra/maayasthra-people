@@ -476,3 +476,18 @@ button.btn:disabled[title]{cursor:not-allowed}
 .wi-l{max-height:264px;overflow-y:auto;scrollbar-width:thin}
 .wi-s .wi-bar{height:8px!important;flex:none;min-height:8px}
 .wi-s .wi-bar i{height:100%}
+
+/* No page scrollbar on the right (the page still scrolls); the board's sideways bar is thin */
+html{scrollbar-width:none;scrollbar-gutter:auto}
+html::-webkit-scrollbar,body::-webkit-scrollbar{display:none;width:0;height:0}
+.kb2{scrollbar-width:thin;scrollbar-color:var(--n-400) transparent}
+.kb2::-webkit-scrollbar{height:6px}
+.kb2::-webkit-scrollbar-thumb{border-radius:999px}
+:root[data-theme="dark"] .kb2{scrollbar-color:var(--n-700) transparent}
+
+/* Calendar: centred numbers, wider month box */
+.df-p{box-sizing:border-box}
+.df-d{display:grid;place-items:center;padding:0;text-align:center;width:100%}
+.df-s{padding:0 6px;text-overflow:clip}
+.df-s:first-of-type{flex:1 1 120px}
+.df-h .ib{flex:none;width:36px;height:36px}

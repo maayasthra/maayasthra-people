@@ -16,7 +16,7 @@ export function DateField({ id, value, onChange, min, max, placeholder = 'Pick a
   const today = (() => { const t = new Date(); return iso(t.getFullYear(), t.getMonth(), t.getDate()); })();
 
   const place = () => {
-    const r = btn.current.getBoundingClientRect(), w = 300, h = 360;
+    const r = btn.current.getBoundingClientRect(), w = Math.min(320, window.innerWidth - 24), h = 380;
     const left = Math.max(12, Math.min(r.left, window.innerWidth - w - 12));
     const top = r.bottom + 6 + h > window.innerHeight && r.top - h - 6 > 8 ? r.top - h - 6 : r.bottom + 6;
     setPos({ left, top, width: w });
@@ -47,7 +47,7 @@ export function DateField({ id, value, onChange, min, max, placeholder = 'Pick a
     ${open && pos && createPortal(html`<div ref=${pop} className="df-p" role="dialog" aria-label="Choose a date" style=${{ left: pos.left, top: pos.top, width: pos.width }}>
       <div className="df-h">
         <button type="button" className="ib" onClick=${() => go(-1)} aria-label="Previous month"><${Icon} n="chevL" s=${15}/></button>
-        <select className="df-s" value=${view.m} onChange=${ev => setView(v => ({ ...v, m: +ev.target.value }))} aria-label="Month">${MON.map((n, i) => html`<option key=${n} value=${i}>${n}</option>`)}</select>
+        <select className="df-s" value=${view.m} onChange=${ev => setView(v => ({ ...v, m: +ev.target.value }))} aria-label="Month">${MON.map((n, i) => html`<option key=${n} value=${i}>${n.slice(0, 3)}</option>`)}</select>
         <select className="df-s" value=${view.y} onChange=${ev => setView(v => ({ ...v, y: +ev.target.value }))} aria-label="Year">${years.map(y => html`<option key=${y} value=${y}>${y}</option>`)}</select>
         <button type="button" className="ib" onClick=${() => go(1)} aria-label="Next month"><${Icon} n="chevR" s=${15}/></button>
       </div>
