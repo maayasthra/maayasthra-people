@@ -557,3 +557,17 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{display:none;width:0;height:0}
 
 /* Use the width: small side padding and less empty space above the page title */
 @media (min-width:861px){.main,.app.wide .main,.no-side .main,.app.no-side.wide .main{padding-top:16px!important;padding-left:20px!important;padding-right:20px!important}}
+
+/* Dark mode, deeper and cleaner: near-black surfaces with a faint cool tint instead of mid grey.
+   Remapping the neutral scale here moves every component that uses it. */
+:root[data-theme="dark"]{
+  --n-950:#050506; --n-900:#0C0C0E; --n-800:#16161A; --n-700:#25252B; --n-600:#4A4A53;
+  --card-hover:#111115; --dlg-bg:#101013; --menu-bg:#111115;
+  --line:#1D1D22; --line-hi:#2A2A31;
+  --text-2:#D2D2D8; --muted:#9C9CA6; --faint:#707079;
+  --hdr-bg:rgba(5,5,6,.84); --bnav-bg:rgba(12,12,14,.94);
+  --seg-on:#25252B; --pop:#16161A;
+}
+:root[data-theme="dark"] :is(.pn,.tile,.card,.ps,.mt3-col,.an-pg,.rq3-c){box-shadow:inset 0 1px 0 rgb(255 255 255 / .035)}
+:root[data-theme="dark"] :is(.kt,.mt3-k){box-shadow:inset 0 1px 0 rgb(255 255 255 / .03)}
+:root[data-theme="dark"] .wi-out{background:#3A3A42}:root[data-theme="dark"] .wi-wait{background:#26262C}
