@@ -434,3 +434,6 @@ body{overflow-x:clip!important}
 .nav-lock svg{color:var(--faint)!important}
 .bnav button.dis:active,.mo button.dis:active{background:transparent}
 button.btn:disabled[title]{cursor:not-allowed}
+
+/* Departments view: the group box must be as tall as the board so a long column scrolls inside it instead of spilling out the bottom */
+@media (min-width:861px){.kb2>.kgrp:not(.shut){align-self:stretch}.kgrp-c{align-items:stretch}.kgrp .kc2{max-height:100%;align-self:flex-start}}
