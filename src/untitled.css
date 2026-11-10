@@ -532,3 +532,7 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{display:none;width:0;height:0}
 @keyframes leave{to{opacity:0;scale:.98;translate:0 -4px}}
 .dlg-bg.leaving,.sh-bg.leaving,.mo-bg.leaving{animation:leaveBg .17s ease forwards!important}
 @keyframes leaveBg{to{opacity:0}}
+
+/* My Tasks: add a task at the foot of Pending */
+.mt3-new{margin-top:0;padding:10px 12px;min-height:40px}
+.mt3-b .kc-compose{margin-top:2px}
