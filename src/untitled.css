@@ -760,3 +760,11 @@ body{font-size:13.5px;line-height:1.5}
 .kc2 .kc2-b{display:flex;flex-direction:column;gap:6px;padding:0}
 .kc2 .kc2-b>.kt,.kc2 .kc2-b>article{flex:none;margin:0;padding:9px 11px;box-sizing:border-box}
 .kc2 .kc2-b>.kc-new,.kc2 .kc2-b>.kc-compose,.kc2 .kc2-b>.kc-e{margin-top:0}
+
+/* Whole-pixel card heights, so the gaps between cards never look uneven */
+.kt-t,.kt-open,.kt-open b,.kt-open .kt-t{line-height:20px}
+.kt-top{min-height:20px}
+.kt-f{min-height:26px;box-sizing:border-box}
+.kt .kt-st,.kt-s span,.kt-s{line-height:16px}
+.mt3-t{line-height:20px}
+.mt3-k .mt3-f{min-height:28px}
