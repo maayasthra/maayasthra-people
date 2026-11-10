@@ -21,15 +21,16 @@ const byTitle = (tasks, name) => tasks.find(t => t.title.trim().toLowerCase() ==
 /* A draft is kept in this browser as you type, so clicking away or closing the box never loses what was written.
    It is removed once the report is sent. */
 const hm2 = t => new Date(t).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' });
-const draftKey = n => 'mp-eoddraft-' + n + '-' + dayKey();
-const readDraft = n => { try { const v = JSON.parse(localStorage.getItem(draftKey(n)) || 'null'); return v && Array.isArray(v.rows) && v.rows.length ? v : null; } catch (x) { return null; } };
+const draftKey = (n, d = dayKey()) => 'mp-eoddraft-' + n + '-' + d;
+const readDraft = (n, d) => { try { const v = JSON.parse(localStorage.getItem(draftKey(n, d)) || 'null'); return v && Array.isArray(v.rows) && v.rows.length ? v : null; } catch (x) { return null; } };
 const hasText = rows => rows.some(r => r.project.trim() || r.desc.trim() || Number(r.hours) > 0 || (r.subs || []).some(x => x.title.trim() || x.desc.trim() || Number(x.hours) > 0));
-const writeDraft = (n, rows) => { try { if (hasText(rows)) localStorage.setItem(draftKey(n), JSON.stringify({ rows, at: Date.now() })); else localStorage.removeItem(draftKey(n)); } catch (x) { /* ignore */ } };
-export const clearEodDraft = n => { try { localStorage.removeItem(draftKey(n)); } catch (x) { /* ignore */ } };
+const writeDraft = (n, rows, d) => { try { if (hasText(rows)) localStorage.setItem(draftKey(n, d), JSON.stringify({ rows, at: Date.now() })); else localStorage.removeItem(draftKey(n, d)); } catch (x) { /* ignore */ } };
+export const clearEodDraft = (n, d) => { try { localStorage.removeItem(draftKey(n, d)); } catch (x) { /* ignore */ } };
 
 /* The end-of-day report. Opens when someone checks out, and nobody can check out without sending it.
    mode 'out' sends the report and then checks out; mode 'save' only updates today's report. */
-export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel }) {
+export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel, day }) {
+  const D = day || dayKey(), late = mode === 'late';
   const mine = tasks.filter(t => (t.cols || []).includes(user.n) && !t.done);
   const [rows, setRows] = useState(null);
   const [err, setErr] = useState(''), [busy, setBusy] = useState(false), [restored, setRestored] = useState(null), [savedAt, setSavedAt] = useState(0);
@@ -37,21 +38,21 @@ export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel
 
   // Start from today's report if one was already sent, otherwise from the tasks that are in progress
   useEffect(() => {
-    let live = true; const d = dayKey();
-    const dr = readDraft(user.n);
+    let live = true; const d = D;
+    const dr = readDraft(user.n, D);
     if (dr) { setRows(dr.rows.map(x => ({ ...blankRow(), ...x, id: 'r' + ++uid, subs: (x.subs || []).map(q => ({ ...q, id: 's' + ++uid })) }))); setRestored(dr.at); return () => { live = false; }; }
     loadEods(d, d).then(l => {
       if (!live) return;
       const r = l.find(x => x.emp === user.n);
       const start = r && r.rows.length ? r.rows.map(x => ({ ...blankRow(), ...x, id: 'r' + ++uid, hours: x.hours || '', subs: (x.subs || []).map(s => ({ ...s, id: 's' + ++uid, hours: s.hours || '' })) }))
-        : mine.filter(t => isDoing(t, user.n)).map(t => blankRow({ project: t.title, task: t.id }));
+        : late ? [] : mine.filter(t => isDoing(t, user.n)).map(t => blankRow({ project: t.title, task: t.id }));
       setRows(start.length ? start : [blankRow()]);
     }).catch(() => live && setRows([blankRow()]));
     return () => { live = false; };
   }, []);
   useEffect(() => {
     if (!rows) return;
-    const t = setTimeout(() => { writeDraft(user.n, rows); if (hasText(rows)) setSavedAt(Date.now()); }, 300);
+    const t = setTimeout(() => { writeDraft(user.n, rows, D); if (hasText(rows)) setSavedAt(Date.now()); }, 300);
     return () => clearTimeout(t);
   }, [rows]);
   useEffect(() => { const k = ev => { if (ev.key === 'Escape' && !busy) onCancel(); }; document.addEventListener('keydown', k); return () => document.removeEventListener('keydown', k); }, [busy]);
@@ -86,16 +87,16 @@ export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel
   const send = async () => {
     const e = check(); if (e) { setErr(e); return; }
     setBusy(true);
-    try { await onSend(rows); clearEodDraft(user.n); } catch (x) { setErr(x.message); setBusy(false); }
+    try { await onSend(rows); clearEodDraft(user.n, D); } catch (x) { setErr(x.message); setBusy(false); }
   };
   const over = !noHours && worked > 0 && total * 3600000 > worked + 30 * 60000;
 
   return html`<div className="dlg-bg"></div>
     <div className=${'dlg eod' + (noHours ? ' nh' : '')} role="dialog" aria-modal="true" aria-labelledby="eod-t">
       <div className="eod-h"><div className="dlg-i"><${Icon} n="timer" s=${22}/></div>
-        <div><h2 id="eod-t">${mode === 'out' ? 'End-of-day report' : 'Today’s report'}</h2>
-          <p>${mode === 'out' ? 'Fill in what you worked on today' + (noHours ? '' : ', with the time') + '. You can check out once it is sent.' : 'Save it now, then check out when you are done. A later save replaces this one.'}</p></div></div>
-      ${restored && html`<div className="eod-note" role="status"><span>We brought back your draft from ${hm2(restored)}.</span><button className="link" onClick=${() => { clearEodDraft(user.n); setRestored(null); setRows([blankRow()]); }}>Start over</button></div>`}
+        <div><h2 id="eod-t">${late ? 'Missed report' : mode === 'out' ? 'End-of-day report' : 'Today’s report'}</h2>
+          <p>${late ? 'Fill in what you worked on ' + new Date(D + 'T00:00:00Z').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }) + ', with the time.' : mode === 'out' ? 'Fill in what you worked on today' + (noHours ? '' : ', with the time') + '. You can check out once it is sent.' : 'Save it now, then check out when you are done. A later save replaces this one.'}</p></div></div>
+      ${restored && html`<div className="eod-note" role="status"><span>We brought back your draft from ${hm2(restored)}.</span><button className="link" onClick=${() => { clearEodDraft(user.n, D); setRestored(null); setRows([blankRow()]); }}>Start over</button></div>`}
       <div className="eod-t" role="table" aria-label="Today's work">
         <div className="eod-hd" role="row"><span>Project</span><span>Description</span>${!noHours && html`<span>Time</span>`}<span></span></div>
         ${rows.map((r, i) => {
@@ -121,7 +122,7 @@ export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel
       <button className="btn ghost sm eod-new" onClick=${() => setRows(rs => [...rs, blankRow()])}><${Icon} n="plus" s=${14}/> Add a project</button>
       ${!noHours && html`<div className="eod-f"><span>Total <b>${fmtH(total)}</b></span>${worked > 0 && html`<span className=${over ? 'eod-warn' : ''}>Checked in today: ${hm(worked)}${over ? ' · more than you were here' : ''}</span>`}</div>`}
       ${err && html`<div className="eod-e" role="alert">${err}</div>`}
-      <div className="dlg-a"><span className="eod-ds">${savedAt ? 'Draft saved' : ''}</span><button className="btn ghost" disabled=${busy} onClick=${onCancel}>${mode === 'out' ? 'Keep working' : 'Cancel'}</button>
-        <button className="btn pri" disabled=${busy} onClick=${send}>${busy ? 'Sending…' : mode === 'out' ? 'Send and check out' : 'Save report'}</button></div>
+      <div className="dlg-a"><span className="eod-ds">${savedAt ? 'Draft saved' : ''}</span><button className="btn ghost" disabled=${busy} onClick=${onCancel}>${mode === 'out' ? 'Keep working' : late ? 'Close' : 'Cancel'}</button>
+        <button className="btn pri" disabled=${busy} onClick=${send}>${busy ? 'Sending…' : mode === 'out' ? 'Send and check out' : late ? 'Send report' : 'Save report'}</button></div>
     </div>`;
 }

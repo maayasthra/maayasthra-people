@@ -8,7 +8,8 @@ import { ProfileSetup } from './ProfileSetup.jsx';
 import { CopyLeave } from '../CopyLeave.jsx';
 import { isOpen } from '../tasks.js';
 import { SessionList, useDay, dayNote } from '../Attendance.jsx';
-import { hm, lunchInfo, checkIn, checkOut, dayInfo, useNow, clock, minuteOfDay } from '../attendance.js';
+import { hm, lunchInfo, checkIn, checkOut, dayInfo, useNow, clock, minuteOfDay, getDay, addDays } from '../attendance.js';
+import { loadEods } from '../eodDb.js';
 import {
   TOD, DAY, WDL, MONL, pd, fmtDM, fmtDay, rel, plural, range, addMonths, isoOf, TODISO, HOL, BY,
   balances, awayList, isAway, activeEmps, fmtTime, nextOcc, EMP
@@ -84,6 +85,28 @@ function Actions({ leaves, go, openForm, compose }) {
 }
 
 
+/* Employees: a recent day they were checked in but sent no end-of-day report. Shown until it is sent. */
+const LATE_DAYS = 3;
+function useMissedEod(user, att, tick, on) {
+  const [have, setHave] = useState(null);
+  useEffect(() => {
+    if (!on) return; let live = true;
+    loadEods(addDays(TODISO, -LATE_DAYS), addDays(TODISO, -1)).then(l => live && setHave(l.filter(r => r.emp === user.n).map(r => r.day))).catch(() => live && setHave(null));
+    return () => { live = false; };
+  }, [user.n, tick, on]);
+  if (!on || have === null) return [];
+  const days = []; for (let i = LATE_DAYS; i >= 1; i--) { const d = addDays(TODISO, -i); if (getDay(att, user.n, d).sessions.length > 0 && !have.includes(d)) days.push(d); }
+  return days;
+}
+function MissedEod({ days, onSend }) {
+  if (!days.length) return null;
+  const lab = d => d === addDays(TODISO, -1) ? 'yesterday' : new Date(pd(d)).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short', timeZone: 'UTC' });
+  return html`<div className="eod-alert" role="alert"><span className="eod-alert-i"><${Icon} n="timer" s=${20}/></span>
+    <div className="eod-alert-t"><b>${days.length === 1 ? 'You did not send your end-of-day report for ' + lab(days[0]) : 'You have ' + days.length + ' end-of-day reports to send'}</b>
+      <span>${days.length === 1 ? 'Please send it now. This stays here until it is sent.' : 'Oldest first: ' + days.map(lab).join(', ') + '. This stays here until they are sent.'}</span></div>
+    <button className="btn pri" onClick=${() => onSend(days[0])}>Send ${lab(days[0])}'s report</button></div>`;
+}
+
 function NotYet({ att, leaves, open }) {
   const now = useNow(30000), away = awayList(leaves);
   const rows = activeEmps().map(e => ({ e, i: dayInfo(att, e, TODISO, now, away) })).filter(x => x.i.state === 'absent' || x.i.state === 'notyet')
@@ -148,7 +171,8 @@ function YourDay({ user, att, setAtt, onOut }) {
 }
 
 /* ---------- Home ---------- */
-export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, onOut, tasks, goTask, go, openForm, open }) {
+export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, onOut, tasks, goTask, go, openForm, open, eodTick, onLateEod }) {
+  const missed = useMissedEod(user, att, eodTick, role === 'employee');
   const h = Math.floor(minuteOfDay(Date.now()) / 60), t = new Date(TOD);
   const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
   const mine = leaves.filter(l => l.emp === user.n);
@@ -205,6 +229,7 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
   const myOpen = (tasks || []).filter(t => t.cols.includes(user.n) && isOpen(t)).sort((a, b) => (a.due || '9').localeCompare(b.due || '9'));
   const recent = [...mine].filter(l => !l.past).sort((a, b) => b.from.localeCompare(a.from)).slice(0, 4);
   return html`<div>
+    <${MissedEod} days=${missed} onSend=${onLateEod}/>
     <div className="date-l">${dateL}</div>
     <h1 className="h-greet">${greet}, ${first(user)}.</h1>
     <p className="lede"><span>${hols[0] ? html`Next holiday: <b>${HOL[hols[0]]}</b>, ${fmtDay(pd(hols[0]))}` : 'No holidays coming up'}</span></p>

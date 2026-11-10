@@ -26,15 +26,15 @@ export async function loadEods(from, to) {
   return out;
 }
 
-export async function submitEod(rows, emp) {
+export async function submitEod(rows, emp, day) {
   const clean = rows.map(r => ({
     project: String(r.project || '').trim(), task: r.task || null, desc: String(r.desc || '').trim(), hours: Number(r.hours) || 0,
     subs: (r.subs || []).map(s => ({ title: String(s.title || '').trim(), desc: String(s.desc || '').trim(), hours: Number(s.hours) || 0 }))
   }));
   if (IS_DEMO) {
-    const day = dayKey(), l = readDemo().filter(r => !(r.emp === emp && r.day === day));
-    writeDemo([...l, { emp, day, rows: clean, total: totalOf(clean), at: Date.now() }]); return;
+    const d = day || dayKey(), l = readDemo().filter(r => !(r.emp === emp && r.day === d));
+    writeDemo([...l, { emp, day: d, rows: clean, total: totalOf(clean), at: Date.now() }]); return;
   }
-  const { error } = await supabase.rpc('submit_eod', { p_rows: clean });
+  const { error } = day && day !== dayKey() ? await supabase.rpc('submit_eod_for', { p_day: day, p_rows: clean }) : await supabase.rpc('submit_eod', { p_rows: clean });
   if (error) throw new Error(/^(Line \d+|Add at least|That (adds|report)|Not allowed)/.test(error.message) ? error.message : 'Could not save your report. Check your connection and try again.');
 }

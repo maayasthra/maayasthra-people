@@ -376,6 +376,15 @@ as('abines'); await m.loadStaff();
 const rb3 = await m.loadBoard();
 t('an employee cannot unmark a retainer task', /Only admins|retainer/i.test(await tryit(() => m.persistBoard(rb3, { ...rb3, tasks: rb3.tasks.map(x => x.id === rid ? { ...x, retainer: false } : x) }))) || (await m.loadBoard()).tasks.find(x => x.id === rid).retainer === true);
 
+// 0032: a missed day can be sent once, within 7 days, and never overwrites an earlier report
+as('abines'); await m.loadStaff();
+const rowsOk = [{ project: 'Brand work', desc: 'Drafts', hours: 2, subs: [] }];
+t('a missed day can be sent late', !(await tryit(async () => m.submitEod(rowsOk, ids.abines, (await q("select (public.today_ist() - 3)::text d"))[0].d))));
+t('that late report is stored for the right day', (await q("select count(*)::int c from eod_reports where employee_id = " + ids.abines + " and day = public.today_ist() - 3"))[0].c === 1);
+t('the same missed day cannot be sent twice', /already sent/.test(await tryit(async () => m.submitEod(rowsOk, ids.abines, (await q("select (public.today_ist() - 3)::text d"))[0].d))));
+t('a day more than 7 days back is refused', /Not allowed/.test(await tryit(async () => m.submitEod(rowsOk, ids.abines, (await q("select (public.today_ist() - 9)::text d"))[0].d))));
+t('a future day is refused', /Not allowed/.test(await tryit(async () => m.submitEod(rowsOk, ids.abines, (await q("select (public.today_ist() + 1)::text d"))[0].d))));
+
 console.log('--- done ---');
 
 if (process.exitCode) console.log('SOME CHECKS FAILED');

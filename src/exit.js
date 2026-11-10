@@ -10,7 +10,7 @@ export function startExitMotion() {
     for (const m of list) {
       if (!m.removedNodes.length || !m.target.isConnected) continue;
       m.removedNodes.forEach(n => {
-        if (n.nodeType !== 1 || n.classList.contains('leaving') || !n.matches(SEL)) return;
+        if (n.nodeType !== 1 || n.isConnected || n.classList.contains('leaving') || !n.matches(SEL)) return;   // isConnected: React only moved it
         const next = m.nextSibling && m.nextSibling.parentNode === m.target ? m.nextSibling : null;
         n.classList.add('leaving'); n.setAttribute('aria-hidden', 'true'); n.inert = true;
         try { m.target.insertBefore(n, next); } catch (x) { return; }

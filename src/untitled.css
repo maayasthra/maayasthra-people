@@ -603,3 +603,11 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{display:none;width:0;height:0}
 .mt3-add.slim{min-height:44px;margin-top:2px}
 .mt3-add.slim .a2{opacity:1;transform:none;color:var(--faint)}
 .mt3-add.slim:hover .a2{color:var(--brand-text)}
+
+/* Missed end-of-day report: an alert that stays until the report is sent */
+.eod-alert{display:flex;align-items:center;gap:14px;padding:14px 16px;margin-bottom:20px;border-radius:var(--r-card);background:var(--err-bg);border:1px solid color-mix(in srgb,var(--red) 45%,var(--line));color:var(--text)}
+.eod-alert-i{display:grid;place-items:center;flex:none;width:40px;height:40px;border-radius:10px;background:color-mix(in srgb,var(--red) 18%,var(--card));color:var(--err-text)}
+.eod-alert-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.eod-alert-t b{font-size:15px;font-weight:600}
+.eod-alert-t span{font-size:14px;color:var(--text-2)}
+@media (max-width:640px){.eod-alert{flex-wrap:wrap}.eod-alert .btn{width:100%}}

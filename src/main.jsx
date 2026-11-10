@@ -125,7 +125,7 @@ function App() {
     g.cur = next; g.dirty = true; setGroupsRaw(next); clearTimeout(g.timer);
     g.timer = setTimeout(async () => { try { await saveGroups(g.saved, g.cur); g.saved = g.cur; } catch (x) { setSyncErr(x.message); } g.dirty = false; }, 600);
   };
-  const [eodAsk, setEodAsk] = useState(null), [eodTick, setEodTick] = useState(0);
+  const [eodAsk, setEodAsk] = useState(null), [eodTick, setEodTick] = useState(0), [eodLate, setEodLate] = useState(null);
   const [bootErr, setBootErr] = useState('');
   const [seenVer, setSeenVer] = useState(() => { try { return localStorage.getItem('mp-seen-version'); } catch (x) { return null; } });
   useEffect(() => { if (nav.view === 'about' && seenVer !== VERSION) { try { localStorage.setItem('mp-seen-version', VERSION); } catch (x) {} setSeenVer(VERSION); } }, [nav.view]);
@@ -323,6 +323,7 @@ function App() {
     if (eodAsk === 'out') { setAtt(a => checkOut(a, user.n)); stopMyTimers(Date.now()); checkOutSound(); }
     setEodAsk(null); setEodTick(t => t + 1);
   };
+  const sendLate = async rows => { await submitEod(rows, user.n, eodLate); setEodLate(null); setEodTick(t => t + 1); };
   const keys = app === 'task' ? (isMgr ? ['board', 'mytasks', 'eod', 'team'] : ['mytasks', 'eod']) : peopleKeys;
   const setApp = a => { setAppState(a); setNav({ view: a === 'task' ? (isMgr ? 'board' : 'mytasks') : 'home' }); setTaskSel(null); setSOpen(false); window.scrollTo({ top: 0 }); };
   const openTask = (id, ctx) => setTaskSel({ id, ctx });
@@ -342,7 +343,7 @@ function App() {
   const active = nav.view === 'profile' || nav.view === 'form' ? (nav.from || 'home') : nav.view;
   const pending = role === 'admin' ? leaves.filter(l => !l.past && l.state === 'pending').length : 0;
 
-  const home = html`<${Home} role=${role} user=${user} leaves=${leaves} setLeaves=${setLeaves} ann=${ann} setAnn=${setAnn} att=${att} setAtt=${setAtt} onOut=${requestOut} tasks=${tasks} goTask=${goTask} go=${go} openForm=${openForm} open=${open}/>`;
+  const home = html`<${Home} role=${role} user=${user} leaves=${leaves} setLeaves=${setLeaves} ann=${ann} setAnn=${setAnn} att=${att} setAtt=${setAtt} onOut=${requestOut} tasks=${tasks} goTask=${goTask} go=${go} openForm=${openForm} open=${open} eodTick=${eodTick} onLateEod=${setEodLate}/>`;
   const taskScreen = nav.view === 'eod' ? html`<${EodReports} user=${user} role=${role} tick=${eodTick} checkedIn=${isIn(sessionsOf(att, user.n))} att=${att} onEditToday=${() => setEodAsk('save')}/>`
     : nav.view === 'mytasks' || !isMgr ? html`<${MyTasks} tasks=${tasks} setTasks=${setTasks} user=${user} tq=${tq} openTask=${openTask} canDelete=${isMgr}/>`
     : nav.view === 'team' && isMgr ? html`<${TeamView} tasks=${tasks} onPick=${n => { setTf(f => ({ ...f, dept: 'All' })); setFocus(n); go('board'); }}/>`
@@ -384,6 +385,7 @@ function App() {
     ${tour && html`<${Tour} name=${user.name.split(' ')[0]} role=${role} onClose=${() => { setUstate(st => ({ ...(st || {}), tourDone: true })); saveState({ tourDone: true }); setTour(false); }}/>`}
     ${pwOpen && html`<${ChangePassword} user=${user} onClose=${() => setPwOpen(false)}/>`}
     ${alerts.current && html`<${AnnouncementAlert} a=${alerts.current} count=${alerts.count} perm=${alerts.perm} askPerm=${alerts.askPerm} onClose=${() => alerts.dismiss(alerts.current.id)}/>`}
+    ${eodLate && html`<${EodDialog} user=${user} tasks=${tasks} worked=${0} mode="late" day=${eodLate} noHours=${false} onSend=${sendLate} onCancel=${() => setEodLate(null)}/>`}
     ${eodAsk && html`<${EodDialog} user=${user} tasks=${tasks} worked=${workedMs(sessionsOf(att, user.n), Date.now())} mode=${eodAsk} noHours=${isMgr} onSend=${sendEod} onCancel=${() => setEodAsk(null)}/>`}
     ${taskSel && html`<${TaskDetail} key=${taskSel.id} id=${taskSel.id} ctx=${taskSel.ctx} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} leaves=${leaves} custom=${custom} close=${() => setTaskSel(null)}/>`}
     <nav className="bnav" style=${{ gridTemplateColumns: 'repeat(' + mob.length + ', 1fr)' }} aria-label="Main">${mob.map(k => k === 'more'
