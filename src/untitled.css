@@ -611,3 +611,17 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{display:none;width:0;height:0}
 .eod-alert-t b{font-size:15px;font-weight:600}
 .eod-alert-t span{font-size:14px;color:var(--text-2)}
 @media (max-width:640px){.eod-alert{flex-wrap:wrap}.eod-alert .btn{width:100%}}
+
+/* Career milestones: the highlighted entry is only a dot, not a box (the .hi icon style was leaking in) */
+.tl-i.hi{background:transparent;box-shadow:none;border-radius:0;color:inherit;padding-left:0}
+
+/* My Tasks: every card the same size, status like the board, drag no longer gets stuck */
+.mt3-k{min-height:120px;justify-content:flex-start}
+.mt3-k .mt3-f{margin-top:auto}
+.mt3-st{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;color:var(--faint)}
+.mt3-st.kt-st{font-size:12.5px}
+.mt3-dn{color:var(--ok-text)}
+.mt3-k.run .mt3-st i{animation:mtpulse 1.4s ease-in-out infinite}
+.mt3-k.isdone .mt3-t{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--faint)}
+.mt3-k.run{box-shadow:none!important;border-color:color-mix(in srgb,var(--ok) 45%,var(--line))}
+.mt3-k.dragging{opacity:.45}
