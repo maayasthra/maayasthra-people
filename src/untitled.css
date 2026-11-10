@@ -768,3 +768,9 @@ body{font-size:13.5px;line-height:1.5}
 .kt .kt-st,.kt-s span,.kt-s{line-height:16px}
 .mt3-t{line-height:20px}
 .mt3-k .mt3-f{min-height:28px}
+
+/* Tinted cards use the same neutral border as every other card, so they do not look closer to their neighbours */
+.kt.is-ret,.mt3-k.is-ret,.kc2.retainer .kt,
+:root[data-theme="dark"] :is(.kt.is-ret,.mt3-k.is-ret,.kc2.retainer .kt){border-color:var(--line)}
+.kt.is-ret:hover,.mt3-k.is-ret:hover{border-color:var(--line-hi)}
+.kt:hover{transform:none}
