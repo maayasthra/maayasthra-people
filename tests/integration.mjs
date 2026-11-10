@@ -376,6 +376,13 @@ as('abines'); await m.loadStaff();
 const rb3 = await m.loadBoard();
 t('an employee cannot unmark a retainer task', /Only admins|retainer/i.test(await tryit(() => m.persistBoard(rb3, { ...rb3, tasks: rb3.tasks.map(x => x.id === rid ? { ...x, retainer: false } : x) }))) || (await m.loadBoard()).tasks.find(x => x.id === rid).retainer === true);
 
+// 0032: a card for each newly added person, unless a card with that name is already there
+await db.exec("insert into tasks (id, title, cols) values ('manual-1', 'Keerthi', '[\"pending\"]')");
+await db.exec("insert into employees (email, name) values ('keerthi@example.test', 'Keerthi'), ('lavanya@example.test', 'Lavanya')");
+const onb = await q("select title, cols from tasks where lower(title) in ('keerthi','lavanya') order by title");
+t('an existing card with the same name is not duplicated', onb.filter(r => r.title === 'Keerthi').length === 1);
+t('a new person with no card gets one in Pending', onb.filter(r => r.title === 'Lavanya').length === 1 && JSON.stringify(onb.find(r => r.title === 'Lavanya').cols) === '["pending"]');
+
 console.log('--- done ---');
 
 if (process.exitCode) console.log('SOME CHECKS FAILED');
