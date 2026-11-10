@@ -491,3 +491,27 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{display:none;width:0;height:0}
 .df-s{padding:0 6px;text-overflow:clip}
 .df-s:first-of-type{flex:1 1 120px}
 .df-h .ib{flex:none;width:36px;height:36px}
+
+/* ---------- Motion: short, soft, and off for people who ask for less motion ---------- */
+:root{--ease:cubic-bezier(.2,.8,.2,1)}
+/* Columns and departments open and close */
+@keyframes colOpen{0%{flex-basis:46px;opacity:.35;overflow:hidden}99%{overflow:hidden}100%{overflow:visible}}
+@keyframes colShut{0%{width:280px;max-width:280px;opacity:.35;overflow:hidden}99%{overflow:hidden}100%{overflow:hidden}}
+.kc2:not(.shut),.kgrp:not(.shut){animation:colOpen .3s var(--ease) backwards}
+.kc2.shut,.kgrp.shut{animation:colShut .28s var(--ease) backwards}
+.kc2:not(.shut) .kc2-b,.kgrp:not(.shut) .kgrp-c{animation:cFade .3s .06s ease backwards}
+@keyframes cFade{from{opacity:0;transform:translateY(4px)}}
+/* Cards appear and settle */
+.kt,.mt3-k{animation:cardIn .24s var(--ease) backwards}
+@keyframes cardIn{from{opacity:0;transform:translateY(6px) scale(.985)}}
+/* Menus and popovers */
+.df-p,.cm,.kt-menu,.nf-p,.qs-dd,.lm{animation:popIn .16s var(--ease) backwards}
+@keyframes popIn{from{opacity:0;transform:translateY(-4px) scale(.98)}}
+/* Hover, press and state changes */
+.btn,.ib,.row,.nav-b,.kt,.pn,.tile,.pill,.seg button,.inp,.link,.kt-c,.chip,.df-d,.wi-p,.kc-new,.kc-e{transition:background-color .16s ease,border-color .16s ease,color .16s ease,box-shadow .2s ease,opacity .16s ease,transform .16s var(--ease)}
+.btn:active:not(:disabled),.ib:active{transform:scale(.97)}
+.kt:hover{transform:translateY(-1px)}
+.kt.dragging{transform:none}
+.sw,.sw i{transition:background-color .2s ease,transform .2s var(--ease)}
+.wi-bar i{transition:flex-grow .5s var(--ease)}
+@media (prefers-reduced-motion:reduce){.kc2,.kgrp,.kc2-b,.kgrp-c,.kt,.mt3-k,.df-p,.cm,.kt-menu,.nf-p,.qs-dd,.lm{animation:none!important}}
