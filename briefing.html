@@ -1,0 +1,122 @@
+<title>Maayasthra People Guide</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one calm column. Orange marks what to do, grey carries everything else. */
+:root{
+  --bg:#FAFAFA; --card:#FFFFFF; --text:#171717; --text2:#404040; --muted:#525252; --faint:#737373;
+  --line:#E5E5E5; --fill:#F5F5F5; --brand:#FE6D00; --brand-text:#B03A00; --brand-tint:#FFF4EB; --brand-line:#FFCBA0;
+  --ok:#067647; --ok-tint:#ECFDF3; --warn:#B54708; --warn-tint:#FFFAEB;
+  --font:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0A0A0A; --card:#171717; --text:#FAFAFA; --text2:#D4D4D4; --muted:#A3A3A3; --faint:#8A8A8A;
+  --line:#262626; --fill:#1F1F1F; --brand-text:#FFA666; --brand-tint:rgba(254,109,0,.14); --brand-line:rgba(255,166,102,.3);
+  --ok:#47CD89; --ok-tint:rgba(7,148,85,.16); --warn:#FDB022; --warn-tint:rgba(220,104,3,.16); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0A0A0A; --card:#171717; --text:#FAFAFA; --text2:#D4D4D4; --muted:#A3A3A3; --faint:#8A8A8A;
+  --line:#262626; --fill:#1F1F1F; --brand-text:#FFA666; --brand-tint:rgba(254,109,0,.14); --brand-line:rgba(255,166,102,.3);
+  --ok:#47CD89; --ok-tint:rgba(7,148,85,.16); --warn:#FDB022; --warn-tint:rgba(220,104,3,.16); color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;
+  padding-block:48px 72px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:44px}
+h1,h2,h3,p,ul,ol{margin:0}
+h1{font-size:40px;line-height:1.1;letter-spacing:-.03em;font-weight:700;text-wrap:balance}
+h2{font-size:22px;line-height:1.25;letter-spacing:-.02em;font-weight:650}
+h3{font-size:16px;font-weight:600}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--brand-text);background:var(--brand-tint);border:1px solid var(--brand-line);border-radius:999px;padding:4px 12px;width:max-content}
+.lede{font-size:18px;color:var(--muted);max-width:60ch;margin-top:14px}
+.url{display:inline-block;margin-top:18px;font-size:15px;font-weight:600;color:var(--text);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 14px;word-break:break-all}
+section{display:flex;flex-direction:column;gap:16px}
+.sub{color:var(--muted);max-width:62ch}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.card p,.card li{color:var(--text2);font-size:15px}
+.card ul{padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.tag{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--faint)}
+.steps{list-style:none;padding:0;display:flex;flex-direction:column;gap:12px;counter-reset:s}
+.steps li{display:grid;grid-template-columns:32px minmax(0,1fr);gap:14px;align-items:start;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;counter-increment:s}
+.steps li::before{content:counter(s);display:grid;place-items:center;width:32px;height:32px;border-radius:8px;background:var(--brand-tint);color:var(--brand-text);font-weight:700;font-size:14px;border:1px solid var(--brand-line)}
+.steps b{display:block;font-weight:600}
+.steps span{color:var(--text2);font-size:15px}
+table{width:100%;border-collapse:collapse;font-size:15px}
+.tw{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:12px}
+th,td{text-align:left;padding:12px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:13px;font-weight:600;color:var(--faint);background:var(--fill);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600;white-space:nowrap}
+.yes{color:var(--ok)}.off{color:var(--faint)}
+.note{display:flex;gap:12px;background:var(--warn-tint);border:1px solid var(--line);border-radius:12px;padding:16px 18px;color:var(--text2);font-size:15px}
+.note b{color:var(--warn)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-size:14px;font-weight:500;color:var(--text2);background:var(--fill);border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+.chip.lock{color:var(--faint)}
+footer{color:var(--faint);font-size:14px;border-top:1px solid var(--line);padding-top:20px}
+@media (max-width:560px){h1{font-size:32px}.lede{font-size:17px}}
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Team guide</span>
+    <h1 style="margin-top:16px">Maayasthra People</h1>
+    <p class="lede">One place for your day at Maayasthra: check in and out, your tasks, announcements, the calendar and your hours. It works on a laptop and on your phone.</p>
+    <a class="url" href="https://people.maayasthra.com">people.maayasthra.com</a>
+  </header>
+
+  <section>
+    <h2>Getting started</h2>
+    <ol class="steps">
+      <li><div><b>Sign in with your work email</b><span>Use the email the company has on file for you. If you forget your password, choose "Forgot password?" and a 6-digit code is emailed to you. It works once and lasts 10 minutes.</span></div></li>
+      <li><div><b>Take the short tour</b><span>The first time you sign in, a one-minute tour shows you around. You can skip it, and run it again any time from your photo menu, top right.</span></div></li>
+      <li><div><b>Finish your profile</b><span>The Home page shows a progress card until you have added a photo, a line about you, your phone number and an emergency contact (name, relationship and phone).</span></div></li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>What you do every day</h2>
+    <div class="grid">
+      <div class="card"><span class="tag">Start of day</span><h3>Check in</h3><p>Press <b>Check in</b> at the top when you start. Your worked time counts up from there. Press <b>Check out</b> when you finish.</p></div>
+      <div class="card"><span class="tag">Through the day</span><h3>Your tasks</h3><p>Open <b>Task</b>, then <b>My Tasks</b>. Cards move from <b>Pending</b> to <b>In progress</b> to <b>Completed</b>. Press <b>Start</b> on what you are working on. You can have several in progress at once.</p></div>
+      <div class="card"><span class="tag">End of day</span><h3>Report before you check out</h3><p>Employees write a short report of the day: project, what you did, and the time as hours and minutes. It saves as a draft while you type, so nothing is lost if you click away.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Helpful things to know</h2>
+    <div class="grid">
+      <div class="card"><h3>The bell</h3><p>The bell at the top tells you when a task is given to you. Employees also get a reminder 30 minutes and 15 minutes before their shift ends if the day's report is not sent yet.</p></div>
+      <div class="card"><h3>Announcements</h3><p>A new announcement pops up during your working hours with a chime, and repeats every minute until you press <b>Got it</b>. Admins can see who has read each one.</p></div>
+      <div class="card"><h3>Light or dark</h3><p>Open your photo menu and pick light, dark, or match your device. Your choice is remembered.</p></div>
+      <div class="card"><h3>Retainer tasks</h3><p>Retainer tasks have a blue tint and keep it wherever they are moved, so they are easy to spot.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What each role sees</h2>
+    <div class="tw"><table>
+      <thead><tr><th>Area</th><th>Employee</th><th>Project manager</th><th>Admin</th></tr></thead>
+      <tbody>
+        <tr><td>Check in and out</td><td class="yes">Yes, with a day report</td><td class="yes">Yes, no report</td><td class="yes">Yes, no report</td></tr>
+        <tr><td>My Tasks</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+        <tr><td>Kanban board and Team</td><td class="off">No</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+        <tr><td>Everyone's day reports</td><td class="off">Only your own, for today</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+        <tr><td>Announcements</td><td>Read</td><td>Read</td><td class="yes">Post, and see who read them</td></tr>
+        <tr><td>Calendar, Org chart, My Hours</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+        <tr><td>Attendance, Settings</td><td class="off">No</td><td class="off">No</td><td class="yes">Yes</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Switched off for now</h2>
+    <p class="sub">These menu items are visible but greyed out with a lock for project managers and employees. Only admins can open them at the moment.</p>
+    <div class="chips"><span class="chip lock">Members</span><span class="chip lock">My Leaves</span><span class="chip lock">Requests</span></div>
+  </section>
+
+  <div class="note"><div><b>Good to know.</b> All times are India time. Sounds and reminders only work while the page is open in your browser. If something looks wrong, tell an admin what you were doing and the version number shown in <b>About</b> (bottom of the menu).</div></div>
+
+  <footer>Maayasthra People · people.maayasthra.com</footer>
+</div>
