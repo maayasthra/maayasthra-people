@@ -192,7 +192,7 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
     <p className="lede"><span>${hols[0] ? html`Next holiday: <b>${HOL[hols[0]]}</b>, ${fmtDay(pd(hols[0]))}` : 'No holidays coming up'}</span></p>
     <${ProfileSetup} user=${user} openForm=${openForm}/>
     <div className="tiles">
-      ${bal.map(b => html`<${Tile} key=${b.t} icon=${typeIcon(b.t)} tone=${typeTone(b.t)} label=${b.t} value=${b.left} sub=${b.pend ? 'days left · ' + b.pend + ' pending' : 'of ' + b.total + ' days left'} onClick=${() => go('leaves')}/>`)}
+      ${bal.map(b => html`<${Tile} key=${b.t} icon=${typeIcon(b.t)} tone=${typeTone(b.t)} label=${b.t} value=${b.left} sub=${b.pend ? 'days left · ' + b.pend + ' pending' : 'of ' + b.total + ' days left'} onClick=${role === 'admin' ? () => go('leaves') : undefined}/>`)}
       <${Tile} icon="clock" tone="green" label="Worked today" value=${hm(worked)} sub=${live ? 'timer is running' : sessions.length ? 'checked out' : 'not checked in yet'}/>
     </div>
     <section className="eq3 sec">
@@ -205,7 +205,7 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
         ${myOpen.length === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="check" s=${22}/></span><b>All clear</b></div>` :
           myOpen.slice(0, 6).map(t => html`<button key=${t.id} className="row" onClick=${() => goTask(t.id)}><span className="row-t"><b>${t.title}</b><span>Card</span></span><span className="row-d"><${DueChip} due=${t.due} done=${t.done}/></span></button>`)}
       <//>
-      <${Panel} title="Leave requests" sub=${t.getUTCFullYear()} right=${html`<button className="btn sec2 sm" onClick=${() => go('leaves')}><${Icon} n="plus" s=${15}/> Apply</button>`}>
+      <${Panel} title="Leave requests" sub=${t.getUTCFullYear()} right=${html`<button className="btn sec2 sm" onClick=${() => go('leaves')} disabled=${role !== 'admin'} title=${role !== 'admin' ? 'Not available yet' : undefined}><${Icon} n="plus" s=${15}/> Apply</button>`}>
         ${recent.length === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="leaves" s=${22}/></span><b>No requests yet</b><span>Apply for leave and track it here.</span></div>` :
           recent.map(l => html`<div className="hx" key=${l.id}><span className="row-t"><b>${l.type}${l.half ? ' · half day' : ''}</b><span>${range(l.from, l.to)} · ${plural(l.days, 'day')}</span></span>
             <span className="pill" style=${{ '--c': LS_C[l.state] }}><i></i>${l.state[0].toUpperCase() + l.state.slice(1)}</span></div>`)}

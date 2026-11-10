@@ -308,7 +308,9 @@ function App() {
   if (!auth) return html`<${Login} onLogin=${(user, role) => { setMe(user.n); setNav({ view: 'home' }); setAuth({ user, role }); window.scrollTo({ top: 0 }); }}/>`;
   // The live record, so a change to your own details (shift times, name) shows straight away
   const user = (!IS_DEMO && BY[auth.user.n]) || auth.user, role = auth.role;
-  const peopleKeys = role === 'admin' ? ['home', 'announcements', 'members', 'org', 'calendar', 'attendance', 'leaves', 'requests', 'settings'] : ['home', 'announcements', 'org', 'calendar', 'hours', 'leaves'];
+  const peopleKeys = role === 'admin' ? ['home', 'announcements', 'members', 'org', 'calendar', 'attendance', 'leaves', 'requests', 'settings'] : ['home', 'announcements', 'members', 'org', 'calendar', 'hours', 'leaves', 'requests'];
+  // These stay in the menu for everyone but only admins can open them. Everyone else sees them switched off.
+  const locked = k => app === 'people' && role !== 'admin' && ['org', 'members', 'leaves', 'requests'].includes(k);
   // Admins and project managers get the whole task app. Everyone else gets only their own tasks.
   const isMgr = role === 'admin' || role === 'pm';
   const seenNow = seenVer === VERSION || nav.view === 'about';
@@ -328,7 +330,7 @@ function App() {
   const goTask = id => { setAppState('task'); setNav({ view: 'mytasks' }); setTaskSel(id ? { id } : null); window.scrollTo({ top: 0 }); };
   const top = () => window.scrollTo({ top: 0 });
   const startTour = () => { setAppState('people'); setNav({ view: 'home' }); setTaskSel(null); setTimeout(() => setTour(true), 150); };
-  const go = v => { setNav({ view: v }); setTaskSel(null); setMoreOpen(false); top(); };
+  const go = v => { if (locked(v)) return; setNav({ view: v }); setTaskSel(null); setMoreOpen(false); top(); };
   const open = (id, tab) => { setNav(p => ({ view: 'profile', id, tab: typeof tab === 'string' ? tab : undefined, from: p.view === 'profile' ? p.from : p.view === 'form' ? (p.from || 'home') : p.view })); top(); };
   const openForm = id => { setNav(p => ({ view: 'form', id, from: p.view === 'profile' ? p.from : p.view })); top(); };
   const back = () => { setNav({ view: nav.from || 'home' }); top(); };
@@ -362,8 +364,8 @@ function App() {
   return html`<div className=${'app' + (navHidden ? ' no-side' : '') + (app === 'task' && nav.view === 'board' ? ' wide' : '')}>
     <aside className="side">${brand}
       <${AppSwitch} app=${app} setApp=${setApp}/>
-      <nav className="nav" aria-label="Main">${keys.map(k => html`<button key=${k} className=${'nav-b' + (active === k ? ' on' : '')} onClick=${() => go(k)} aria-current=${active === k ? 'page' : undefined}>
-        <${Icon} n=${k}/>${ALL[k]}${k === 'requests' && pending > 0 && html`<span className="cnt">${pending}</span>`}</button>`)}</nav>
+      <nav className="nav" aria-label="Main">${keys.map(k => html`<button key=${k} className=${'nav-b' + (active === k ? ' on' : '') + (locked(k) ? ' dis' : '')} onClick=${() => go(k)} aria-current=${active === k ? 'page' : undefined} disabled=${locked(k)} title=${locked(k) ? 'Only admins can open this' : undefined}>
+        <${Icon} n=${k}/>${ALL[k]}${locked(k) ? html`<span className="nav-lock" aria-hidden="true"><${Icon} n="lock" s=${14}/></span>` : k === 'requests' && pending > 0 && html`<span className="cnt">${pending}</span>`}</button>`)}</nav>
       <button className=${'side-about' + (active === 'about' ? ' on' : '')} onClick=${() => go('about')} aria-current=${active === 'about' ? 'page' : undefined}><${Icon} n="info" s=${17}/><span>About</span><small>v${VERSION}</small>${!seenNow && html`<em className="new-p">New</em>`}</button>
     </aside>
     <div className="col">
@@ -385,8 +387,8 @@ function App() {
     ${taskSel && html`<${TaskDetail} key=${taskSel.id} id=${taskSel.id} ctx=${taskSel.ctx} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} leaves=${leaves} custom=${custom} close=${() => setTaskSel(null)}/>`}
     <nav className="bnav" style=${{ gridTemplateColumns: 'repeat(' + mob.length + ', 1fr)' }} aria-label="Main">${mob.map(k => k === 'more'
       ? html`<button key=${k} className=${more.includes(active) || moreOpen ? 'on' : ''} onClick=${() => setMoreOpen(o => !o)} aria-expanded=${moreOpen}><${Icon} n="dots" s=${22}/>More</button>`
-      : html`<button key=${k} className=${active === k && !moreOpen ? 'on' : ''} onClick=${() => go(k)}><${Icon} n=${k} s=${22}/>${SHORT[k] || ALL[k]}${k === 'requests' && pending > 0 && html`<span className="cnt">${pending}</span>`}</button>`)}</nav>
-    ${moreOpen && html`<div className="mo-bg" onClick=${() => setMoreOpen(false)}></div><div className="mo" role="menu">${more.map(k => html`<button key=${k} role="menuitem" className=${active === k ? 'on' : ''} onClick=${() => go(k)}><${Icon} n=${k} s=${22}/>${ALL[k]}${k === 'requests' && pending > 0 && html`<span className="cnt">${pending}</span>`}</button>`)}</div>`}
+      : html`<button key=${k} className=${(active === k && !moreOpen ? 'on' : '') + (locked(k) ? ' dis' : '')} onClick=${() => go(k)} disabled=${locked(k)}><${Icon} n=${k} s=${22}/>${SHORT[k] || ALL[k]}${k === 'requests' && pending > 0 && html`<span className="cnt">${pending}</span>`}</button>`)}</nav>
+    ${moreOpen && html`<div className="mo-bg" onClick=${() => setMoreOpen(false)}></div><div className="mo" role="menu">${more.map(k => html`<button key=${k} role="menuitem" className=${(active === k ? 'on' : '') + (locked(k) ? ' dis' : '')} onClick=${() => go(k)} disabled=${locked(k)}><${Icon} n=${k} s=${22}/>${ALL[k]}${k === 'requests' && pending > 0 && html`<span className="cnt">${pending}</span>`}</button>`)}</div>`}
   </div>`;
 }
 

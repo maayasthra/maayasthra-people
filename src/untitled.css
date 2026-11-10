@@ -425,3 +425,12 @@ body{overflow-x:clip!important}
 .lx-code{font-size:24px;letter-spacing:.5em;text-align:center;font-weight:600;font-variant-numeric:tabular-nums;padding-left:.5em}
 .lx-code::placeholder{letter-spacing:.5em;color:var(--n-300)}
 .lg-alt .link:disabled{color:var(--faint);cursor:default;text-decoration:none}
+
+/* Menu items that are switched off for this role: still in place, faded, not clickable */
+.nav-b.dis,.bnav button.dis,.mo button.dis{opacity:.45;cursor:not-allowed}
+.nav-b.dis:hover{background:transparent;color:var(--text-2)}
+.nav-b.dis svg:first-child{color:var(--faint)}
+.nav-lock{margin-left:auto;display:grid;place-items:center;color:var(--faint)}
+.nav-lock svg{color:var(--faint)!important}
+.bnav button.dis:active,.mo button.dis:active{background:transparent}
+button.btn:disabled[title]{cursor:not-allowed}
