@@ -755,3 +755,8 @@ body{font-size:13.5px;line-height:1.5}
 .td2-sw-b:hover{transform:scale(1.1)}
 .td2-sw-b.on{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--c)}
 .td2-rtag.on{color:color-mix(in srgb,var(--ret) 80%,#000)}
+
+/* One card gap and one card padding in every column (the Priority column's values), whatever the column or tint */
+.kc2 .kc2-b{display:flex;flex-direction:column;gap:6px;padding:0}
+.kc2 .kc2-b>.kt,.kc2 .kc2-b>article{flex:none;margin:0;padding:9px 11px;box-sizing:border-box}
+.kc2 .kc2-b>.kc-new,.kc2 .kc2-b>.kc-compose,.kc2 .kc2-b>.kc-e{margin-top:0}
