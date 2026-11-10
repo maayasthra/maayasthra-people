@@ -682,37 +682,37 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{display:none;width:0;height:0}
 /* ---------- One tighter type scale (replaces the larger sizes above) ----------
    page title 22/28 · big number 24/30 · panel and column title 14 · body 13 · supporting 12 · caption 11.5
    Fields stay 16px on phones so iPhones do not zoom. */
-body{font-size:13px;line-height:1.5}
+body{font-size:13.5px;line-height:1.5}
 .pg-h h1,.h-greet{font-size:22px;line-height:28px;font-weight:600}
-.pg-h p,.lede,.pg-h .sub{font-size:13px;line-height:20px}
+.pg-h p,.lede,.pg-h .sub{font-size:13.5px;line-height:20px}
 .tile-v b{font-size:24px;line-height:30px}
-.tile-l{font-size:13px}
-.tile-v small{font-size:12px}
-.pn-h h2,.sec-h h2{font-size:14px;line-height:20px}
-.pn-h span,.pn-h small{font-size:12px}
-.row-t b{font-size:13px;line-height:18px}
-.row-t span,.row-d,.row-d em{font-size:12px}
-.btn,.btn.sm,.nav-b,.seg button,.menu button,.cm button,.lm-r{font-size:13px}
-.btn.sm{font-size:12.5px}
-.nav-b{font-size:13px}
-.inp,.td2-desc,.td2-comp input,.kc-compose textarea{font-size:13px}
-.an-h b,.an-t b{font-size:14px}
-.an-b p,.an-b{font-size:13px}
-.kt-t,.kt-open,.kt-open b{font-size:13.5px;line-height:1.35}
-.kc2-t,.kc2-h .row-t b{font-size:13.5px}
-.kt-st,.kt-f small,.kt-s span,.kc-n,.td2-n{font-size:11.5px}
-.mt3-t{font-size:13.5px}
-.mt3-st{font-size:12px}
-.mt3-col>header b,.kgrp-t b{font-size:13.5px}
+.tile-l{font-size:13.5px}
+.tile-v small{font-size:12.5px}
+.pn-h h2,.sec-h h2{font-size:14.5px;line-height:20px}
+.pn-h span,.pn-h small{font-size:12.5px}
+.row-t b{font-size:13.5px;line-height:18px}
+.row-t span,.row-d,.row-d em{font-size:12.5px}
+.btn,.btn.sm,.nav-b,.seg button,.menu button,.cm button,.lm-r{font-size:13.5px}
+.btn.sm{font-size:13px}
+.nav-b{font-size:13.5px}
+.inp,.td2-desc,.td2-comp input,.kc-compose textarea{font-size:13.5px}
+.an-h b,.an-t b{font-size:14.5px}
+.an-b p,.an-b{font-size:13.5px}
+.kt-t,.kt-open,.kt-open b{font-size:14px;line-height:1.35}
+.kc2-t,.kc2-h .row-t b{font-size:14px}
+.kt-st,.kt-f small,.kt-s span,.kc-n,.td2-n{font-size:12px}
+.mt3-t{font-size:14px}
+.mt3-st{font-size:12.5px}
+.mt3-col>header b,.kgrp-t b{font-size:14px}
 .td-title{font-size:20px;line-height:1.25}
-.td2-sub,.td2-main .td2-sub,.td2-st{font-size:13.5px}
-.td2-main .td2-desc,.td2-c p{font-size:13.5px}
-.td2-k,.td2-side .td2-k{font-size:11.5px}
-.sh-h h2,.dlg h2{font-size:16px}
-.dlg p,.sh p{font-size:13px}
-.eod .inp,.eod textarea{font-size:13px}
-.eod-hd,.er-hd{font-size:11.5px}
-.table th,.tw th,th{font-size:11.5px}
+.td2-sub,.td2-main .td2-sub,.td2-st{font-size:14px}
+.td2-main .td2-desc,.td2-c p{font-size:14px}
+.td2-k,.td2-side .td2-k{font-size:12px}
+.sh-h h2,.dlg h2{font-size:16.5px}
+.dlg p,.sh p{font-size:13.5px}
+.eod .inp,.eod textarea{font-size:13.5px}
+.eod-hd,.er-hd{font-size:12px}
+.table th,.tw th,th{font-size:12px}
 .pf2-hero h1,.pf2-name{font-size:22px}
 @media (max-width:860px){
   .pg-h h1,.h-greet{font-size:20px;line-height:26px}
