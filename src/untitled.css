@@ -774,3 +774,7 @@ body{font-size:13.5px;line-height:1.5}
 :root[data-theme="dark"] :is(.kt.is-ret,.mt3-k.is-ret,.kc2.retainer .kt){border-color:var(--line)}
 .kt.is-ret:hover,.mt3-k.is-ret:hover{border-color:var(--line-hi)}
 .kt:hover{transform:none}
+
+/* Sizes in multiples of 4px stay whole device pixels on 1.25x, 1.5x, 1.75x and 2x screens, so gaps never look uneven */
+.kc2 .kc2-b{gap:8px}
+.kc2 .kc2-b>.kt{min-height:84px}
