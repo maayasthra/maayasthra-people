@@ -64,6 +64,7 @@ Run these in the Supabase SQL Editor, in order. Each file can be run again safel
 | `0029_notifications_and_user_state.sql` | The notification bell, the tour flag and the tasks already announced are kept per person in the database |
 | `0030_user_prefs.sql` | Board column open/closed state and filters are remembered per person |
 | `0031_retainer_flag.sql` | Retainer tasks stay marked (blue tint) wherever they are moved |
+| `0032_eod_missed_day.sql` | Send an end-of-day report for a missed day (up to 7 days back, once); used by the Home alert |
 
 ## Tests
 
