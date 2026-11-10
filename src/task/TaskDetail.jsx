@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { pendingSound, doneSound, deleteSound } from '../alerts.js';
 import { html, Icon, Av, Switch } from '../ui.jsx';
 import { Sheet } from './parts.jsx';
@@ -11,8 +12,9 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close
   const isNew = id === 'new';
   const existing = isNew ? null : tasks.find(t => t.id === id);
   const [draft, setDraft] = useState(() => mkTask({ cols: [ctx && ctx.col != null ? ctx.col : user.n] }, user));
-  const [newSub, setNewSub] = useState(''), [addingSub, setAddingSub] = useState(false), [dragSub, setDragSub] = useState(null), [overSub, setOverSub] = useState(null), [comment, setComment] = useState(''), [confirm, setConfirm] = useState(false), [err, setErr] = useState('');
+  const [newSub, setNewSub] = useState(''), [addingSub, setAddingSub] = useState(false), [dragSub, setDragSub] = useState(null), [overSub, setOverSub] = useState(null), [comment, setComment] = useState(''), [editSub, setEditSub] = useState(null), [editVal, setEditVal] = useState(''), [sm, setSm] = useState(null), [smQ, setSmQ] = useState(''), [keepSub, setKeepSub] = useState(false), [made, setMade] = useState(''), [confirm, setConfirm] = useState(false), [err, setErr] = useState('');
   const t = isNew ? draft : existing;
+  useEffect(() => { if (!sm) return; const off = () => setSm(null); document.addEventListener('mousedown', off); return () => document.removeEventListener('mousedown', off); }, [!!sm]);
   if (!t) return null;
   const mgr = role === 'admin' || role === 'pm';
   const canEdit = mgr || isNew || t.cols.includes(user.n) || t.by === user.n || (t.prev || []).includes(user.n);
@@ -25,6 +27,13 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close
   const create = () => { if (!t.title.trim()) { setErr('Give the card a title.'); return; } setTasks(ts => [...ts, { ...draft, title: draft.title.trim() }]); close(); };
   const addComment = () => { if (!comment.trim()) return; upd({ comments: [...t.comments, { id: Date.now(), by: user.n, text: comment.trim(), at: Date.now() }] }); setComment(''); };
   const addSub = () => { if (!newSub.trim()) return; upd({ subs: [...t.subs, { id: Date.now() + t.subs.length, t: newSub.trim(), done: false }] }); setNewSub(''); };
+  const renameSub = (sid, v) => { const val = v.trim(); setEditSub(null); if (val && val !== (t.subs.find(x => x.id === sid) || {}).t) upd({ subs: t.subs.map(x => x.id === sid ? { ...x, t: val } : x) }); };
+  // A subtask becomes its own card, titled "Main card: subtask", and goes to the chosen person
+  const makeMain = (sub, person) => {
+    const title = t.title.trim() + ': ' + sub.t;
+    setTasks(ts => { const nt = mkTask({ title, client: t.client, prio: t.prio, labels: t.labels, cols: [person] }, user); return [...(keepSub ? ts : ts.map(x => x.id === t.id ? { ...x, subs: x.subs.filter(q => q.id !== sub.id) } : x)), nt]; });
+    setMade('Made “' + title + '” and gave it to ' + (BY[person] ? BY[person].name : 'them') + '.'); setSm(null); setSmQ('');
+  };
   const toggleDone = () => { t.done ? pendingSound() : doneSound(); setTasks(ts => t.done ? reopenCard(ts, t.id, user.n) : completeCard(ts, t.id)); };
 
   const footer = isNew ? html`<button className="btn ghost" onClick=${close}>Cancel</button><span style=${{ flex: 1 }}></span><button className="btn pri" onClick=${create}>Create card</button>`
@@ -41,6 +50,18 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close
     ${!isNew && !t.done && (st => html`<div className=${'kt-st big ' + st.k}><i></i>${st.label}${st.who.length > 0 && html`<span> · ${st.who.map(n => BY[n] ? BY[n].name : '').filter(Boolean).join(', ')}</span>`}</div>`)(statusOf(t))}
     ${err && html`<div className="lg-err" role="alert">${err}</div>`}
 
+    ${made && html`<div className="td2-made" role="status"><${Icon} n="check" s=${15}/><span>${made}</span><button className="ib" onClick=${() => setMade('')} aria-label="Dismiss"><${Icon} n="x" s=${13}/></button></div>`}
+    ${sm && (sub => sub && createPortal(html`<div className="cm td2-sm" style=${{ left: sm.x, top: sm.y }} role="menu" onMouseDown=${ev => ev.stopPropagation()}>
+      ${sm.stage === 'root'
+        ? html`<button role="menuitem" onClick=${() => { setEditSub(sub.id); setEditVal(sub.t); setSm(null); }}><${Icon} n="edit" s=${15}/> Rename</button>
+            ${mgr && !isNew && html`<button role="menuitem" onClick=${() => setSm({ ...sm, stage: 'assign' })}><${Icon} n="next" s=${15}/> Make it a main card…</button>`}
+            <button role="menuitem" className="cm-d" onClick=${() => { upd({ subs: t.subs.filter(x => x.id !== sub.id) }); setSm(null); }}><${Icon} n="trash" s=${15}/> Remove subtask</button>`
+        : html`<div className="cm-h"><button className="ib" onClick=${() => setSm({ ...sm, stage: 'root' })} aria-label="Back"><${Icon} n="chevL" s=${14}/></button><b>Give it to…</b></div>
+            <div className="td2-mm"><small>New card</small><b>${t.title.trim()}: ${sub.t}</b></div>
+            <div className="cm-q"><${Icon} n="search" s=${15}/><input autoFocus className="inp" value=${smQ} onChange=${ev => setSmQ(ev.target.value)} placeholder="Find a person" aria-label="Find a person"/></div>
+            <div className="cm-l">${people.filter(e => e.name.toLowerCase().includes(smQ.trim().toLowerCase())).map(e => html`<button key=${e.n} role="menuitem" onClick=${() => makeMain(sub, e.n)}><${Av} e=${e} s=${24}/><span className="cm-n">${e.name}</span></button>`)}</div>
+            <label className="td2-keep"><input type="checkbox" checked=${keepSub} onChange=${ev => setKeepSub(ev.target.checked)}/> Also keep it on this card</label>`}
+    </div>`, document.body))(t.subs.find(x => x.id === sm.id))}
     <div className="td2-grid">
     <div className="td2-main">
     <section className="td2-sec">
@@ -53,8 +74,10 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close
           onDragEnd=${() => { setDragSub(null); setOverSub(null); }}>
           ${canEdit && t.subs.length > 1 && html`<span className="td2-grip" aria-hidden="true" title="Drag to reorder"><${Icon} n="grip" s=${16}/></span>`}
           <button className=${'td2-ck' + (s.done ? ' on' : '')} disabled=${!canEdit} onClick=${() => upd({ subs: t.subs.map(x => x.id === s.id ? { ...x, done: !x.done } : x) })} aria-label=${(s.done ? 'Mark not done: ' : 'Mark done: ') + s.t}><${Icon} n="check" s=${12}/></button>
-          <span className=${'td2-st' + (s.done ? ' dn' : '')}>${s.t}</span>
-          ${canEdit && html`<button className="td2-x" onClick=${() => upd({ subs: t.subs.filter(x => x.id !== s.id) })} aria-label=${'Remove ' + s.t} title="Remove"><${Icon} n="x" s=${13}/></button>`}</div>`)}
+          ${editSub === s.id
+            ? html`<input className="td2-edit" autoFocus value=${editVal} aria-label="Rename subtask" maxLength="200" onChange=${ev => setEditVal(ev.target.value)} onBlur=${() => renameSub(s.id, editVal)} onKeyDown=${ev => { if (ev.key === 'Enter') renameSub(s.id, editVal); if (ev.key === 'Escape') { ev.stopPropagation(); setEditSub(null); } }}/>`
+            : html`<span className=${'td2-st' + (s.done ? ' dn' : '') + (canEdit ? ' ed' : '')} title=${canEdit ? 'Click to rename' : undefined} onClick=${() => { if (canEdit) { setEditSub(s.id); setEditVal(s.t); } }}>${s.t}</span>`}
+          ${canEdit && html`<button className="td2-x" onMouseDown=${ev => ev.stopPropagation()} onClick=${ev => { const r = ev.currentTarget.getBoundingClientRect(); setSm(sm && sm.id === s.id ? null : { id: s.id, stage: 'root', x: Math.max(12, Math.min(r.right - 224, window.innerWidth - 236)), y: Math.min(r.bottom + 6, window.innerHeight - 300) }); setSmQ(''); }} aria-label=${'Options for ' + s.t} aria-haspopup="menu" title="Options"><${Icon} n="dots" s=${16}/></button>`}</div>`)}
         ${canEdit && (addingSub
           ? html`<div className="td2-sub td2-sub-in"><span className="td2-ck plus"><${Icon} n="plus" s=${12}/></span>
               <input autoFocus value=${newSub} placeholder="Type a subtask and press Enter" aria-label="New subtask" onChange=${ev => setNewSub(ev.target.value)} onKeyDown=${ev => { if (ev.key === 'Enter') addSub(); if (ev.key === 'Escape') { ev.stopPropagation(); setAddingSub(false); setNewSub(''); } }} onBlur=${() => { if (!newSub.trim()) setAddingSub(false); }}/>
