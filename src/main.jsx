@@ -47,6 +47,7 @@ import { isDoing, stopFor, loadTasks, saveTasks, loadCollapsed, saveCollapsed, l
 import { IS_DEMO } from './env.js';
 import './styles.css';
 import './untitled.css';
+import { startExitMotion } from './exit.js';
 
 const ALL = { about: 'About', announcements: 'Announcements', members: 'Members', board: 'Board', mytasks: 'My Tasks', eod: 'EOD reports', team: 'Team', home: 'Home', people: 'People', org: 'Org chart', calendar: 'Calendar', attendance: 'Attendance', hours: 'My Hours', leaves: 'My Leaves', requests: 'Requests', settings: 'Settings' };
 const SHORT = { mytasks: 'Mine', eod: 'EOD', org: 'Org', leaves: 'Leaves', attendance: 'Hours', hours: 'Hours' };
@@ -393,4 +394,5 @@ function App() {
 }
 
 applyTheme();
+startExitMotion();
 createRoot(document.getElementById('root')).render(html`<${App}/>`);

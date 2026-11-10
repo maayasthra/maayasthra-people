@@ -526,3 +526,9 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{display:none;width:0;height:0}
 .kc2.closing{animation:colClosing .25s var(--ease) forwards!important;overflow:hidden!important;pointer-events:none;min-height:0}
 .kgrp.closing{animation:grpClosing .25s var(--ease) forwards!important;overflow:hidden!important;pointer-events:none}
 .kc2.closing>*,.kgrp.closing>*{opacity:0;transition:opacity .12s ease;animation:none!important}
+
+/* Leaving: popups fade and settle away instead of vanishing */
+.leaving{pointer-events:none!important;animation:leave .17s ease forwards!important}
+@keyframes leave{to{opacity:0;scale:.98;translate:0 -4px}}
+.dlg-bg.leaving,.sh-bg.leaving,.mo-bg.leaving{animation:leaveBg .17s ease forwards!important}
+@keyframes leaveBg{to{opacity:0}}
