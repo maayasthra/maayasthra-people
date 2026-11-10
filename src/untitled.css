@@ -554,3 +554,6 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{display:none;width:0;height:0}
 
 /* Equal left and right space on tablets and phones, even with the side bar hidden */
 @media (max-width:860px){.main,.no-side .main,.app.wide .main,.app.no-side.wide .main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}}
+
+/* Use the width: small side padding and less empty space above the page title */
+@media (min-width:861px){.main,.app.wide .main,.no-side .main,.app.no-side.wide .main{padding-top:16px!important;padding-left:20px!important;padding-right:20px!important}}
