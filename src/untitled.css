@@ -571,3 +571,8 @@ html::-webkit-scrollbar,body::-webkit-scrollbar{display:none;width:0;height:0}
 :root[data-theme="dark"] :is(.pn,.tile,.card,.ps,.mt3-col,.an-pg,.rq3-c){box-shadow:inset 0 1px 0 rgb(255 255 255 / .035)}
 :root[data-theme="dark"] :is(.kt,.mt3-k){box-shadow:inset 0 1px 0 rgb(255 255 255 / .03)}
 :root[data-theme="dark"] .wi-out{background:#3A3A42}:root[data-theme="dark"] .wi-wait{background:#26262C}
+
+/* Dark mode: each panel's title sits on a slightly lighter band so the card has a clear top */
+:root[data-theme="dark"] .pn{padding:0 20px 16px!important;overflow:hidden}
+:root[data-theme="dark"] .pn-h{margin:0 -20px 14px;padding:16px 20px;background:#14141a;border-bottom:1px solid var(--line)}
+:root[data-theme="dark"] .pn-h .btn.sec2{background:var(--card)}
