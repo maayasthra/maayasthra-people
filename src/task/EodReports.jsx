@@ -7,9 +7,9 @@ import { subscribeTables } from '../tasksDb.js';
 import { IS_DEMO } from '../env.js';
 
 const isWorking = iso => { const w = new Date(pd(iso)).getUTCDay(); return w !== 0 && w !== 6 && !HOL[iso]; };
-const dayLabel = iso => new Date(pd(iso)).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+export const dayLabel = iso => new Date(pd(iso)).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
 
-function Report({ r }) {
+export function Report({ r }) {
   const hrs = r.total > 0;
   return html`<div className=${'er-t' + (hrs ? '' : ' nh')} role="table">
     <div className="er-hd" role="row"><span>Project</span><span>Description</span>${hrs && html`<span>Time</span>`}</div>

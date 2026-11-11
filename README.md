@@ -66,6 +66,7 @@ Run these in the Supabase SQL Editor, in order. Each file can be run again safel
 | `0031_retainer_flag.sql` | Retainer tasks stay marked (blue tint) wherever they are moved |
 | `0032_eod_missed_day.sql` | Send an end-of-day report for a missed day (up to 7 days back, once); used by the Home alert |
 | `0033_retainer_color.sql` | Each retainer card can have its own tint colour; duplicates keep it. Only admins and project managers can change it |
+| `0034_eod_own_history.sql` | Everyone can read back their own past day reports (My Tasks > Submitted work); only admins and project managers see other people's |
 
 ## Tests
 

@@ -166,7 +166,7 @@ t('a project manager checks out without any report', (await stepA(x => m.att.che
 as('abines'); await m.loadStaff(); const eoDay = m.att.dayKey();
 t('an employee cannot read someone else’s report', (await m.loadEods(eoDay, eoDay)).filter(r => r.emp !== ids.abines).length === 0);
 await db.exec("insert into eod_reports (employee_id, day, rows, total_hours) values (" + ids.abines + ", public.today_ist() - 1, '[]'::jsonb, 1)");
-t('an employee cannot read their own past reports', !(await m.loadEods(m.att.dayKey(Date.now() - 86400000), eoDay)).some(r => r.emp === ids.abines && r.day !== eoDay));
+t('an employee can read their own past reports, and only their own', (await m.loadEods(m.att.dayKey(Date.now() - 86400000), eoDay)).every(r => r.emp === ids.abines));
 as('vijay'); t('admins and project managers can read everyone’s', (await m.loadEods(eoDay, eoDay)).some(r => r.emp === ids.karthik));
 as('vijay'); await m.loadStaff(); const seen = await m.loadAttendance(3);
 t('an admin sees the check-in', Object.values(seen[ids.karthik] || {}).length === 1);
@@ -388,7 +388,8 @@ t('a future day is refused', /Not allowed/.test(await tryit(async () => m.submit
 // 0032: an employee can see which recent days they already reported, without reading the reports
 t('an employee sees which past days they have reported', JSON.stringify(await m.myEodDays(await q("select (public.today_ist() - 5)::text d").then(r => r[0].d), await q("select (public.today_ist() - 1)::text d").then(r => r[0].d), ids.abines)).includes((await q("select (public.today_ist() - 3)::text d"))[0].d));
 const d3 = (await q("select (public.today_ist() - 3)::text d"))[0].d;
-t('they still cannot read the old report itself', (await m.loadEods(d3, d3)).length === 0);
+t('they can read their own old report back', (await m.loadEods(d3, d3)).length === 1);
+t('they still cannot read anyone else\'s report', (await m.loadEods(d3, d3)).every(r => r.emp === ids.abines));
 
 // 0033: a retainer card can have its own colour; only managers can change it
 as('vijay'); await m.loadStaff();
