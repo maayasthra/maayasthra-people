@@ -74,6 +74,7 @@ function JumpMenu({ m, cols: all, jump, close }) {
 
 export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask, focus, collapsed, setCollapsed, custom, setCustom, layout, setLayout, groups, setGroups }) {
   const [gDrag, setGDrag] = useState(null), [gOver, setGOver] = useState(null);
+  const [openSubs, setOpenSubs] = useState({});   // cards whose subtasks are showing
   const [gdlg, setGdlg] = useState(false);  // false, or the id of the department to show ('' = none in particular)
   // Closing plays its shrink first, then the column is really collapsed
   const closeAnim = (sel, apply) => {
@@ -212,8 +213,9 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
             </div>
             <div className="kt-f">
               ${can ? html`<button className=${'kt-c' + (isDone ? ' on' : '')} onClick=${() => complete(t)} title=${t.done ? 'Reopen' : isDone ? 'Undo' : 'Mark complete'} aria-label=${t.done ? 'Reopen ' + t.title : isDone ? 'Undo complete' : 'Complete ' + t.title}><${Icon} n="check" s=${13}/></button>` : html`<span></span>`}
-              <span className="kt-s">${!t.done && (st => html`<span className=${'kt-st ' + st.k} title=${st.who.length ? st.label + ': ' + st.who.map(n => BY[n] ? BY[n].name : '').filter(Boolean).join(', ') : st.label}><i></i><span className="lb">${st.label}</span></span>`)(statusOf(t))}${t.subs.length > 0 && html`<span><${Icon} n="check" s=${12}/>${t.subs.filter(s => s.done).length}/${t.subs.length}</span>`}${t.comments.length > 0 && html`<span><${Icon} n="comment" s=${12}/>${t.comments.length}</span>`}</span>
+              <span className="kt-s">${!t.done && (st => st.k !== 'new' && html`<span className=${'kt-st ' + st.k} title=${st.who.length ? st.label + ': ' + st.who.map(n => BY[n] ? BY[n].name : '').filter(Boolean).join(', ') : st.label}><i></i><span className="lb">${st.label}</span></span>`)(statusOf(t))}${t.comments.length > 0 && html`<span className="kt-m" title=${t.comments.length + (t.comments.length === 1 ? ' comment' : ' comments')}><${Icon} n="comment" s=${14}/>${t.comments.length}</span>`}${t.subs.length > 0 && html`<button className=${'kt-sb' + (openSubs[t.id] ? ' open' : '')} aria-expanded=${!!openSubs[t.id]} aria-label=${(openSubs[t.id] ? 'Hide' : 'Show') + ' subtasks of ' + t.title} title=${openSubs[t.id] ? 'Hide subtasks' : 'Show subtasks'} onClick=${() => setOpenSubs(o => ({ ...o, [t.id]: !o[t.id] }))}><${Icon} n="check" s=${14}/><b>${t.subs.filter(x => x.done).length}/${t.subs.length}</b><${Icon} n="chevD" s=${14}/></button>`}</span>
             </div>
+            ${t.subs.length > 0 && openSubs[t.id] && html`<ul className="kt-subs">${t.subs.map(sb => html`<li key=${sb.id}><button className=${'kt-sc' + (sb.done ? ' on' : '')} disabled=${!can} aria-label=${(sb.done ? 'Mark not done: ' : 'Mark done: ') + sb.t} onClick=${() => setTasks(ts => ts.map(x => x.id === t.id ? { ...x, subs: x.subs.map(q => q.id === sb.id ? { ...q, done: !q.done } : q) } : x))}><${Icon} n="check" s=${11}/></button><span className=${sb.done ? 'dn' : ''}>${sb.t}</span></li>`)}</ul>`}
           </article>`; })}
         ${over && over.col === key && over.before === null && list.length > 0 && html`<div className="kc-drop"></div>`}
         ${kind !== 'doneCol' && (adding === key

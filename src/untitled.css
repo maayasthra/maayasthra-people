@@ -780,3 +780,34 @@ body{font-size:13.5px;line-height:1.5}
 .kc2 .kc2-b>.kt{min-height:84px}
 .kt-p{display:block;line-height:16px;margin-top:0}
 .kt-open{gap:0}
+
+/* ===== Board card, laid out once and evenly =====
+   12px padding all round · 20px title line · 10px gap · 28px footer · 1px border = 84px. */
+.kc2 .kc2-b>.kt{min-height:0;padding:12px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
+.kc2 .kt-top{display:flex;align-items:flex-start;gap:8px;min-height:20px;margin:0;padding:0}
+.kc2 .kt-open{flex:1;min-width:0;padding:0;display:flex;flex-direction:column;gap:0}
+.kc2 .kt-t{font-size:14px;line-height:20px;font-weight:500}
+.kc2 .kt-dots{flex:none;width:24px;height:24px;margin:-2px -4px 0 0;display:grid;place-items:center}
+.kc2 .kt-f{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:28px;height:28px;margin:0;padding:0}
+/* the complete circle: clearly visible on every tint, tick centred */
+.kc2 .kt-c{flex:none;display:grid;place-items:center;width:24px;height:24px;padding:0;border-radius:50%!important;background:transparent;border:1.5px solid color-mix(in srgb,var(--text) 45%,transparent);color:transparent}
+.kc2 .kt-c svg{display:block}
+.kc2 .kt-c:hover:not(:disabled){border-color:var(--ok);color:var(--ok);background:rgb(48 209 88 / .14)}
+.kc2 .kt-c.on{background:var(--ok);border-color:var(--ok);color:#fff}
+/* right side: status dot, comments, subtasks */
+.kc2 .kt-s{display:flex;align-items:center;justify-content:flex-end;gap:12px;min-width:0;height:28px}
+.kc2 .kt-s>*{display:inline-flex;align-items:center;gap:5px;height:24px;font-size:12px;line-height:16px;color:var(--text-2);font-variant-numeric:tabular-nums}
+.kc2 .kt-m svg,.kc2 .kt-sb svg{flex:none;color:var(--muted)}
+.kc2 .kt-sb{padding:0 6px;margin-right:-6px;border-radius:var(--r-ctl);transition:background-color .15s ease}
+.kc2 .kt-sb b{font-weight:600;color:var(--text)}
+.kc2 .kt-sb:hover{background:rgb(var(--ink) / .08)}
+.kc2 .kt-sb svg:last-child{transition:transform .2s var(--ease)}
+.kc2 .kt-sb.open svg:last-child{transform:rotate(180deg)}
+/* subtasks, shown inside the card */
+.kc2 .kt-subs{list-style:none;margin:0;padding:10px 0 0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.kc2 .kt-subs li{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:18px;color:var(--text-2)}
+.kc2 .kt-subs .dn{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--faint)}
+.kc2 .kt-sc{flex:none;display:grid;place-items:center;width:18px;height:18px;margin-top:0;padding:0;border-radius:50%;border:1.5px solid color-mix(in srgb,var(--text) 40%,transparent);color:transparent}
+.kc2 .kt-sc:hover:not(:disabled){border-color:var(--ok);color:var(--ok)}
+.kc2 .kt-sc.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.kc2 .kt-dots{margin:-2px -4px -2px 0}
