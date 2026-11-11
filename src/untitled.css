@@ -1012,3 +1012,59 @@ body{font-size:13.5px;line-height:1.5}
 .kc2-hd{cursor:grab}
 .kc2-hd:active{cursor:grabbing}
 @media (prefers-reduced-motion:reduce){.kc2 .kt,.kc2.shut,.kc2-h .ib,.kc2 .kt-dots{transition:none}}
+
+/* =====================================================================
+   Interaction states, the same everywhere
+   rest -> hover (soft fill, text brightens) -> pressed (one step deeper) -> focus (orange ring) -> disabled (faded, no feedback)
+   ===================================================================== */
+button,a,[role="button"],summary,label[for]{-webkit-tap-highlight-color:transparent}
+button:not(:disabled),[role="button"],summary,a[href]{cursor:pointer}
+button:disabled,.btn:disabled,[aria-disabled="true"]{cursor:not-allowed}
+
+/* one focus ring for every control (fields keep their own ring) */
+button:focus-visible,a[href]:focus-visible,[role="button"]:focus-visible,summary:focus-visible,[role="radio"]:focus-visible,[role="tab"]:focus-visible,[role="menuitem"]:focus-visible,[role="option"]:focus-visible,.sw:focus-visible,select:focus-visible{outline:2px solid var(--accent)!important;outline-offset:2px}
+.inp:focus-visible,.td-title:focus-visible,textarea:focus-visible,input:focus-visible{outline:0!important}
+
+/* buttons */
+.btn{transition:background-color .15s ease,border-color .15s ease,color .15s ease,box-shadow .15s ease,transform .1s ease,filter .15s ease}
+.btn:active:not(:disabled){transform:scale(.98)}
+.btn.pri:active:not(:disabled){filter:brightness(.92)}
+.btn.sec2:hover:not(:disabled),.btn.ghost:hover:not(:disabled){border-color:var(--text-2)}
+.btn.sec2:active:not(:disabled),.btn.ghost:active:not(:disabled){background:var(--fill-hi)}
+.btn.danger:active:not(:disabled){filter:brightness(.92)}
+.btn:disabled{opacity:.5;box-shadow:none}
+
+/* icon buttons */
+.ib{transition:background-color .15s ease,color .15s ease}
+.ib:hover:not(:disabled){background:var(--fill-hi);color:var(--text)}
+.ib:active:not(:disabled){background:var(--fill)}
+.ib:disabled{opacity:.45}
+
+/* text links */
+.link{transition:color .15s ease,opacity .15s ease}
+.link:hover{text-decoration:underline}
+.link:active{opacity:.75}
+
+/* navigation, rows, menu items, tabs, chips */
+.nav-b,.bnav button,.row,.menu button,.cm button,.lm-r,.mo button,.seg button,.chip,.qi,.di,.oc-p,.th button,.ps-i{transition:background-color .15s ease,color .15s ease,border-color .15s ease}
+.nav-b:active:not(.dis):not(.on),.row:active,.menu button:active,.cm button:active:not(:disabled),.lm-r:active,.mo button:active,.qi:active,.di:active,.ps-i:active{background:var(--fill-hi)}
+.menu button:hover:not(:disabled),.cm button:hover:not(:disabled),.mo button:hover:not(:disabled){background:var(--fill);color:var(--text)}
+.nav-b.dis,.nav-b.dis:hover{background:transparent;cursor:not-allowed}
+.seg button:hover:not(.on):not(:disabled){color:var(--text)}
+.seg button:active:not(.on):not(:disabled){background:var(--fill-hi)}
+.chip:active:not(:disabled){background:var(--fill-hi)}
+.tile[role="button"],.tile.click,button.tile{transition:border-color .15s ease,background-color .15s ease}
+button.tile:hover,.tile.click:hover{border-color:var(--line-hi);background:var(--card-hover)}
+button.tile:active,.tile.click:active{background:var(--fill)}
+
+/* fields */
+.inp,.sel,select.inp{transition:border-color .15s ease,box-shadow .15s ease,background-color .15s ease}
+.inp:hover:not(:focus):not(:disabled){border-color:var(--muted)}
+.inp:disabled{opacity:.6;cursor:not-allowed}
+
+/* switches and checkboxes */
+.sw{transition:background-color .2s ease,filter .15s ease}
+.sw:hover:not(:disabled){filter:brightness(1.1)}
+.sw:active:not(:disabled){filter:brightness(.92)}
+.sw:disabled{opacity:.5;cursor:not-allowed}
+@media (prefers-reduced-motion:reduce){.btn,.ib,.link,.nav-b,.row,.seg button,.chip,.inp,.sw{transition:none}.btn:active:not(:disabled){transform:none}}

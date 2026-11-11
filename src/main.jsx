@@ -48,6 +48,7 @@ import { IS_DEMO } from './env.js';
 import './styles.css';
 import './untitled.css';
 import { startExitMotion } from './exit.js';
+import { startTooltips } from './tooltips.js';
 
 const ALL = { about: 'About', announcements: 'Announcements', members: 'Members', board: 'Board', mytasks: 'My Tasks', eod: 'EOD reports', team: 'Team', home: 'Home', people: 'People', org: 'Org chart', calendar: 'Calendar', attendance: 'Attendance', hours: 'My Hours', leaves: 'My Leaves', requests: 'Requests', settings: 'Settings' };
 const SHORT = { mytasks: 'Mine', eod: 'EOD', org: 'Org', leaves: 'Leaves', attendance: 'Hours', hours: 'Hours' };
@@ -397,6 +398,7 @@ function App() {
 
 applyTheme();
 startExitMotion();
+startTooltips();
 const rootEl = document.getElementById('root');
 const root = rootEl.__root || (rootEl.__root = createRoot(rootEl));   // reused when the dev server reloads this file
 root.render(html`<${App}/>`);
