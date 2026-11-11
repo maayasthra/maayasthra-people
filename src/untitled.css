@@ -811,3 +811,7 @@ body{font-size:13.5px;line-height:1.5}
 .kc2 .kt-sc:hover:not(:disabled){border-color:var(--ok);color:var(--ok)}
 .kc2 .kt-sc.on{background:var(--ok);border-color:var(--ok);color:#fff}
 .kc2 .kt-dots{margin:-2px -4px -2px 0}
+.kc2 .kt-c{opacity:1;border:2px solid var(--text-2);background:rgb(var(--ink) / .06)}
+.kc2 .kt-c:hover:not(:disabled){border-color:var(--ok);background:rgb(48 209 88 / .18)}
+.kc2 .kt-c.on{opacity:1;background:var(--ok);border-color:var(--ok)}
+.kc2 .kt-sc{border-color:var(--text-2);border-width:2px}
