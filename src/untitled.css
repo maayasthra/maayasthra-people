@@ -1197,3 +1197,9 @@ button.tile:active,.tile.click:active{background:var(--fill)}
 .mt3-k .mt3-a .btn.sm,.mt3-k .mt3-a .mt3-rm,.mt3-k .mt3-a .mt3-ok{height:32px;min-height:32px;box-sizing:border-box}
 .mt3-k .mt3-a .mt3-rm,.mt3-k .mt3-a .mt3-ok{width:32px;min-width:32px;padding:0;border-radius:8px!important}
 @media (hover:none),(max-width:640px){.mt3-k .mt3-a .btn.sm,.mt3-k .mt3-a .mt3-rm,.mt3-k .mt3-a .mt3-ok{height:40px;min-height:40px}.mt3-k .mt3-a .mt3-rm,.mt3-k .mt3-a .mt3-ok{width:40px;min-width:40px}}
+/* Same outlined shape for all three actions; only the icon/fill colour differs */
+.mt3-k .mt3-a .mt3-rm,.mt3-k .mt3-a .mt3-ok{border:1px solid var(--line-hi);box-shadow:var(--shadow-xs,none)}
+.mt3-k .mt3-a .mt3-rm{background:var(--card);color:var(--err-text)}
+.mt3-k .mt3-a .mt3-rm:hover{background:var(--err-bg);border-color:var(--err-text)}
+.mt3-k .mt3-a .mt3-ok{border-color:var(--ok);background:var(--ok);color:#fff}
+.mt3-k .mt3-a .mt3-ok:hover{filter:brightness(1.08)}
