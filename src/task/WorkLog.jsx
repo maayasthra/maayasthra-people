@@ -3,7 +3,20 @@ import { html, Icon } from '../ui.jsx';
 import { dayKey, addDays, weekStart, monthDays } from '../attendance.js';
 import { fmtDM, pd, TODISO, plural } from '../data.js';
 import { loadEods, fmtH } from '../eodDb.js';
-import { Report, dayLabel } from './EodReports.jsx';
+import { dayLabel } from './EodReports.jsx';
+
+const rowH = x => x.subs && x.subs.length ? x.subs.reduce((t, s) => t + (Number(s.hours) || 0), 0) : Number(x.hours) || 0;
+const dateBits = iso => { const d = new Date(pd(iso)); return [d.toLocaleDateString('en-IN', { weekday: 'short', timeZone: 'UTC' }), d.getUTCDate(), d.toLocaleDateString('en-IN', { month: 'short', timeZone: 'UTC' })]; };
+
+function DayCard({ r }) {
+  const [wd, dd, mo] = dateBits(r.day);
+  return html`<section className="wl-c"><header><span className="wl-dt"><small>${wd}</small><b>${dd}</b><small>${mo}</small></span>
+    <span className="wl-hd"><b>${r.day === dayKey() ? 'Today' : dayLabel(r.day)}</b><span>${plural(r.rows.length, 'project')}</span></span>
+    ${r.total > 0 && html`<span className="wl-tt">${fmtH(r.total)}</span>`}</header>
+    <ul>${r.rows.map((x, i) => html`<li key=${i}><div className="wl-p"><b>${x.project}</b>${r.total > 0 && html`<span>${fmtH(rowH(x))}</span>`}</div>
+      ${x.desc && html`<p>${x.desc}</p>`}
+      ${(x.subs || []).length > 0 && html`<ul className="wl-sub">${x.subs.map((u, j) => html`<li key=${j}><i></i><span><b>${u.title}</b>${u.desc ? html`<em> · ${u.desc}</em>` : null}</span>${r.total > 0 && html`<small>${fmtH(u.hours)}</small>`}</li>`)}</ul>`}</li>`)}</ul></section>`;
+}
 
 // My Tasks > Submitted work: my own day reports, by Day, Week or Month.
 export function WorkLog({ user, tick }) {
@@ -28,6 +41,6 @@ export function WorkLog({ user, tick }) {
     ${err && html`<div className="eod-e" role="alert">${err}</div>`}
     ${list === null && html`<div className="none">Loading…</div>`}
     ${list !== null && list.length === 0 && !err && html`<div className="none"><b>Nothing submitted ${view === 'day' ? 'on this day' : 'in this period'}</b>Your day reports appear here after you send them.</div>`}
-    ${(list || []).map(r => html`<section className="wl-d" key=${r.day}><h3 className="er-day">${dayLabel(r.day)}${r.total > 0 ? ' · ' + fmtH(r.total) : ''}</h3><${Report} r=${r}/></section>`)}
+    ${(list || []).map(r => html`<${DayCard} key=${r.day + '-' + r.at} r=${r}/>`)}
   </div>`;
 }

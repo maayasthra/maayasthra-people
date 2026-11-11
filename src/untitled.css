@@ -1174,3 +1174,26 @@ button.tile:active,.tile.click:active{background:var(--fill)}
 .ps-h>div{padding:0;margin:0;min-width:0}
 .ps-h{flex-wrap:wrap}
 @media (max-width:640px){.ps-h{flex-direction:column;align-items:stretch;gap:12px}.ps-h .btn{width:100%}}
+
+/* My Tasks > Submitted work: one card per day */
+.wl{display:flex;flex-direction:column;gap:12px}
+.wl .er-nav{margin-bottom:4px}
+.wl-s{font-size:14px;color:var(--muted)}
+.wl-c{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);overflow:hidden}
+.wl-c>header{display:flex;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.wl-dt{display:flex;flex-direction:column;align-items:center;justify-content:center;width:48px;height:56px;border-radius:10px;background:var(--fill);flex:none;line-height:1.1}
+.wl-dt b{font-size:18px;font-weight:600;color:var(--text)}.wl-dt small{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.wl-hd{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}.wl-hd b{font-size:16px;font-weight:600;color:var(--text)}.wl-hd span{font-size:13px;color:var(--muted)}
+.wl-tt{font-size:14px;font-weight:600;color:var(--brand-text);background:var(--brand-tint);border-radius:999px;padding:4px 12px;white-space:nowrap}
+.wl-c>ul{list-style:none;margin:0;padding:0}
+.wl-c>ul>li{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+.wl-c>ul>li:last-child{border-bottom:0}
+.wl-p{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.wl-p b{font-size:15px;font-weight:600;color:var(--text)}.wl-p span{font-size:14px;font-weight:500;color:var(--text-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.wl-c p{margin:0;font-size:14px;line-height:20px;color:var(--text-2);overflow-wrap:anywhere}
+.wl-sub{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.wl-sub li{display:flex;gap:10px;align-items:baseline;font-size:14px;line-height:20px;color:var(--text-2)}
+.wl-sub i{width:5px;height:5px;border-radius:50%;background:var(--faint);flex:none;transform:translateY(-2px)}
+.wl-sub span{flex:1;min-width:0;overflow-wrap:anywhere}.wl-sub b{font-weight:500;color:var(--text)}.wl-sub em{font-style:normal;color:var(--muted)}
+.wl-sub small{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+@media (max-width:560px){.wl-c>header,.wl-c>ul>li{padding-left:14px;padding-right:14px}}
