@@ -4,7 +4,7 @@ import { pendingSound, doneSound, deleteSound } from '../alerts.js';
 import { html, Icon, Av, Switch } from '../ui.jsx';
 import { Sheet } from './parts.jsx';
 import { BY, activeEmps } from '../data.js';
-import { PRIO, LABELS, PINNED, mkTask, colName, completeCard, reopenCard, statusOf } from '../tasks.js';
+import { PRIO, LABELS, PINNED, mkTask, colName, completeCard, reopenCard, statusOf, startTimer, pauseTimer } from '../tasks.js';
 
 const RET_COLORS = ['#0A84FF', '#BF5AF2', '#FF375F', '#FF9F0A', '#FFD60A', '#30D158', '#30B0C7', '#8E8E93'];
 const ago = t => { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'Just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' d ago'; };
@@ -13,9 +13,10 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close
   const isNew = id === 'new';
   const existing = isNew ? null : tasks.find(t => t.id === id);
   const [draft, setDraft] = useState(() => mkTask({ cols: [ctx && ctx.col != null ? ctx.col : user.n] }, user));
-  const [newSub, setNewSub] = useState(''), [addingSub, setAddingSub] = useState(false), [dragSub, setDragSub] = useState(null), [overSub, setOverSub] = useState(null), [comment, setComment] = useState(''), [editSub, setEditSub] = useState(null), [editVal, setEditVal] = useState(''), [sm, setSm] = useState(null), [smQ, setSmQ] = useState(''), [keepSub, setKeepSub] = useState(false), [made, setMade] = useState(''), [confirm, setConfirm] = useState(false), [err, setErr] = useState('');
+  const [newSub, setNewSub] = useState(''), [addingSub, setAddingSub] = useState(false), [dragSub, setDragSub] = useState(null), [overSub, setOverSub] = useState(null), [comment, setComment] = useState(''), [editSub, setEditSub] = useState(null), [editVal, setEditVal] = useState(''), [sm, setSm] = useState(null), [smQ, setSmQ] = useState(''), [keepSub, setKeepSub] = useState(false), [made, setMade] = useState(''), [stm, setStm] = useState(null), [confirm, setConfirm] = useState(false), [err, setErr] = useState('');
   const t = isNew ? draft : existing;
   useEffect(() => { if (!sm) return; const off = () => setSm(null); document.addEventListener('mousedown', off); return () => document.removeEventListener('mousedown', off); }, [!!sm]);
+  useEffect(() => { if (!stm) return; const off = () => setStm(null); document.addEventListener('mousedown', off); return () => document.removeEventListener('mousedown', off); }, [!!stm]);
   if (!t) return null;
   const mgr = role === 'admin' || role === 'pm';
   const canEdit = mgr || isNew || t.cols.includes(user.n) || t.by === user.n || (t.prev || []).includes(user.n);
@@ -35,20 +36,34 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close
     setTasks(ts => { const nt = mkTask({ title, client: t.client, prio: t.prio, labels: t.labels, cols: [person] }, user); return [...(keepSub ? ts : ts.map(x => x.id === t.id ? { ...x, subs: x.subs.filter(q => q.id !== sub.id) } : x)), nt]; });
     setMade('Made “' + title + '” and gave it to ' + (BY[person] ? BY[person].name : 'them') + '.'); setSm(null); setSmQ('');
   };
+  const stNow = t.done ? 'done' : statusOf(t).k;
+  const ST = { new: ['Not started', 'var(--faint)'], idle: ['Paused', '#F5B301'], doing: ['In progress', '#30D158'], done: ['Completed', '#30D158'] };
+  const setStatus = v => {
+    setStm(null);
+    if (v === 'doing') { setTasks(ts => startTimer(ts, t.id, user.n)); }
+    else if (v === 'done') { doneSound(); setTasks(ts => completeCard(ts, t.id)); }
+    else { if (t.done) { pendingSound(); setTasks(ts => reopenCard(ts, t.id, user.n)); } else setTasks(ts => pauseTimer(ts, t.id, user.n)); }
+  };
   const toggleDone = () => { t.done ? pendingSound() : doneSound(); setTasks(ts => t.done ? reopenCard(ts, t.id, user.n) : completeCard(ts, t.id)); };
 
   const footer = isNew ? html`<button className="btn ghost" onClick=${close}>Cancel</button><span style=${{ flex: 1 }}></span><button className="btn pri" onClick=${create}>Create card</button>`
     : mgr ? (confirm ? html`<span className="sh-c">Delete this card?</span><button className="btn ghost" onClick=${() => setConfirm(false)}>Keep</button><button className="btn danger" onClick=${() => { deleteSound(); setTasks(ts => ts.filter(x => x.id !== t.id)); close(); }}>Delete</button>`
-      : html`<button className="btn ghost td2-del" onClick=${() => setConfirm(true)}><${Icon} n="trash" s=${15}/> Delete</button><span style=${{ flex: 1 }}></span><button className="btn pri" onClick=${close}>Done</button>`)
+      : html`<button className="td2-del" onClick=${() => setConfirm(true)}><${Icon} n="trash" s=${15}/> Delete task</button><span style=${{ flex: 1 }}></span><span className="td2-saved"><${Icon} n="check" s=${14}/>Changes save automatically</span><button className="btn pri" onClick=${close}>Done</button>`)
     : html`<span style=${{ flex: 1 }}></span><button className="btn pri" onClick=${close}>${canEdit ? 'Done' : 'Close'}</button>`;
 
-  return html`<${Sheet} title=${isNew ? 'New card' : 'Card'} onClose=${close} footer=${footer}>
+  return html`<${Sheet} title=${isNew ? 'New task' : 'Task details'} onClose=${close} footer=${footer}>
     ${!canEdit && html`<div className="note-row" style=${{ marginBottom: 14 }}><${Icon} n="user" s=${16}/> <span>View only. You are not on this card.</span></div>`}
     <div className="td2-top">
-      ${!isNew && html`<button className=${'td2-tick' + (t.done ? ' on' : '')} disabled=${!canEdit} onClick=${toggleDone} title=${t.done ? 'Reopen' : 'Mark complete'} aria-label=${t.done ? 'Reopen this card' : 'Mark this card complete'}><${Icon} n="check" s=${15}/></button>`}
-      <textarea id="td-title" rows="1" autoFocus=${isNew} className="td-title" value=${t.title} disabled=${!canEdit} placeholder="Card title" ref=${el => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }} onChange=${ev => upd({ title: ev.target.value.replace(/\n/g, ' ') })} onKeyDown=${ev => { if (ev.key === 'Enter') ev.preventDefault(); }} aria-label="Card title"></textarea>
+      ${!isNew && html`<button className=${'td2-tick' + (t.done ? ' on' : '')} disabled=${!canEdit} onClick=${toggleDone} title=${t.done ? 'Reopen' : 'Mark complete'} aria-label=${t.done ? 'Reopen this task' : 'Mark this task complete'}><${Icon} n="check" s=${15}/></button>`}
+      <div className="td2-tw">
+        <textarea id="td-title" rows="1" autoFocus=${isNew} className="td-title" value=${t.title} disabled=${!canEdit} placeholder="Task name" aria-label="Task name" title=${canEdit ? 'Click to rename' : undefined} ref=${el => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }} onChange=${ev => upd({ title: ev.target.value.replace(/\n/g, ' ') })} onKeyDown=${ev => { if (ev.key === 'Enter') { ev.preventDefault(); ev.currentTarget.blur(); } }}></textarea>
+        ${canEdit && html`<span className="td2-pen" aria-hidden="true"><${Icon} n="edit" s=${15}/></span>`}
+      </div>
     </div>
-    ${!isNew && !t.done && (st => html`<div className=${'kt-st big ' + st.k}><i></i>${st.label}${st.who.length > 0 && html`<span> · ${st.who.map(n => BY[n] ? BY[n].name : '').filter(Boolean).join(', ')}</span>`}</div>`)(statusOf(t))}
+    ${!isNew && html`<div className="td2-stw"><button className=${'td2-st-b s-' + stNow} disabled=${!canEdit} aria-haspopup="listbox" aria-expanded=${!!stm} onMouseDown=${ev => ev.stopPropagation()} onClick=${ev => { const r = ev.currentTarget.getBoundingClientRect(); setStm(stm ? null : { x: r.left, y: r.bottom + 6 }); }}><i style=${{ background: ST[stNow][1] }}></i>${ST[stNow][0]}${(stNow === 'doing' || stNow === 'idle') && statusOf(t).who.length > 0 ? html`<span className="td2-who">· ${statusOf(t).who.map(n => BY[n] ? BY[n].name.split(' ')[0] : '').filter(Boolean).join(', ')}</span>` : null}${canEdit && html`<${Icon} n="chevD" s=${14}/>`}</button></div>`}
+    ${stm && createPortal(html`<div className="cm td2-stm" role="listbox" aria-label="Status" style=${{ left: stm.x, top: stm.y }} onMouseDown=${ev => ev.stopPropagation()}>
+      ${[['new', 'Not started', 'Nobody is working on it'], ['doing', 'In progress', 'Start your timer on it'], ['done', 'Completed', 'Move it to Completed Tasks']].map(([k, label, hint]) => { const off = k === 'doing' && !t.cols.includes(user.n); return html`<button key=${k} role="option" aria-selected=${stNow === k || (k === 'new' && stNow === 'idle')} disabled=${off} title=${off ? 'Only people on this card can start it' : undefined} onClick=${() => setStatus(k)}><i style=${{ background: ST[k][1] }}></i><span><b>${label}</b><small>${hint}</small></span>${(stNow === k || (k === 'new' && stNow === 'idle')) && html`<${Icon} n="check" s=${14}/>`}</button>`; })}
+    </div>`, document.body)}
     ${err && html`<div className="lg-err" role="alert">${err}</div>`}
 
     ${made && html`<div className="td2-made" role="status"><${Icon} n="check" s=${15}/><span>${made}</span><button className="ib" onClick=${() => setMade('')} aria-label="Dismiss"><${Icon} n="x" s=${13}/></button></div>`}
@@ -88,8 +103,15 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close
     </section>
 
     <section className="td2-sec"><label className="td2-h" htmlFor="td-desc"><b>Description</b></label>
-      <textarea id="td-desc" className="td2-desc" value=${t.desc} disabled=${!canEdit} placeholder="Add notes, links or details" onChange=${ev => upd({ desc: ev.target.value })}></textarea></section>
+      <textarea id="td-desc" className="td2-desc" rows="3" value=${t.desc} disabled=${!canEdit} placeholder="Add notes, links or details" ref=${el => { if (el) { el.style.height = 'auto'; el.style.height = Math.max(el.scrollHeight, 96) + 'px'; } }} onChange=${ev => upd({ desc: ev.target.value })}></textarea></section>
 
+    ${!isNew && html`<section className="td2-sec td2-cm">
+      <div className="td2-h td2-hk"><span className="td2-k"><${Icon} n="comment" s=${16}/>Comments</span>${t.comments.length > 0 && html`<span className="td2-n">${t.comments.length}</span>`}</div>
+      ${t.comments.map(c => BY[c.by] && html`<div className="td2-c" key=${c.id}><${Av} e=${BY[c.by]} s=${32}/><div><div className="td2-cn"><b>${BY[c.by].name}</b><small>${ago(c.at)}</small></div><p>${c.text}</p></div></div>`)}
+      ${t.comments.length === 0 && !canEdit && html`<p className="td2-empty">No comments yet.</p>`}
+      ${canEdit && html`<div className="td2-comp"><input value=${comment} placeholder="Write a comment" aria-label="New comment" onChange=${ev => setComment(ev.target.value)} onKeyDown=${ev => { if (ev.key === 'Enter') addComment(); }}/>
+        <button className="td2-send" disabled=${!comment.trim()} onClick=${addComment} aria-label="Post comment" title="Post"><${Icon} n="arrow" s=${16}/></button></div>`}
+    </section>`}
     </div>
     <div className="td2-side">
     <div className="td2-props">
@@ -98,21 +120,16 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close
           ${t.cols.map(c => html`<span className="td2-chip" key=${c}>${typeof c === 'number' && BY[c] ? html`<${Av} e=${BY[c]} s=${22}/>` : html`<i className="td2-dot"></i>`}${colName(c, BY, custom)}${mgr && t.cols.length > 1 && !t.done && html`<button onClick=${() => upd({ cols: t.cols.filter(x => x !== c), time: typeof c === 'number' ? stopFor(t.time, c) : t.time })} aria-label=${'Remove ' + colName(c, BY, custom)}><${Icon} n="x" s=${11}/></button>`}</span>`)}
           ${mgr && !t.done && html`<label className="td2-add"><${Icon} n="plus" s=${14}/>Add<select value="" onChange=${ev => { const v = ev.target.value; if (v) upd({ cols: [...t.cols, /^\d+$/.test(v) ? Number(v) : v] }); }} aria-label="Add a person or column"><option value="">Add…</option>${addablePins.map(p => html`<option key=${p[0]} value=${p[0]}>${p[1]}</option>`)}${addable.map(e => html`<option key=${e.n} value=${e.n}>${e.name}</option>`)}</select></label>`}
         </div></div>
-      <div className="td2-r td2-r-ret"><span className="td2-k"><${Icon} n="star" s=${16}/>Retainer${mgr && html`<span className="td2-kr"><${Switch} on=${!!t.retainer} set=${v => { if (!t.cols.includes('retainer')) upd({ retainer: v }); }} label="Retainer task"/></span>`}</span>
-        <div className="td2-v">${mgr ? html`<div className="td2-ret"><small>${t.cols.includes('retainer') ? 'In the Retainer column. Move it out first to unmark it.' : t.retainer ? 'Keeps its blue tint wherever it is moved.' : 'Mark it to keep a blue tint wherever it goes.'}</small>${t.retainer && html`<div className="td2-sw" role="radiogroup" aria-label="Retainer colour">${RET_COLORS.map(c => html`<button key=${c} role="radio" aria-checked=${(t.rcolor || RET_COLORS[0]) === c} className=${'td2-sw-b' + ((t.rcolor || RET_COLORS[0]) === c ? ' on' : '')} style=${{ '--c': c }} title=${c} aria-label=${'Colour ' + c} onClick=${() => upd({ rcolor: c === RET_COLORS[0] ? '' : c })}></button>`)}</div>`}</div>` : html`<span className=${'td2-rtag' + (t.retainer ? ' on' : '')}>${t.retainer ? 'Retainer task' : 'Not a retainer task'}</span>`}</div></div>
+      <div className="td2-r td2-r-ret"><span className="td2-k"><${Icon} n="star" s=${16}/>Retainer${mgr && (t.cols.includes('retainer')
+          ? html`<span className="td2-kr"><span className="td2-lock" title="Set by the Retainer column"><${Icon} n="lock" s=${13}/>On</span></span>`
+          : html`<span className="td2-kr"><${Switch} on=${!!t.retainer} set=${v => upd({ retainer: v })} label="Retainer task"/></span>`)}</span>
+        <div className="td2-v">${mgr ? html`<div className="td2-ret"><small>${t.cols.includes('retainer') ? 'This task is in the Retainer column, so it is a retainer task. Move it to another column to turn this off.' : t.retainer ? 'Keeps its tint wherever it is moved.' : 'Turn on to keep a tint wherever it is moved.'}</small>${t.retainer && html`<div className="td2-sw" role="radiogroup" aria-label="Colour">${RET_COLORS.map(c => { const on = (t.rcolor || RET_COLORS[0]) === c; return html`<button key=${c} role="radio" aria-checked=${on} className=${'td2-sw-b' + (on ? ' on' : '')} style=${{ '--c': c }} aria-label=${'Colour ' + c} onClick=${() => upd({ rcolor: c === RET_COLORS[0] ? '' : c })}>${on && html`<${Icon} n="check" s=${13}/>`}</button>`; })}</div>`}</div>` : html`<span className=${'td2-rtag' + (t.retainer ? ' on' : '')}>${t.retainer ? 'Retainer task' : 'Not a retainer task'}</span>`}</div></div>
       <div className="td2-r"><span className="td2-k"><${Icon} n="flag" s=${16}/>Priority</span>
-        <div className="td2-v"><div className="seg s3" role="group" aria-label="Priority">${Object.entries(PRIO).map(([k, v]) => html`<button key=${k} disabled=${!canEdit} className=${t.prio === k ? 'on' : ''} onClick=${() => upd({ prio: k })}>${v[0]}</button>`)}</div></div></div>
+        <div className="td2-v"><div className="seg s3" role="group" aria-label="Priority">${Object.entries(PRIO).map(([k, v]) => html`<button key=${k} type="button" role="radio" aria-checked=${t.prio === k} disabled=${!canEdit} className=${t.prio === k ? 'on' : ''} onClick=${() => upd({ prio: k })}><i style=${{ background: v[1] }}></i>${v[0]}</button>`)}</div></div></div>
       <div className="td2-r"><span className="td2-k"><${Icon} n="tag" s=${16}/>Labels</span>
-        <div className="td2-v td2-chips">${LABELS.map(l => html`<button key=${l} disabled=${!canEdit} className=${'chip' + (t.labels.includes(l) ? ' on' : '')} onClick=${() => upd({ labels: t.labels.includes(l) ? t.labels.filter(x => x !== l) : [...t.labels, l] })}>${l}</button>`)}</div></div>
+        <div className="td2-v td2-chips">${LABELS.map(l => html`<button key=${l} disabled=${!canEdit} className=${'chip' + (t.labels.includes(l) ? ' on' : '')} aria-pressed=${t.labels.includes(l)} onClick=${() => upd({ labels: t.labels.includes(l) ? t.labels.filter(x => x !== l) : [...t.labels, l] })}>${t.labels.includes(l) && html`<${Icon} n="check" s=${13}/>`}${l}</button>`)}</div></div>
     </div>
 
-    ${!isNew && html`<section className="td2-sec">
-      <div className="td2-h td2-hk"><span className="td2-k"><${Icon} n="comment" s=${16}/>Comments</span>${t.comments.length > 0 && html`<span className="td2-n">${t.comments.length}</span>`}</div>
-      ${t.comments.map(c => BY[c.by] && html`<div className="td2-c" key=${c.id}><${Av} e=${BY[c.by]} s=${32}/><div><div className="td2-cn"><b>${BY[c.by].name}</b><small>${ago(c.at)}</small></div><p>${c.text}</p></div></div>`)}
-      ${t.comments.length === 0 && !canEdit && html`<p className="td2-empty">No comments yet.</p>`}
-      ${canEdit && html`<div className="td2-comp"><input value=${comment} placeholder="Write a comment" aria-label="New comment" onChange=${ev => setComment(ev.target.value)} onKeyDown=${ev => { if (ev.key === 'Enter') addComment(); }}/>
-        <button className="td2-send" disabled=${!comment.trim()} onClick=${addComment} aria-label="Post comment" title="Post"><${Icon} n="arrow" s=${16}/></button></div>`}
-    </section>`}
     </div>
     </div>
   <//>`;

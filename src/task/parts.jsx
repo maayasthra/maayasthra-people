@@ -6,9 +6,19 @@ import { PRIO, dueState } from '../tasks.js';
 /* A sheet that slides in from the right (a bottom sheet on phones) */
 export function Sheet({ title, onClose, children, footer }) {
   useEffect(() => {
-    const k = ev => { if (ev.key === 'Escape') onClose(); };
+    const was = document.activeElement;
+    const k = ev => {
+      if (ev.key === 'Escape') { onClose(); return; }
+      if (ev.key !== 'Tab') return;
+      const box = document.querySelector('.sh'); if (!box) return;
+      const f = [...box.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),textarea:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])')].filter(e => e.offsetParent !== null);
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (ev.shiftKey && (document.activeElement === first || !box.contains(document.activeElement))) { ev.preventDefault(); last.focus(); }
+      else if (!ev.shiftKey && (document.activeElement === last || !box.contains(document.activeElement))) { ev.preventDefault(); first.focus(); }
+    };
     document.addEventListener('keydown', k); document.body.style.overflow = 'hidden';
-    return () => { document.removeEventListener('keydown', k); document.body.style.overflow = ''; };
+    return () => { document.removeEventListener('keydown', k); document.body.style.overflow = ''; if (was && was.focus) try { was.focus(); } catch (x) { /* ignore */ } };
   }, []);
   return html`<div className="sh-bg" onClick=${onClose}></div>
     <aside className="sh" role="dialog" aria-modal="true" aria-label=${title}>
