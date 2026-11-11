@@ -840,3 +840,8 @@ body{font-size:13.5px;line-height:1.5}
 /* comments */
 .td2-side .td2-comp{margin-top:0}
 .td2-side .td2-c{padding:0}
+.kc2 .kt-c{border:1.5px solid var(--muted);background:rgb(var(--ink) / .03);opacity:.8}
+.kc2 .kt-c:hover:not(:disabled){opacity:1;border-color:var(--ok);background:rgb(48 209 88 / .14)}
+.kc2 .kt-c.on{opacity:1}
+.kc2 .kt-sc{border-width:1.5px;border-color:var(--muted);opacity:.8}
+.kc2 .kt-sc.on{opacity:1}
