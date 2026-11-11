@@ -815,3 +815,28 @@ body{font-size:13.5px;line-height:1.5}
 .kc2 .kt-c:hover:not(:disabled){border-color:var(--ok);background:rgb(48 209 88 / .18)}
 .kc2 .kt-c.on{opacity:1;background:var(--ok);border-color:var(--ok)}
 .kc2 .kt-sc{border-color:var(--text-2);border-width:2px}
+
+/* ===== Card details, right-hand panel: one rhythm =====
+   every section = [icon  LABEL  (control on the right)] then its content 12px below, 18px above and below, hairline between */
+.td2-side{padding:4px 20px 8px}
+.td2-side .td2-r,.td2-side .td2-sec{display:flex;flex-direction:column;align-items:stretch;gap:12px;padding:18px 0;margin:0;border:0;border-bottom:1px solid var(--line)}
+.td2-side .td2-sec{border-top:0}
+.td2-side .td2-r:last-child,.td2-side .td2-sec:last-child{border-bottom:0}
+.td2-side .td2-k,.td2-side .td2-hk .td2-k{display:flex;align-items:center;gap:10px;min-height:24px;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+.td2-side .td2-k svg{flex:none;width:16px;height:16px}
+.td2-side .td2-kr{margin-left:auto;display:inline-flex;align-items:center;letter-spacing:0;text-transform:none}
+.td2-side .td2-hk{display:flex;align-items:center;justify-content:space-between;margin:0}
+.td2-side .td2-v{margin:0}
+/* retainer: hint, then evenly spaced round swatches */
+.td2-side .td2-ret{display:flex;flex-direction:column;gap:12px}
+.td2-side .td2-ret small{font-size:12.5px;line-height:18px;color:var(--muted)}
+.td2-side .td2-sw{display:flex;flex-wrap:wrap;gap:10px;width:auto;margin:0}
+.td2-side .td2-sw-b{width:24px;height:24px;border-radius:50%!important;border:0;padding:0}
+.td2-side .td2-sw-b.on{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--c);transform:none}
+/* assigned to, labels: same height chips, same gaps */
+.td2-side .td2-chips{display:flex;flex-wrap:wrap;gap:8px}
+.td2-side .td2-chip,.td2-side .td2-add,.td2-side .td2-r .chip{height:32px;box-sizing:border-box;display:inline-flex;align-items:center}
+.td2-side .seg.s3{width:100%}
+/* comments */
+.td2-side .td2-comp{margin-top:0}
+.td2-side .td2-c{padding:0}
