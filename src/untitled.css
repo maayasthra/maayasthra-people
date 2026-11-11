@@ -950,3 +950,65 @@ body{font-size:13.5px;line-height:1.5}
   .sh .td-title{font-size:20px;line-height:26px}
   .td2-saved{display:none}
 }
+
+/* =====================================================================
+   Kanban board polish. Horizontal scrolling is untouched.
+   Radius system: columns 12 · cards 8 · controls 8 · pills full.
+   Type: column title 14/600 · card title 14/500 · meta 12 · counts 12/600.
+   ===================================================================== */
+
+/* columns: one surface, one border, one header */
+.kc2{border-radius:12px;position:relative}
+.kc2-h{display:flex;align-items:center;gap:8px;height:40px;padding:0 4px 0 6px;margin:0 0 4px}
+.kc2 .kc2-t{font-size:14px;font-weight:600;line-height:20px;letter-spacing:-.005em;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kc2-lead{flex:none;display:grid;place-items:center;width:22px;height:22px}
+.kc2-ico{color:var(--muted)}
+.kc2-ico svg{display:block}
+/* the same count pill on open and collapsed columns */
+.kc-n,.kc2.shut .kc-n{display:inline-grid;place-items:center;flex:none;min-width:22px;height:20px;padding:0 6px;box-sizing:border-box;border-radius:999px;background:var(--fill-hi);color:var(--text-2);font-size:12px;font-weight:600;line-height:20px;font-variant-numeric:tabular-nums}
+.kc2.shut .kc-n{width:auto}
+/* header actions: same box, same stroke, same feedback */
+.kc2-h .ib{flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:8px!important;color:var(--muted);transition:background-color .15s ease,color .15s ease}
+.kc2-h .ib svg{width:16px;height:16px;stroke-width:1.8}
+.kc2-h .ib:hover{background:var(--fill-hi);color:var(--text)}
+.kc2-h .ib:active{background:var(--fill);transform:none}
+/* department boxes: columns inside lose their own border so borders are not nested */
+.kgrp .kc2{border-color:transparent}
+.kgrp-h .kgrp-t b{font-size:14px;font-weight:600}
+/* collapsed strip: readable label, count and a clear expand target */
+.kc2.shut{cursor:pointer;transition:background-color .15s ease,border-color .15s ease}
+.kc2.shut:hover{background:var(--card-hover);border-color:var(--line-hi)}
+.kc2 .kc2-s{color:var(--text-2)}
+.kc2 .kc2-s svg{color:var(--muted)}
+.kc2 .kc2-v{font-size:14px;font-weight:600;color:var(--text)}
+.kc2 .kc2-s:focus-visible{outline:2px solid var(--accent);outline-offset:-3px;border-radius:12px}
+
+/* cards: states */
+.kc2 .kt{transition:border-color .15s ease,background-color .15s ease,opacity .15s ease,box-shadow .15s ease}
+.kc2 .kt:hover{border-color:var(--line-hi)}
+.kc2 .kt:focus-within{border-color:var(--line-hi)}
+.kc2 .kt-open:focus-visible,.kc2 .kt-c:focus-visible,.kc2 .kt-dots:focus-visible,.kc2 .kt-sb:focus-visible,.kc2 .kt-sc:focus-visible,.kc2 .kc-new:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.kc2 .kt-open{text-align:left}
+.kc2 .kt-dots{color:var(--muted);border-radius:6px!important;transition:background-color .15s ease,color .15s ease}
+.kc2 .kt-dots:hover{background:rgb(var(--ink) / .1);color:var(--text)}
+.kc2 .kt-s>*,.kc2 .kt-st{color:var(--text-2)}
+.kc2 .kt.isdone .kt-t{color:var(--muted)}
+.kc2 .kc2-b .kt-p{color:var(--muted);font-size:12px}
+
+/* "+ New task": same size and look in every column */
+.kc2 .kc-new{display:flex;align-items:center;gap:8px;width:100%;height:32px;padding:0 8px;margin:0;border-radius:8px!important;font-size:13px;font-weight:500;color:var(--muted);transition:background-color .15s ease,color .15s ease}
+.kc2 .kc-new:hover{background:var(--fill);color:var(--text)}
+
+/* drag and drop: clear source, clear insertion point, clear drop zone */
+.kc2 .kt.dragging{opacity:.4;outline:1px dashed var(--line-hi);outline-offset:-1px;cursor:grabbing}
+.kc2 .kt.drop-before::before{top:-5px;height:2px;left:2px;right:2px;background:var(--accent);border-radius:2px;box-shadow:0 0 0 3px var(--accent-soft)}
+.kc2 .kc2-b>.kt:first-child.drop-before::before{top:-4px}
+.kc2 .kc-drop{height:2px;margin:2px;background:var(--accent);border-radius:2px;box-shadow:0 0 0 3px var(--accent-soft)}
+.kc2.over{border-color:var(--accent)!important;background:color-mix(in srgb,var(--accent) 5%,var(--card-hi))}
+.kc2.col-drag{opacity:.5}
+.kc2.ovr-l::before,.kc2.ovr-r::before{content:"";position:absolute;top:0;bottom:0;width:3px;border-radius:3px;background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);z-index:2}
+.kc2.ovr-l::before{left:-8px}
+.kc2.ovr-r::before{right:-8px}
+.kc2-hd{cursor:grab}
+.kc2-hd:active{cursor:grabbing}
+@media (prefers-reduced-motion:reduce){.kc2 .kt,.kc2.shut,.kc2-h .ib,.kc2 .kt-dots{transition:none}}
