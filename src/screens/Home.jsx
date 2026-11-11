@@ -78,10 +78,10 @@ function Birthdays({ open }) {
 
 function Actions({ leaves, go, openForm, compose }) {
   return html`<div className="acts">
-    <button className="btn pri" onClick=${() => openForm(null)}><${Icon} n="plus" s=${16}/> Add employee</button>
-    <button className="btn ghost" onClick=${compose}><${Icon} n="megaphone" s=${16}/> Announce</button>
-    <button className="btn ghost" onClick=${() => downloadLeaveReport(leaves)}><${Icon} n="download" s=${16}/> Report</button>
-    <button className="btn ghost" onClick=${() => go('settings')}><${Icon} n="settings" s=${16}/> Policy</button></div>`;
+    <button className="btn pri" onClick=${() => openForm(null)}><${Icon} n="plus" s=${16}/><span className="lb">Add employee</span></button>
+    <button className="btn ghost" onClick=${compose} title="Post an announcement" aria-label="Announce"><${Icon} n="megaphone" s=${16}/><span className="lb">Announce</span></button>
+    <button className="btn ghost" onClick=${() => downloadLeaveReport(leaves)} title="Download the leave report" aria-label="Report"><${Icon} n="download" s=${16}/><span className="lb">Report</span></button>
+    <button className="btn ghost" onClick=${() => go('settings')} title="Leave policy and settings" aria-label="Policy"><${Icon} n="settings" s=${16}/><span className="lb">Policy</span></button></div>`;
 }
 
 
@@ -199,13 +199,12 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
       <div className="home-h"><div>
       <h1 className="h-greet">${greet}, ${first(user)}.</h1></div>
       <${Actions} leaves=${leaves} go=${go} openForm=${openForm} compose=${compose}/></div>
-      <p className="lede">${pending ? html`<span><b>${pending}</b> to review</span>` : 'All clear'}</p>
       <${ProfileSetup} user=${user} openForm=${openForm}/>
       <div className="tiles">
         <${Tile} icon="people" tone="blue" label="Headcount" value=${people.length} sub=${depts + ' departments'} onClick=${() => go('org')}/>
-        <${Tile} icon="leaves" tone="purple" label="On leave today" value=${onLeave} sub=${HOL[TODISO] ? 'Holiday: ' + HOL[TODISO] : onLeave ? 'away' : 'all in'} onClick=${() => go('calendar')}/>
-        <${Tile} icon="requests" tone="orange" hot=${pending > 0} label="Waiting for you" value=${pending} sub="to review" onClick=${() => go('requests')}/>
-        <${Tile} icon="check" tone="green" label="Checked in now" value=${inNow} sub=${expected ? 'of ' + expected : 'studio closed today'} onClick=${() => go('attendance')}/>
+        <${Tile} icon="leaves" tone="purple" label="On leave today" value=${onLeave} sub=${HOL[TODISO] ? 'Holiday: ' + HOL[TODISO] : onLeave ? (onLeave === 1 ? 'person away' : 'people away') : 'Nobody is away'} onClick=${() => go('calendar')}/>
+        <${Tile} icon="requests" tone="orange" hot=${pending > 0} label="Waiting for you" value=${pending} sub=${pending ? (pending === 1 ? 'leave request to review' : 'leave requests to review') : 'Nothing to review'} onClick=${() => go('requests')}/>
+        <${Tile} icon="check" tone="green" label="Checked in now" value=${inNow} sub=${expected ? 'of ' + expected + ' expected today' : 'Studio closed today'} onClick=${() => go('attendance')}/>
       </div>
       <section className="sec wi-s"><${WhoIsIn} att=${att} leaves=${leaves} open=${open}/></section>
       <section className="eq3 sec">

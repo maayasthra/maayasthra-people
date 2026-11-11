@@ -1068,3 +1068,109 @@ button.tile:active,.tile.click:active{background:var(--fill)}
 .sw:active:not(:disabled){filter:brightness(.92)}
 .sw:disabled{opacity:.5;cursor:not-allowed}
 @media (prefers-reduced-motion:reduce){.btn,.ib,.link,.nav-b,.row,.seg button,.chip,.inp,.sw{transition:none}.btn:active:not(:disabled){transform:none}}
+
+/* =====================================================================
+   Dashboard refinement (admin Home): top bar, greeting, profile banner, KPIs, Who is in, lists, sidebar
+   One control height in the top bar (40px), one radius (8px), one rhythm (8 / 12 / 16 / 24).
+   ===================================================================== */
+
+/* top bar */
+.hdr .nav-t,.hdr .nf-b{width:40px;height:40px;border-radius:8px!important}
+.hdr .qs,.hdr .hs,.hdr .qs .inp,.hdr .qs input{height:40px;box-sizing:border-box}
+.hdr .qs input::placeholder{color:var(--muted)}
+.hdr .ck,.hdr .ck-d{height:40px;box-sizing:border-box;border-radius:8px!important}
+.hdr .tr,.hdr .tr-me{height:40px;box-sizing:border-box}
+
+/* greeting and actions */
+.date-l{font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.home-h{align-items:flex-end;gap:16px;flex-wrap:wrap}
+.h-greet{margin-top:4px}
+.acts{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
+.acts .btn{height:36px;padding:0 14px;font-size:13px;gap:8px}
+.acts .btn.ghost{color:var(--text-2);background:transparent}
+.acts .btn.ghost:hover:not(:disabled){background:var(--fill);color:var(--text)}
+@media (max-width:720px){
+  .acts .btn.ghost{width:36px;padding:0;justify-content:center}
+  .acts .btn.ghost .lb{display:none}
+}
+
+/* profile banner: compact, readable progress, two clear chip states */
+.ps{padding:14px 16px;border-radius:12px}
+.ps-h{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.ps-h h2{font-size:14px;font-weight:600;margin:0;line-height:20px}
+.ps-h p{font-size:12.5px;line-height:18px;color:var(--text-2);margin:2px 0 0}
+.ps-p{display:flex;align-items:center;gap:12px;margin-top:12px}
+.ps-bar{flex:1;height:6px;border-radius:999px;background:var(--fill-hi);overflow:hidden}
+.ps-bar i{display:block;height:100%;min-width:0;border-radius:999px;background:var(--accent);transition:width .3s var(--ease)}
+.ps-p b{min-width:44px;text-align:right;font-size:12px;font-weight:600;line-height:16px;color:var(--text-2);font-variant-numeric:tabular-nums}
+.ps-l{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.ps-i{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px 0 8px;border:1px solid var(--line-hi);border-radius:8px!important;background:var(--card);font-size:13px;font-weight:500;color:var(--text-2)}
+.ps-i:hover:not(:disabled){background:var(--fill);color:var(--text)}
+.ps-ck{flex:none;display:grid;place-items:center;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--muted);color:transparent}
+.ps-i.on{background:transparent;border-color:var(--line);color:var(--muted);cursor:default}
+.ps-i.on .ps-ck{background:var(--ok);border-color:var(--ok);color:#fff}
+
+/* KPI cards: one structure */
+.tiles{gap:12px}
+.tile{display:flex;align-items:center;gap:14px;padding:16px;min-height:0;border-radius:12px;text-align:left}
+.tile-i{flex:none;width:40px;height:40px;border-radius:10px}
+.tile-v{min-width:0}
+.tile-v b{font-size:24px;line-height:30px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.tile-l{margin-top:0;font-size:13px;font-weight:500;line-height:18px;color:var(--text)}
+.tile-v small{margin-top:0;font-size:12px;line-height:16px;color:var(--muted)}
+.tile.hot{border-color:color-mix(in srgb,var(--accent) 38%,var(--line));background:color-mix(in srgb,var(--accent) 5%,var(--card))}
+.tile.hot .tile-v b{color:var(--brand-text)}
+
+/* Who is in: no fade, no hidden rows, a thin visible scrollbar when the list is long */
+.wi-s .pn-b{max-height:none!important;overflow:visible!important;-webkit-mask-image:none!important;mask-image:none!important;padding:0!important;display:block}
+.wi-t{margin-bottom:12px;gap:8px}
+.wi-tab{height:32px;padding:0 12px 0 10px;gap:8px;border-radius:8px!important}
+.wi-tab b{display:grid;place-items:center;min-width:22px;height:20px;padding:0 6px;box-sizing:border-box;border-radius:999px;background:var(--fill-hi);font-size:12px;font-weight:600;line-height:20px;color:var(--text)}
+.wi-tab>span:last-child{font-size:13px;font-weight:500;color:var(--text-2)}
+.wi-tab.on{background:var(--brand-tint);border-color:color-mix(in srgb,var(--accent) 45%,transparent)}
+.wi-tab.on>span:last-child{color:var(--brand-text)}
+.wi-tab.on b{background:var(--accent);color:#fff}
+.wi-s .wi-l{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:2px 8px;max-height:236px;overflow-y:auto;overflow-x:hidden;padding-right:4px;scrollbar-width:thin;scrollbar-color:var(--line-hi) transparent;
+  background:linear-gradient(var(--card) 30%,rgb(0 0 0 / 0)),linear-gradient(rgb(0 0 0 / 0),var(--card) 70%) 0 100%,radial-gradient(farthest-side at 50% 0,rgb(0 0 0 / .4),rgb(0 0 0 / 0)),radial-gradient(farthest-side at 50% 100%,rgb(0 0 0 / .4),rgb(0 0 0 / 0)) 0 100%;
+  background-repeat:no-repeat;background-size:100% 28px,100% 28px,100% 8px,100% 8px;background-attachment:local,local,scroll,scroll}
+.wi-s .wi-l::-webkit-scrollbar{display:block;width:6px}
+.wi-s .wi-l::-webkit-scrollbar-thumb{background:var(--line-hi);border-radius:999px}
+.wi-s .wi-p{height:48px;min-width:0;padding:0 8px;gap:10px;border-radius:8px!important}
+.wi-s .wi-p .row-t{min-width:0}
+.wi-s .wi-p .row-t b{font-size:13px;font-weight:500;line-height:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
+.wi-s .wi-p .row-t span{font-size:12px;line-height:16px;color:var(--text-2)}
+
+/* list panels: no bottom fade, one row pattern, clear date and countdown */
+.pn-b{-webkit-mask-image:none!important;mask-image:none!important}
+.pn .row{display:flex;align-items:center;gap:12px;min-height:52px;padding:6px 8px;border-radius:8px!important}
+.pn .row .row-t{min-width:0;flex:1}
+.pn .row .row-t b{display:block;font-size:13px;font-weight:500;line-height:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pn .row .row-t span{display:block;font-size:12px;line-height:16px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pn .row-d{display:flex;flex-direction:column;align-items:flex-end;gap:1px;flex:none;font-size:13px;font-weight:500;line-height:18px;color:var(--text);white-space:nowrap}
+.pn .row-d em{font-style:normal;font-size:12px;font-weight:400;line-height:16px;color:var(--muted)}
+.pn-h .ib{border-radius:8px!important}
+
+/* sidebar: quiet, even, one icon size */
+.side .nav{gap:2px}
+.nav-b{height:36px;padding:0 10px;gap:10px;font-size:13.5px;font-weight:500;color:var(--text-2)}
+.nav-b svg{flex:none;width:18px;height:18px;stroke-width:1.6;color:var(--muted)}
+.nav-b:hover:not(.dis){background:var(--fill);color:var(--text)}
+.nav-b.on{background:var(--fill-hi);color:var(--text)}
+.nav-b.on svg{color:var(--brand-text)}
+.apps2{padding:3px;gap:2px;border-radius:10px;background:var(--fill);border:1px solid var(--line)}
+.apps2 button{height:32px;border-radius:8px!important;font-size:13px;font-weight:500;color:var(--muted)}
+.apps2 button:hover:not(.on){color:var(--text)}
+.apps2 button.on{background:var(--card);color:var(--text);box-shadow:inset 0 0 0 1px var(--line-hi)}
+
+/* tablet and phone: actions in a tidy row, banner text flush with its bar */
+@media (max-width:860px){
+  .acts{flex-direction:row;flex-wrap:wrap;justify-content:flex-start;width:100%}
+  .acts .btn{width:auto;flex:none}
+}
+@media (max-width:560px){
+  .acts .btn.pri{flex:1 1 100%;width:100%;justify-content:center}
+  .acts{justify-content:flex-end}
+}
+.ps-h>div{padding:0;margin:0;min-width:0}
+.ps-h{flex-wrap:wrap}
+@media (max-width:640px){.ps-h{flex-direction:column;align-items:stretch;gap:12px}.ps-h .btn{width:100%}}

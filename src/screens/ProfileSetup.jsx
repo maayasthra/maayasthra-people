@@ -18,7 +18,7 @@ export function ProfileSetup({ user, openForm }) {
       <div><h2>Finish setting up your profile</h2><p>${done === 0 ? 'Help the team get to know you. It takes a minute.' : done + ' of ' + SETUP.length + ' done. Nearly there.'}</p></div>
       <button className="btn pri sm" onClick=${() => openForm(user.n)}>${done === 0 ? 'Get started' : 'Continue'}</button>
     </div>
-    <div className="ps-p"><div className="ps-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow=${pct} aria-label="Profile completion"><i style=${{ width: pct + '%' }}></i></div><b>${pct}%</b></div>
+    <div className="ps-p"><div className="ps-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow=${pct} aria-label="Profile completion"><i style=${{ width: pct + '%' }}></i></div><b>${done} of ${SETUP.length}</b></div>
     <div className="ps-l">${SETUP.map(s => { const d = s.done(user); return html`<button key=${s.k} className=${'ps-i' + (d ? ' on' : '')} onClick=${() => !d && openForm(user.n)} disabled=${d}><span className="ps-ck"><${Icon} n="check" s=${12}/></span>${s.label}</button>`; })}</div>
   </section>`;
 }
