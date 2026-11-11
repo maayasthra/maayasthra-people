@@ -1191,3 +1191,9 @@ button.tile:active,.tile.click:active{background:var(--fill)}
 .wl-r p.wl-sb{margin-top:2px;padding-left:12px;color:var(--muted);position:relative}
 .wl-r p.wl-sb:before{content:"";position:absolute;left:0;top:10px;width:4px;height:4px;border-radius:50%;background:var(--faint)}
 @media (max-width:640px){.wl-r{grid-template-columns:1fr;gap:10px;padding:16px}.wl-dt{flex-direction:row;justify-content:space-between;align-items:baseline}}
+
+/* My Tasks card actions: delete, text button and complete are all the same height, icon buttons are square-ish at the same size */
+.mt3-a{gap:8px}
+.mt3-k .mt3-a .btn.sm,.mt3-k .mt3-a .mt3-rm,.mt3-k .mt3-a .mt3-ok{height:32px;min-height:32px;box-sizing:border-box}
+.mt3-k .mt3-a .mt3-rm,.mt3-k .mt3-a .mt3-ok{width:32px;min-width:32px;padding:0;border-radius:8px!important}
+@media (hover:none),(max-width:640px){.mt3-k .mt3-a .btn.sm,.mt3-k .mt3-a .mt3-rm,.mt3-k .mt3-a .mt3-ok{height:40px;min-height:40px}.mt3-k .mt3-a .mt3-rm,.mt3-k .mt3-a .mt3-ok{width:40px;min-width:40px}}
