@@ -95,7 +95,7 @@ Check-in and leave allocation serialize on the employee row. Restoring declined 
 
 At 500 hot timer entries, `task_timer` archives closed sessions transactionally before starting the next timer. Open sessions remain on the task. `loadBoard` merges archived history so total and date-range reports retain every session. Archives inherit task read permissions and are not writable through the client API. Do not deploy the frontend before migration 0039, or revert to a frontend that ignores archived history after archival has started.
 
-Before an approved release, verify backup/restore and the installed baseline, recheck existing JSON compatibility (including `board_groups.members`), and review migrations 0034–0041 as the observed pending set. Migration 0039 intentionally fails atomically if existing group member data is malformed. All testing here uses isolated synthetic data; production has not been changed.
+Before an approved release, verify backup/restore and the installed baseline, recheck existing JSON compatibility (including `board_groups.members`), and review migrations 0034–0041 as the observed pending set. Migration 0039 intentionally fails atomically if existing group member data is malformed. The audit test suites use isolated synthetic data. Migrations 0034–0041 and the matching frontend were released on 13 November 2026; reconcile the installed baseline before future migrations.
 
 Lost-response recovery uses stable creation keys for employees, announcements and leave; task inserts ignore existing identities and reconcile newer local edits. Identical missed-day reports and matching attendance states can confirm a previously committed write. Different saved reports remain immutable. Retry identity is retained during the active edit session; this is not an offline queue that survives closing the browser.
 
@@ -104,3 +104,7 @@ The directory/private contacts, attendance, EOD, holidays and groups use the sha
 Task-list and timer RPCs recheck authorization after acquiring the task row lock, so assignment changes while a request waits take effect before its mutation. Uncertain list additions reconcile before newer edits/removals; discarded uncertain card creations are checked and removed safely. Timer-history loading deduplicates sessions that move into the archive during a read. Partial employee creation retains its core-field baseline until contacts and readback succeed.
 
 Directory refreshes reject superseded responses before publishing shared state, preventing a delayed admin contact read from replacing a newer restricted account's directory.
+
+## Production builds
+
+Cloudflare Workers Builds watches `main`, runs `npm run build`, then `npx wrangler deploy`. Verify the Git-triggered build succeeds for the pushed commit and that the resulting Worker version serves traffic. A successful manual retry alone does not verify automatic builds.
