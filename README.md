@@ -108,3 +108,5 @@ Directory refreshes reject superseded responses before publishing shared state, 
 ## Production builds
 
 Cloudflare Workers Builds watches `main`, runs `npm run build`, then `npx wrangler deploy`. Verify the Git-triggered build succeeds for the pushed commit and that the resulting Worker version serves traffic. A successful manual retry alone does not verify automatic builds.
+
+A documentation-only push on 13 November 2026 verified the production Git trigger using the replacement build token. Keep build tokens valid and selected in the production build configuration; inspect failed automatic builds before retrying. This deployment process does not apply Supabase migrations.
