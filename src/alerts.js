@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from './auth.js';
+import { readAll } from './readAll.js';
 import { subscribeTables } from './tasksDb.js';
 import { IS_DEMO } from './env.js';
 import { HOL, pd, BY } from './data.js';
@@ -59,19 +60,20 @@ const DKEY = 'mp-ann-read';
 const demoReads = () => { try { const d = JSON.parse(localStorage.getItem(DKEY) || '{}'); Object.keys(d).forEach(k => { if (Array.isArray(d[k])) d[k] = Object.fromEntries(d[k].map(id => [id, Date.now()])); }); return d; } catch (x) { return {}; } };
 async function loadReads(me) {
   if (IS_DEMO) return new Set(Object.keys(demoReads()[me] || {}));
-  const { data, error } = await supabase.from('announcement_reads').select('announcement_id');
-  if (error) throw new Error('reads');
+  const data = await readAll(() => supabase.from('announcement_reads').select('announcement_id').eq('employee_id', me).order('announcement_id'), 'reads');
   return new Set(data.map(r => String(r.announcement_id)));
 }
 async function markRead(me, id) {
   if (IS_DEMO) { const d = demoReads(); d[me] = { ...(d[me] || {}), [String(id)]: Date.now() }; try { localStorage.setItem(DKEY, JSON.stringify(d)); } catch (x) {} return; }
-  await supabase.rpc('mark_announcement_read', { p_id: id });
+  const { error } = await supabase.rpc('mark_announcement_read', { p_id: id });
+  if (error) throw new Error('Could not acknowledge this announcement. Please try again.');
 }
 
 export function useAnnouncementAlerts(auth, ann) {
   const me = auth ? auth.user.n : 0;
   const [reads, setReads] = useState(null), [tick, setTick] = useState(0), [perm, setPerm] = useState(notifyState());
-  const chimed = useRef(new Set());
+  const chimed = useRef(new Set()), account = useRef(me);
+  account.current = me;
 
   useEffect(() => unlockAudio(), []);
   useEffect(() => { if (!me) { setReads(null); return; } let live = true; loadReads(me).then(r => { if (live) setReads(r); }).catch(() => { if (live) setReads(new Set()); }); return () => { live = false; }; }, [me]);
@@ -101,7 +103,7 @@ export function useAnnouncementAlerts(auth, ann) {
     return () => { clearInterval(t); document.title = base; };
   }, [live]);
 
-  const dismiss = id => { setReads(r => new Set([...(r || []), String(id)])); markRead(me, id).catch(() => {}); };
+  const dismiss = async id => { await markRead(me, id); if (account.current !== me) return; setReads(r => new Set([...(r || []), String(id)])); };
   return { current, count: unread.length, dismiss, perm, askPerm: () => askNotify().then(setPerm), tick };
 }
 
@@ -110,8 +112,7 @@ export function useAnnouncementAlerts(auth, ann) {
 export async function loadAcks() {
   const by = {};
   if (IS_DEMO) { const d = demoReads(); Object.keys(d).forEach(emp => Object.entries(d[emp]).forEach(([id, at]) => { (by[id] = by[id] || []).push({ emp: Number(emp), at }); })); return by; }
-  const { data, error } = await supabase.from('announcement_reads').select('announcement_id, employee_id, read_at').order('read_at');
-  if (error) throw new Error('Could not load who has read these.');
+  const data = await readAll(() => supabase.from('announcement_reads').select('announcement_id, employee_id, read_at').order('announcement_id').order('employee_id'), 'Could not load who has read these.');
   data.forEach(r => { (by[String(r.announcement_id)] = by[String(r.announcement_id)] || []).push({ emp: r.employee_id, at: Date.parse(r.read_at) || 0 }); });
   return by;
 }

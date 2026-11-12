@@ -45,6 +45,7 @@ import { AnnouncementAlert } from './AnnouncementAlert.jsx';
 import { TaskDetail } from './task/TaskDetail.jsx';
 import { isDoing, stopFor, loadTasks, saveTasks, loadCollapsed, saveCollapsed, loadCustom, saveCustom, loadLayout, saveLayout, loadView, saveView } from './tasks.js';
 import { IS_DEMO } from './env.js';
+import { createSaveQueue } from './saveQueue.js';
 import './styles.css';
 import './untitled.css';
 import { startExitMotion } from './exit.js';
@@ -111,20 +112,26 @@ function App() {
   };
   const updateReady = useUpdateAvailable();
   const [pwOpen, setPwOpen] = useState(false), [tour, setTour] = useState(false);
-  const [groups, setGroupsRaw] = useState([]), gsync = useRef({ saved: [], cur: [], timer: 0, dirty: false });
+  const [leaving, setLeaving] = useState(false);
+  const [, syncTick] = useState(0);
+  const syncChanged = () => syncTick(n => n + 1);
+  const syncFailed = e => setSyncErr(e.message || 'Could not save. Your edits are still pending.');
+  const [groups, setGroupsRaw] = useState([]), gsync = useRef(null);
   // Board groups: admins edit them, project managers see them. Changes save a moment after the last edit.
   useEffect(() => {
     if (!auth || !(auth.role === 'admin' || auth.role === 'pm')) { setGroupsRaw([]); return; }
-    let live = true; const g = gsync.current;
-    const load = () => { if (g.dirty) return; loadGroups().then(l => { if (live && !g.dirty) { g.saved = l; g.cur = l; setGroupsRaw(l); } }).catch(() => {}); };
+    let live = true;
+    const g = createSaveQueue([], saveGroups, syncFailed, syncChanged, 600);
+    gsync.current = g;
+    const load = () => { if (g.dirty || g.running) return; loadGroups().then(l => { if (live && g.replace(l)) setGroupsRaw(l); }).catch(() => {}); };
     load();
     const unsub = IS_DEMO ? null : subscribeTables('mp-groups', ['board_groups'], load);
-    return () => { live = false; if (unsub) unsub(); };
-  }, [auth]);
+    return () => { live = false; g.dispose(); if (gsync.current === g) gsync.current = null; if (unsub) unsub(); };
+  }, [auth && auth.user.n, auth && auth.role]);
   const setGroups = fn => {
-    const g = gsync.current, next = typeof fn === 'function' ? fn(g.cur) : fn;
-    g.cur = next; g.dirty = true; setGroupsRaw(next); clearTimeout(g.timer);
-    g.timer = setTimeout(async () => { try { await saveGroups(g.saved, g.cur); g.saved = g.cur; } catch (x) { setSyncErr(x.message); } g.dirty = false; }, 600);
+    const g = gsync.current; if (!g) return;
+    const next = typeof fn === 'function' ? fn(g.current) : fn;
+    g.set(next); setGroupsRaw(next);
   };
   const [eodAsk, setEodAsk] = useState(null), [eodTick, setEodTick] = useState(0), [eodLate, setEodLate] = useState(null);
   const [bootErr, setBootErr] = useState('');
@@ -165,14 +172,19 @@ function App() {
   const board = useRef(null);
   const who = useRef({ mgr: false, me: 0 });
   who.current = { mgr: !!auth && (auth.role === 'admin' || auth.role === 'pm'), me: auth ? auth.user.n : 0 };
-  if (!board.current) board.current = { tasks, custom, layout, saved: { tasks, custom, layout }, timer: 0, flying: false, dirty: false };
+  const newBoard = (tasks, custom, layout) => {
+    const b = { tasks, custom, layout }, owner = who.current.me;
+    b.sync = createSaveQueue({ tasks, custom, layout }, (prev, next, onProgress) => persistBoard(prev, next, { ...who.current, onProgress, isActive: () => board.current === b && who.current.me === owner }), syncFailed, syncChanged);
+    return b;
+  };
+  if (!board.current) board.current = newBoard(tasks, custom, layout);
   const [navHidden, setNavHidden] = useState(() => { try { return localStorage.getItem('mp-nav') === '1'; } catch (x) { return false; } });
   const bump = () => setVer(v => v + 1);
   useEffect(() => { if (IS_DEMO) saveAtt(att); }, [att]);
   // A tab left open overnight still shows yesterday. Once it is a new day and nothing is waiting to be saved, start fresh.
   useEffect(() => {
     if (IS_DEMO) return;
-    const day = TODISO, chk = () => { const b = board.current; if (dayKeyNow() !== day && !b.dirty && !b.flying && !saving.current.leave && !saving.current.att) window.location.reload(); };
+    const day = TODISO, chk = () => { const b = board.current; if (dayKeyNow() !== day && !b.sync.dirty && !b.sync.running && !gsync.current?.dirty && !gsync.current?.running && !saving.current.leave && !saving.current.att) window.location.reload(); };
     const t = setInterval(chk, 60000); document.addEventListener('visibilitychange', chk);
     return () => { clearInterval(t); document.removeEventListener('visibilitychange', chk); };
   }, []);
@@ -224,39 +236,46 @@ function App() {
     return () => { live = false; sub.unsubscribe(); };
   }, []);
   // The board is shared. Changes are saved half a second after the last edit, and other people's changes arrive live.
-  const flush = async () => {
-    const b = board.current; if (b.flying) return;
-    b.flying = true; b.dirty = false;
-    const snap = { tasks: b.tasks, custom: b.custom, layout: b.layout };
-    try { await persistBoard(b.saved, snap, who.current); b.saved = snap; }
-    catch (e) { setSyncErr(e.message || 'Could not save. Try again.'); b.dirty = false; await refreshBoard(true); }
-    finally { b.flying = false; if (b.dirty) queueSave(); }
+  const queueSave = () => { const b = board.current; b.sync.set({ tasks: b.tasks, custom: b.custom, layout: b.layout }); };
+  const flushSaves = async () => {
+    do { await board.current.sync.flush(); await gsync.current?.flush(); }
+    while (board.current.sync.dirty || gsync.current?.dirty);
   };
-  const queueSave = () => { const b = board.current; b.dirty = true; clearTimeout(b.timer); b.timer = setTimeout(flush, 500); };
+  // Browsers cannot reliably finish async writes while closing. Warn while edits are pending.
+  useEffect(() => {
+    const beforeUnload = ev => {
+      if (board.current.sync.dirty || board.current.sync.running || gsync.current?.dirty || gsync.current?.running) {
+        ev.preventDefault(); ev.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', beforeUnload);
+    return () => window.removeEventListener('beforeunload', beforeUnload);
+  }, []);
   const setTasks = fn => { const b = board.current; b.tasks = flagRet(typeof fn === 'function' ? fn(b.tasks) : fn); setTasksRaw(b.tasks); if (!IS_DEMO) queueSave(); };
   const setCustom = fn => { const b = board.current; b.custom = typeof fn === 'function' ? fn(b.custom) : fn; setCustomRaw(b.custom); if (!IS_DEMO) queueSave(); };
   const setLayout = fn => { const b = board.current; b.layout = typeof fn === 'function' ? fn(b.layout) : fn; setLayoutRaw(b.layout); if (!IS_DEMO) queueSave(); };
   const refreshBoard = async force => {
-    const b = board.current; if (!force && (b.dirty || b.flying)) return;
+    const b = board.current; if (b.sync.dirty || b.sync.running) return;
     try {
       const f = await loadBoard(), a = await loadAnnouncements();
-      if (!force && (b.dirty || b.flying)) return;
+      if (board.current !== b || !b.sync.replace(f)) return;
       if (JSON.stringify(f.tasks) !== JSON.stringify(b.tasks) || JSON.stringify(f.custom) !== JSON.stringify(b.custom)) { b.tasks = f.tasks; b.custom = f.custom; setTasksRaw(f.tasks); setCustomRaw(f.custom); }
       if (JSON.stringify(f.layout) !== JSON.stringify(b.layout)) { b.layout = f.layout; setLayoutRaw(f.layout); }
-      b.saved = { tasks: f.tasks, custom: f.custom, layout: f.layout };
       if (JSON.stringify(a) !== JSON.stringify(annRef.current)) applyAnn(a);
     } catch (e) { if (force) setSyncErr(e.message); }
   };
   useEffect(() => {
     if (IS_DEMO) return;
-    const b = board.current;
-    if (!auth) { clearTimeout(b.timer); Object.assign(b, { tasks: [], custom: [], layout: { order: [], hidden: [] }, saved: { tasks: [], custom: [], layout: { order: [], hidden: [] } }, dirty: false }); setTasksRaw([]); setCustomRaw([]); setLayoutRaw({ order: [], hidden: [] }); applyAnn([]); return; }
+    board.current.sync.dispose();
+    board.current = newBoard([], [], { order: [], hidden: [] });
+    setTasksRaw([]); setCustomRaw([]); setLayoutRaw({ order: [], hidden: [] }); applyAnn([]);
+    if (!auth) return;
     refreshBoard(true);
     let t = 0; const poke = () => { clearTimeout(t); t = setTimeout(() => refreshBoard(false), 300); };
     const unsub = subscribeBoard(poke), poll = setInterval(() => refreshBoard(false), 45000), vis = () => { if (!document.hidden) refreshBoard(false); };
     document.addEventListener('visibilitychange', vis);
     return () => { unsub(); clearInterval(poll); clearTimeout(t); document.removeEventListener('visibilitychange', vis); };
-  }, [auth]);
+  }, [auth && auth.user.n]);
   const notif = useNotifications(auth ? auth.user.n : null);
   // Per-person settings (tour seen, tasks already announced) come from the database
   const [ustate, setUstate] = useState(null), prefsReady = useRef(false);
@@ -338,7 +357,18 @@ function App() {
   const openForm = id => { setNav(p => ({ view: 'form', id, from: p.view === 'profile' ? p.from : p.view })); top(); };
   const back = () => { setNav({ view: nav.from || 'home' }); top(); };
   const formDone = id => { if (id) { setNav(p => ({ view: 'profile', id, from: p.from || 'home' })); } else go(nav.from || 'home'); top(); };
-  const signOut = () => { signOutAuth(); setAuth(null); setAppState('people'); setTaskSel(null); setNav({ view: 'home' }); top(); };
+  const signOut = async () => {
+    if (leaving) return;
+    setLeaving(true);
+    try {
+      await flushSaves();
+      const result = await signOutAuth();
+      if (result?.error) throw result.error;
+      setAuth(null); setAppState('people'); setTaskSel(null); setNav({ view: 'home' }); top();
+    } catch (e) { syncFailed(e); } finally { setLeaving(false); }
+  };
+  const refreshApp = async () => { if (leaving) return; setLeaving(true); try { await flushSaves(); location.reload(); } catch (e) { syncFailed(e); setLeaving(false); } };
+  const unsaved = board.current.sync.dirty || !!gsync.current?.dirty;
   const mob = app === 'task' ? keys : role === 'admin' ? ['home', 'org', 'attendance', 'requests', 'more'] : ['home', 'org', 'hours', 'leaves', 'more'];
   const more = keys.filter(k => !mob.includes(k));
   const active = nav.view === 'profile' || nav.view === 'form' ? (nav.from || 'home') : nav.view;
@@ -364,7 +394,7 @@ function App() {
     : home;
 
   const brand = html`<${Brand}/>`;
-  return html`<div className=${'app' + (navHidden ? ' no-side' : '') + (app === 'task' && nav.view === 'board' ? ' wide' : '')}>
+  return html`<div inert=${leaving ? '' : undefined} aria-busy=${leaving} className=${'app' + (navHidden ? ' no-side' : '') + (app === 'task' && nav.view === 'board' ? ' wide' : '')}>
     <aside className="side">${brand}
       <${AppSwitch} app=${app} setApp=${setApp}/>
       <nav className="nav" aria-label="Main">${keys.map(k => html`<button key=${k} className=${'nav-b' + (active === k ? ' on' : '') + (locked(k) ? ' dis' : '')} onClick=${() => go(k)} aria-current=${active === k ? 'page' : undefined} disabled=${locked(k)} title=${locked(k) ? 'Only admins can open this' : undefined}>
@@ -380,7 +410,8 @@ function App() {
         <${TopRight} user=${user} role=${role} open=${open} openForm=${openForm} signOut=${signOut} goAbout=${() => go('about')} isNew=${!seenNow} onPassword=${() => setPwOpen(true)} onTour=${startTour}/></header>
       <div className="ck-m"><${CheckWidget} user=${user} att=${att} setAtt=${setAtt} onOut=${requestOut}/></div>
       <main className="main" key=${app + nav.view + (nav.id || '')}>${screen}</main>
-      ${updateReady && html`<div className="sync-err upd" role="status"><span>A new version of Maayasthra People is ready.</span><button onClick=${() => location.reload()}>Refresh</button></div>`}
+      ${updateReady && html`<div className="sync-err upd" role="status"><span>A new version of Maayasthra People is ready.</span><button onClick=${refreshApp}>Refresh</button></div>`}
+      ${unsaved && html`<div role="status"><span>Changes are not saved yet. Keep this page open.</span> <button onClick=${() => flushSaves().then(() => setSyncErr('')).catch(() => {})}>Save now / retry</button></div>`}
       ${syncErr && html`<div className="sync-err" role="alert"><span>${syncErr}</span><button onClick=${() => setSyncErr('')} aria-label="Dismiss">Dismiss</button></div>`}
     </div>
     ${tour && html`<${Tour} name=${user.name.split(' ')[0]} role=${role} onClose=${() => { setUstate(st => ({ ...(st || {}), tourDone: true })); saveState({ tourDone: true }); setTour(false); }}/>`}

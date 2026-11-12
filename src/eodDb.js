@@ -1,4 +1,5 @@
 import { supabase } from './auth.js';
+import { readAll } from './readAll.js';
 import { IS_DEMO } from './env.js';
 import { dayKey } from './attendance.js';
 
@@ -17,13 +18,8 @@ const toApp = r => ({ emp: r.employee_id, day: r.day, rows: r.rows || [], total:
 // Reports from `from` to `to` (ISO days). People only receive their own; admins and project managers receive everyone's.
 export async function loadEods(from, to) {
   if (IS_DEMO) return readDemo().filter(r => r.day >= from && r.day <= to);
-  const out = [];
-  for (let start = 0; ; start += 1000) {
-    const { data, error } = await supabase.from('eod_reports').select('*').gte('day', from).lte('day', to).order('day').order('employee_id').range(start, start + 999);
-    if (error) throw new Error('Could not load the reports.');
-    out.push(...data.map(toApp)); if (data.length < 1000) break;
-  }
-  return out;
+  const data = await readAll(() => supabase.from('eod_reports').select('*').gte('day', from).lte('day', to).order('day').order('employee_id'), 'Could not load the reports.');
+  return data.map(toApp);
 }
 
 // The days in a range that I already sent a report for (dates only: employees cannot read old reports)
@@ -34,15 +30,21 @@ export async function myEodDays(from, to, emp) {
   return (data || []).map(d => typeof d === 'string' ? d.slice(0, 10) : d);
 }
 
-export async function submitEod(rows, emp, day) {
-  const clean = rows.map(r => ({
+const cleanRows = rows => rows.map(r => ({
     project: String(r.project || '').trim(), task: r.task || null, desc: String(r.desc || '').trim(), hours: Number(r.hours) || 0,
     subs: (r.subs || []).map(s => ({ title: String(s.title || '').trim(), desc: String(s.desc || '').trim(), hours: Number(s.hours) || 0 }))
   }));
+
+export async function submitEod(rows, emp, day) {
+  const clean = cleanRows(rows);
   if (IS_DEMO) {
     const d = day || dayKey(), l = readDemo().filter(r => !(r.emp === emp && r.day === d));
     writeDemo([...l, { emp, day: d, rows: clean, total: totalOf(clean), at: Date.now() }]); return;
   }
   const { error } = day && day !== dayKey() ? await supabase.rpc('submit_eod_for', { p_day: day, p_rows: clean }) : await supabase.rpc('submit_eod', { p_rows: clean });
+  if (error && day && day !== dayKey()) {
+    const saved = await supabase.from('eod_reports').select('rows').eq('employee_id', emp).eq('day', day).maybeSingle();
+    if (!saved.error && saved.data && JSON.stringify(cleanRows(saved.data.rows)) === JSON.stringify(clean)) return;
+  }
   if (error) throw new Error(/^(Line \d+|Add at least|That (adds|report)|Not allowed)/.test(error.message) ? error.message : 'Could not save your report. Check your connection and try again.');
 }

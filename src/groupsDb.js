@@ -1,4 +1,5 @@
 import { supabase } from './auth.js';
+import { readAll } from './readAll.js';
 import { IS_DEMO } from './env.js';
 
 /* Board groups: { id, name, color, icon, members: [column keys], position }. Only admins change them. */
@@ -9,8 +10,7 @@ const toApp = r => ({ id: r.id, name: r.name || '', color: r.color || '#8E8E93',
 
 export async function loadGroups() {
   if (IS_DEMO) return demoRead();
-  const { data, error } = await supabase.from('board_groups').select('*').order('position').order('id');
-  if (error) throw new Error('Could not load the board groups.');
+  const data = await readAll(() => supabase.from('board_groups').select('*').order('position').order('id'), 'Could not load the board groups.');
   return data.map(toApp);
 }
 

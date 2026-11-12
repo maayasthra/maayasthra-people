@@ -9,6 +9,15 @@ export function OrgChart({ open, user }) {
   const ids = new Set(people.map(e => e.n));
   const kids = n => people.filter(e => e.mgr === n).sort((a, b) => a.name.localeCompare(b.name));
   const roots = people.filter(e => !e.mgr || !ids.has(e.mgr));
+  // Older data can contain a disconnected cycle. Keep those people visible
+  // without recursively traversing their invalid reporting relationships.
+  const placed = new Set(), pending = [...roots];
+  while (pending.length) {
+    const person = pending.pop();
+    if (placed.has(person.n)) continue;
+    placed.add(person.n); pending.push(...kids(person.n));
+  }
+  const unplaced = people.filter(e => !placed.has(e.n));
   const count = n => kids(n).reduce((s, x) => s + 1 + count(x.n), 0);
   const term = q.trim().toLowerCase();
   const hit = e => !term || (e.name + ' ' + e.role + ' ' + e.dept).toLowerCase().includes(term);
@@ -40,8 +49,10 @@ export function OrgChart({ open, user }) {
   return html`<div>
     <div className="pg-h" style=${{ alignItems: 'center' }}><div><h1><${HI} n="org" tone="green"/>Org chart</h1><p>${plural(people.length, 'person').replace('persons', 'people')}${teamCount ? ' · ' + plural(teamCount, 'team') : ''}</p></div>
       <div className="search oc3-s"><${Icon} n="search"/><input id="org-search" value=${q} placeholder="Find someone" onChange=${ev => setQ(ev.target.value)} aria-label="Find in org chart"/></div></div>
-    <div className="oc3">${shown.map(block)}</div>
-    ${term && shown.length === 0 && html`<div className="none"><b>No match</b></div>`}
+    <div className="oc3">${shown.map(block)}
+      ${unplaced.some(hit) && html`<section className="oc3-b"><h2>Reporting relationships need review</h2><p>Ask an admin to correct the reporting lines for these people.</p>${unplaced.filter(hit).map(e => html`<${Person} key=${e.n} e=${e}/>` )}</section>`}
+    </div>
+    ${term && shown.length === 0 && !unplaced.some(hit) && html`<div className="none"><b>No match</b></div>`}
     ${!term && people.length === 0 && html`<div className="none"><b>No one here yet</b></div>`}
   </div>`;
 }

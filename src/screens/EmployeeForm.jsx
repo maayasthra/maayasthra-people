@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { html, Icon, Photo } from '../ui.jsx';
 import { DateField } from '../DateField.jsx';
 import { IS_DEMO } from '../env.js';
-import { saveEmployee, saveMyProfile } from '../staff.js';
+import { saveEmployee, saveMyProfile, newCreationKey } from '../staff.js';
 import { EMP, BY, DEPTS, STATUSES, TODISO, ROLE_NAMES, ROLEMAP, defaultStart, activeEmps, addEmployee, updateEmployee, emailFor, fmt, fmtTime } from '../data.js';
 
 /* One labelled field. It must stay outside EmployeeForm: a component defined inside would be rebuilt on every keystroke and lose the cursor. */
@@ -14,6 +14,8 @@ export function EmployeeForm({ id, role, user, done, bump }) {
   const isAdmin = role === 'admin', self = !!e && e.n === user.n;
   const [f, setF] = useState(() => e ? { ...e } : { name: '', email: '', role: '', dept: '', city: '', mgr: 0, status: 'Full-time', join: TODISO, dob: '', g: 'f', phone: '', emergency: '', emergencyRelation: '', emergencyPhone: '', bio: '', photo: '', shiftStart: '10:00', shiftEnd: '18:00' });
   const [access, setAccess] = useState(e ? ROLEMAP[e.n] : 'Employee');
+  const [createdId, setCreatedId] = useState(0);
+  const [creationKey] = useState(() => newCreationKey());
   const [base0] = useState(() => e ? { ...e, access: ROLEMAP[e.n] } : undefined); // what the form opened with, so only real changes are saved
   const [err, setErr] = useState(''), [busy, setBusy] = useState(false);
   const set = p => { setF(o => ({ ...o, ...p })); setErr(''); };
@@ -46,17 +48,21 @@ export function EmployeeForm({ id, role, user, done, bump }) {
     const email = IS_DEMO ? emailFor(f.name) : (f.email || '').trim().toLowerCase();
     if (!f.name.trim() || !f.role.trim() || !f.dept.trim() || (IS_DEMO && (!f.join || !f.dob))) { setErr(IS_DEMO ? 'Fill in name, job title, department, joining date and birthday.' : 'Fill in name, work email, job title and department.'); return; }
     if (!IS_DEMO && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setErr('Enter a valid work email.'); return; }
-    const dupe = EMP.find(x => x.email === email && (!e || x.n !== e.n));
+    const dupe = EMP.find(x => x.email === email && x.n !== (e ? e.n : createdId));
     if (dupe) { setErr('Another person already has the email ' + dupe.email + '.'); return; }
     if (!f.shiftStart || !f.shiftEnd || f.shiftEnd <= f.shiftStart) { setErr('Working hours need a start time that is earlier than the end time.'); return; }
     const core = { shiftStart: f.shiftStart, shiftEnd: f.shiftEnd, name: f.name.trim(), role: f.role.trim(), dept: f.dept.trim(), city: f.city.trim() || 'Chennai', mgr: Number(f.mgr) || 0, status: f.status, join: f.join, dob: f.dob, g: f.g };
     if (IS_DEMO) { const saved = e ? updateEmployee(e.n, { ...core, ...contact }) : addEmployee({ ...core, ...contact }); ROLEMAP[saved.n] = access; bump(); done(saved.n); return; }
     setBusy(true);
-    try { const saved = await saveEmployee({ ...core, ...contact, n: e ? e.n : 0, email, access }, base0); bump(); done(saved.n); } catch (x) { setErr(x.message); setBusy(false); }
+    try { const saved = await saveEmployee({ ...core, ...contact, n: e ? e.n : createdId, email, access, creationKey }, base0); bump(); done(saved.n); } catch (x) { if (x.employeeId) setCreatedId(x.employeeId); setErr(x.message); setBusy(false); }
   };
 
   const preview = { n: e ? e.n : 99, g: f.g, name: f.name || 'New person', photo: f.photo };
-  const mgrs = activeEmps().filter(x => !e || x.n !== e.n).sort((a, b) => a.name.localeCompare(b.name));
+  const mgrs = activeEmps().filter(candidate => {
+    const seen = new Set([e ? e.n : createdId]); let n = candidate.n;
+    while (n) { if (seen.has(n)) return false; seen.add(n); n = BY[n]?.mgr; }
+    return true;
+  }).sort((a, b) => a.name.localeCompare(b.name));
   const title = !e ? 'Add a person' : self && !isAdmin ? 'Edit your profile' : self ? 'Edit your profile' : 'Edit ' + e.name;
 
   return html`<div className="ef2">
@@ -88,7 +94,7 @@ export function EmployeeForm({ id, role, user, done, bump }) {
         ${isAdmin ? html`<section className="ef2-card"><h2>Employment</h2><p className="ef2-s">Only admins can change these.</p>
           <div className="two"><${Fld} id="ef-name" label="Full name"><input id="ef-name" className="inp" value=${f.name} onChange=${ev => set({ name: ev.target.value })}/><//>
             <${Fld} id="ef-role" label="Job title"><input id="ef-role" className="inp" value=${f.role} onChange=${ev => set({ role: ev.target.value })}/><//></div>
-          ${!IS_DEMO && html`<${Fld} id="ef-email" label="Work email" hint=${e ? 'The email is how they sign in, so it cannot be changed here.' : 'They sign up with this email.'}><input id="ef-email" type="email" className="inp" value=${f.email || ''} disabled=${!!e} onChange=${ev => set({ email: ev.target.value })} placeholder="name@maayasthra.com"/><//>`}
+          ${!IS_DEMO && html`<${Fld} id="ef-email" label="Work email" hint=${e ? 'The email is how they sign in, so it cannot be changed here.' : 'They sign up with this email.'}><input id="ef-email" type="email" className="inp" value=${f.email || ''} disabled=${!!e || !!createdId} onChange=${ev => set({ email: ev.target.value })} placeholder="name@maayasthra.com"/><//>`}
           <div className="two"><${Fld} id="ef-dept" label="Department"><input id="ef-dept" className="inp" list="dept-list" value=${f.dept} onChange=${ev => set({ dept: ev.target.value })}/><datalist id="dept-list">${DEPTS.map(d => html`<option key=${d} value=${d}/>`)}</datalist><//>
             <${Fld} id="ef-city" label="City"><input id="ef-city" className="inp" value=${f.city} onChange=${ev => set({ city: ev.target.value })}/><//></div>
           <div className="two"><${Fld} id="ef-mgr" label="Reports to"><select id="ef-mgr" className="inp" value=${f.mgr} onChange=${ev => set({ mgr: ev.target.value })}><option value="0">No one</option>${mgrs.map(m => html`<option key=${m.n} value=${m.n}>${m.name}</option>`)}</select><//>

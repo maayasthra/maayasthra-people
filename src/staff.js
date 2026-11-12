@@ -1,4 +1,5 @@
 import { supabase } from './auth.js';
+import { readAll } from './readAll.js';
 import { EMP, BY, ROLEMAP, DEPTS } from './data.js';
 
 /* The staff directory, kept in Supabase. Row n in the app is the database id. */
@@ -14,17 +15,20 @@ const toRow = e => ({
 });
 
 // Replace the in-memory directory with what the database holds. Private details come back only for the rows this person may see.
+let staffLoad = 0;
 export async function loadStaff() {
+  const request = ++staffLoad;
   const [a, b] = await Promise.all([
-    supabase.from('employees').select('*').order('id'),
-    supabase.from('employee_private').select('*')
+    readAll(() => supabase.from('employees').select('*').order('id'), 'Could not load the staff list.'),
+    readAll(() => supabase.from('employee_private').select('*').order('employee_id'), 'Could not load the staff list.')
   ]);
-  if (a.error) throw new Error('Could not load the staff list.');
-  if (b.error) throw new Error('Could not load the staff list.');
-  const priv = {}; (b.data || []).forEach(p => { priv[p.employee_id] = p; });
-  EMP.splice(0, EMP.length, ...a.data.map(r => toApp(r, priv[r.id])));
+  // A newer login/refresh owns the shared directory. Never let an older
+  // privileged response restore private contacts after an account switch.
+  if (request !== staffLoad) throw new Error('The staff list was refreshed again. Please try again.');
+  const priv = {}; b.forEach(p => { priv[p.employee_id] = p; });
+  EMP.splice(0, EMP.length, ...a.map(r => toApp(r, priv[r.id])));
   Object.keys(BY).forEach(k => delete BY[k]); Object.keys(ROLEMAP).forEach(k => delete ROLEMAP[k]);
-  a.data.forEach((r, i) => { BY[r.id] = EMP[i]; ROLEMAP[r.id] = r.role; });
+  a.forEach((r, i) => { BY[r.id] = EMP[i]; ROLEMAP[r.id] = r.role; });
   DEPTS.splice(0, DEPTS.length, ...[...new Set(EMP.map(e => e.dept).filter(Boolean))].sort());
 }
 
@@ -37,16 +41,20 @@ const upsertPrivate = async (id, e, base) => {
   if (error) throw new Error('Could not save contact details.');
 };
 const NOT_ALLOWED = 'Only admins can change that.';
-const nice = m => /duplicate key/i.test(m) ? 'That work email is already in the staff list.' : /at least one admin/i.test(m) ? 'There must be at least one admin.' : 'Could not save. Check your connection and try again.';
+const nice = m => /Reporting relationships cannot contain a cycle/i.test(m) ? 'Reporting relationships cannot contain a cycle. Choose another manager.' : /duplicate key/i.test(m) ? 'That work email is already in the staff list.' : /at least one admin/i.test(m) ? 'There must be at least one admin.' : 'Could not save. Check your connection and try again.';
 
 // Admin: add or change a person. Returns the saved record.
 // When editing, pass the record the form was opened with: only the fields that were actually changed are written,
 // so someone else's change to a different field (a new photo, a status) is not undone by a stale form.
+export const newCreationKey = () => Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
+
+const creationAttempts = new Map();
+
 export async function saveEmployee(e, base) {
-  let id = e.n;
+  let id = e.n, recoveredBase;
   if (id) {
     const next = { ...toRow(e), bio: e.bio || '', photo: e.photo || '' };
-    const was = base ? { ...toRow(base), bio: base.bio || '', photo: base.photo || '' } : null;
+    const was = base ? { ...toRow(base), bio: base.bio || '', photo: base.photo || '' } : creationAttempts.get(e.creationKey);
     const patch = was ? Object.fromEntries(Object.entries(next).filter(([k, v]) => v !== was[k])) : next;
     if (Object.keys(patch).length) {
       const { data, error } = await supabase.from('employees').update(patch).eq('id', id).select('id');
@@ -56,13 +64,37 @@ export async function saveEmployee(e, base) {
     const pk = ['phone', 'emergency', 'emergencyRelation', 'emergencyPhone'];
     if (base && !pk.some(k => (e[k] || '') !== (base[k] || ''))) { await loadStaff(); return BY[id]; }
   } else {
-    const { data, error } = await supabase.from('employees').insert({ ...toRow(e), bio: e.bio || '', photo: e.photo || '' }).select('id').single();
-    if (error) throw new Error(nice(error.message));
-    id = data.id;
+    e.creationKey ||= newCreationKey();
+    if (!creationAttempts.has(e.creationKey)) creationAttempts.set(e.creationKey, { ...toRow(e), bio: e.bio || '', photo: e.photo || '' });
+    const { data, error } = await supabase.from('employees').insert({ ...toRow(e), bio: e.bio || '', photo: e.photo || '', creation_key: e.creationKey }).select('id').single();
+    if (error) {
+      const recovered = await supabase.from('employees').select('id').eq('creation_key', e.creationKey).maybeSingle();
+      if (recovered.error || !recovered.data) throw new Error(nice(error.message));
+      id = recovered.data.id;
+      recoveredBase = creationAttempts.get(e.creationKey);
+    } else id = data.id;
   }
-  await upsertPrivate(id, e, base);
-  await loadStaff();
-  return BY[id];
+  try {
+    if (recoveredBase) {
+      const next = { ...toRow(e), bio: e.bio || '', photo: e.photo || '' };
+      const patch = Object.fromEntries(Object.entries(next).filter(([k, v]) => v !== recoveredBase[k]));
+      if (Object.keys(patch).length) {
+        const { data, error } = await supabase.from('employees').update(patch).eq('id', id).select('id');
+        if (error) throw new Error(nice(error.message));
+        if (!data.length) throw new Error(NOT_ALLOWED);
+      }
+    }
+    // Keep the core baseline until contacts and readback also succeed. A partial
+    // creation retry must not rewrite unchanged fields with stale form values.
+    if (e.creationKey) creationAttempts.set(e.creationKey, { ...toRow(e), bio: e.bio || '', photo: e.photo || '' });
+    await upsertPrivate(id, e, base);
+    await loadStaff();
+    creationAttempts.delete(e.creationKey);
+    return BY[id];
+  } catch (error) {
+    error.employeeId = id;
+    throw error;
+  }
 }
 
 // Anyone: change only their own contact details, about line and photo.

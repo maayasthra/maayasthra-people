@@ -18,7 +18,8 @@ export function AckBar({ a, acks }) {
   const list = acks[String(a.id)] || [];
   const mine = e => a.byId ? e.n === a.byId : e.name === a.by;
   const everyone = activeEmps().filter(e => !mine(e));
-  const done = list.map(x => ({ e: BY[x.emp], at: x.at })).filter(x => x.e && !mine(x.e)).sort((p, q) => q.at - p.at);
+  const audience = new Set(everyone.map(e => e.n));
+  const done = list.map(x => ({ e: BY[x.emp], at: x.at })).filter(x => audience.has(x.e?.n)).sort((p, q) => q.at - p.at);
   const doneIds = new Set(done.map(x => x.e.n)), pending = everyone.filter(e => !doneIds.has(e.n));
   const pct = everyone.length ? Math.round(done.length / everyone.length * 100) : 0;
   return html`<div className="ack">

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { html, Icon } from '../ui.jsx';
 import { hoursOf, totalOf, fmtH, loadEods } from '../eodDb.js';
 import { dayKey, hm } from '../attendance.js';
@@ -7,8 +7,6 @@ import { isDoing } from '../tasks.js';
 let uid = 0;
 const blankSub = (title = '') => ({ id: 's' + ++uid, title, desc: '', hours: '' });
 const blankRow = (o = {}) => ({ id: 'r' + ++uid, project: '', task: null, desc: '', hours: '', subs: [], ...o });
-// Hours are typed: digits and one dot, like 2 or 1.5
-const cleanHours = v => { const x = v.replace(/[^0-9.]/g, ''), i = x.indexOf('.'); return (i < 0 ? x : x.slice(0, i + 1) + x.slice(i + 1).replace(/\./g, '')).slice(0, 5); };
 // Time is typed as hours and minutes; it is kept as decimal hours (1h 30m = 1.5)
 function HM({ value, onChange, label, onKeyDown }) {
   const tot = Math.round((Number(value) || 0) * 60), h = Math.floor(tot / 60), m = tot % 60;
@@ -50,10 +48,10 @@ export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel
     }).catch(() => live && setRows([blankRow()]));
     return () => { live = false; };
   }, []);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!rows) return;
-    const t = setTimeout(() => { writeDraft(user.n, rows, D); if (hasText(rows)) setSavedAt(Date.now()); }, 300);
-    return () => clearTimeout(t);
+    writeDraft(user.n, rows, D);
+    if (hasText(rows)) setSavedAt(Date.now());
   }, [rows]);
   useEffect(() => { const k = ev => { if (ev.key === 'Escape' && !busy) onCancel(); }; document.addEventListener('keydown', k); return () => document.removeEventListener('keydown', k); }, [busy]);
   useEffect(() => { if (rows && first.current) first.current.focus(); }, [rows === null]);
@@ -64,7 +62,7 @@ export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel
   const patchSub = (id, sid, p) => { setRows(rs => rs.map(r => r.id === id ? { ...r, subs: r.subs.map(s => s.id === sid ? { ...s, ...p } : s) } : r)); setErr(''); };
   const setProject = (r, v) => { const t = byTitle(mine, v); patch(r.id, { project: v, task: t ? t.id : null }); };
   const cardOf = r => r.task ? tasks.find(t => t.id === r.task) : byTitle(mine, r.project);
-  const addSubsFrom = r => { const c = cardOf(r); if (c) patch(r.id, { subs: [...r.subs, ...c.subs.filter(s => !r.subs.some(x => x.title === s.title)).map(s => blankSub(s.title))] }); };
+  const addSubsFrom = r => { const c = cardOf(r); if (c) patch(r.id, { subs: [...r.subs, ...c.subs.filter(s => !r.subs.some(x => x.title === s.t)).map(s => blankSub(s.t))] }); };
   const removeRow = id => setRows(rs => rs.length > 1 ? rs.filter(r => r.id !== id) : [blankRow()]);
 
   const total = totalOf(rows);
@@ -100,7 +98,7 @@ export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel
       <div className="eod-t" role="table" aria-label="Today's work">
         <div className="eod-hd" role="row"><span>Project</span><span>Description</span>${!noHours && html`<span>Time</span>`}<span></span></div>
         ${rows.map((r, i) => {
-          const c = cardOf(r), canPull = c && c.subs.length > 0 && c.subs.some(s => !r.subs.some(x => x.title === s.title));
+          const c = cardOf(r), canPull = c && c.subs.length > 0 && c.subs.some(s => !r.subs.some(x => x.title === s.t));
           return html`<div className="eod-g" key=${r.id}>
             <div className="eod-r" role="row">
               <input ref=${i === 0 ? first : null} className="inp" autoComplete="off" value=${r.project} placeholder="Project name" aria-label=${'Project, line ' + (i + 1)} maxLength="200" onChange=${ev => setProject(r, ev.target.value)}/>

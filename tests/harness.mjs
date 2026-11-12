@@ -31,14 +31,14 @@ const pk = ${JSON.stringify(pk)};
 const norm = r => { const o = {}; for (const k in r) { let v = r[k]; if (v instanceof Date) { v = k.endsWith('_at') ? v.toISOString() : v.toISOString().slice(0, 10); } o[k] = v; } return o; };
 const par = v => (v !== null && typeof v === 'object') ? JSON.stringify(v) : v;
 function builder(t) {
-  const q = { t, op: 'select', conds: [], order: null, range: null, limit: null, single: false, maybe: false, ret: false, cols: '*', body: null };
+  const q = { t, op: 'select', conds: [], order: [], range: null, limit: null, single: false, maybe: false, ret: false, cols: '*', body: null };
   const add = (c, op, v) => { q.conds.push({ c, op, v }); return api; };
   const api = {
     select: (c) => { q.cols = c || '*'; if (q.op !== 'select') q.ret = true; return api; },
-    insert: b => { q.op = 'insert'; q.body = b; return api; }, update: b => { q.op = 'update'; q.body = b; return api; }, upsert: (b, o) => { q.op = 'upsert'; q.body = b; q.ignore = !!(o && o.ignoreDuplicates); return api; }, delete: () => { q.op = 'delete'; return api; },
+    insert: b => { q.op = 'insert'; q.body = b; return api; }, update: b => { q.op = 'update'; q.body = b; return api; }, upsert: (b, o) => { q.op = 'upsert'; q.body = b; q.ignore = !!(o && o.ignoreDuplicates); q.conflict = o && o.onConflict || pk[t]; return api; }, delete: () => { q.op = 'delete'; return api; },
     eq: (c, v) => add(c, '=', v), neq: (c, v) => add(c, '<>', v), gte: (c, v) => add(c, '>=', v), lte: (c, v) => add(c, '<=', v),
     in: (c, vs) => add(c, 'in', vs),
-    order: (c, o) => { q.order = c + (o && o.ascending === false ? ' desc' : ''); return api; }, range: (a, b) => { q.range = [a, b]; return api; }, limit: n => { q.limit = n; return api; },
+    order: (c, o) => { q.order.push(c + (o && o.ascending === false ? ' desc' : '')); return api; }, range: (a, b) => { q.range = [a, b]; return api; }, limit: n => { q.limit = n; return api; },
     single: () => { q.single = true; return api; }, maybeSingle: () => { q.maybe = true; return api; },
     then: (res, rej) => run(q).then(res, rej)
   };
@@ -50,11 +50,11 @@ async function run(q) {
   const keys = o => Object.keys(o);
   let sql, whereSql = '';
   const where = () => q.conds.length ? ' where ' + q.conds.map(x => x.op === 'in' ? x.c + '::text = any(' + P('{' + x.v.map(v => '"' + String(v).replace(/"/g, '\\"') + '"').join(',') + '}') + '::text[])' : x.c + ' ' + x.op + ' ' + P(x.v)).join(' and ') : '';
-  if (q.op === 'select') { sql = 'select ' + q.cols + ' from ' + q.t + where() + (q.order ? ' order by ' + q.order : '') + (q.range ? ' limit ' + (q.range[1] - q.range[0] + 1) + ' offset ' + q.range[0] : q.limit ? ' limit ' + q.limit : ''); }
+  if (q.op === 'select') { sql = 'select ' + q.cols + ' from ' + q.t + where() + (q.order.length ? ' order by ' + q.order.join(',') : '') + (q.range ? ' limit ' + (q.range[1] - q.range[0] + 1) + ' offset ' + q.range[0] : q.limit ? ' limit ' + q.limit : ''); }
   else if (q.op === 'insert' || q.op === 'upsert') {
     const rows = Array.isArray(q.body) ? q.body : [q.body], ks = keys(rows[0]);
     const tuples = rows.map(r => '(' + ks.map(k => P(r[k])).join(',') + ')');
-    sql = 'insert into ' + q.t + ' (' + ks.join(',') + ') values ' + tuples.join(',') + (q.op === 'upsert' ? (q.ignore ? ' on conflict (' + pk[q.t] + ') do nothing' : ' on conflict (' + pk[q.t] + ') do update set ' + ks.filter(k => !pk[q.t].split(',').includes(k)).map(k => k + ' = excluded.' + k).join(',')) : '') + ' returning *';
+    sql = 'insert into ' + q.t + ' (' + ks.join(',') + ') values ' + tuples.join(',') + (q.op === 'upsert' ? (q.ignore ? ' on conflict (' + q.conflict + ') do nothing' : ' on conflict (' + q.conflict + ') do update set ' + ks.filter(k => !q.conflict.split(',').includes(k)).map(k => k + ' = excluded.' + k).join(',')) : '') + ' returning *';
   } else if (q.op === 'update') { const ks = keys(q.body); const sets = ks.map(k => k + ' = ' + P(q.body[k])).join(','); sql = 'update ' + q.t + ' set ' + sets + where() + ' returning *'; }
   else if (q.op === 'delete') sql = 'delete from ' + q.t + where() + ' returning *';
   const r = await __q(sql, params);

@@ -1,4 +1,5 @@
 import { supabase } from './auth.js';
+import { readAll } from './readAll.js';
 import { HOL, POLICY, BY } from './data.js';
 
 /* Leave requests, holidays and leave rules, kept in Supabase. */
@@ -8,22 +9,21 @@ const mapReq = r => ({ id: r.id, emp: r.employee_id, type: r.type, from: r.from_
 
 // Holidays and rules go into the shared HOL and POLICY objects the screens already read.
 export async function loadLeaveConfig() {
-  const [h, p] = await Promise.all([supabase.from('holidays').select('day, name'), supabase.from('leave_policy').select('*').eq('id', 1).maybeSingle()]);
-  if (h.error || p.error) throw new Error('Could not load holidays and leave rules.');
+  const [h, p] = await Promise.all([readAll(() => supabase.from('holidays').select('day, name').order('day'), 'Could not load holidays and leave rules.'), supabase.from('leave_policy').select('*').eq('id', 1).maybeSingle()]);
+  if (p.error) throw new Error('Could not load holidays and leave rules.');
   Object.keys(HOL).forEach(k => delete HOL[k]);
-  h.data.forEach(r => { HOL[r.day] = r.name; });
+  h.forEach(r => { HOL[r.day] = r.name; });
   if (p.data) Object.assign(POLICY, { allow: p.data.allow, notice: p.data.notice, half: p.data.half, note: p.data.note });
 }
 
 // Own requests (everyone's for admins), plus who else is away. Away rows carry no reason.
 export async function loadLeaves() {
   const [a, b] = await Promise.all([
-    supabase.from('leave_requests').select('*').neq('state', 'cancelled').order('from_date', { ascending: false }),
-    supabase.from('leave_away').select('*')
+    readAll(() => supabase.from('leave_requests').select('*').neq('state', 'cancelled').order('from_date', { ascending: false }).order('id'), 'Could not load leave.'),
+    readAll(() => supabase.from('leave_away').select('*').order('id'), 'Could not load leave.')
   ]);
-  if (a.error || b.error) throw new Error('Could not load leave.');
-  const reqs = a.data.map(mapReq), have = new Set(reqs.map(l => l.id));
-  const away = b.data.filter(r => !have.has(r.id)).map(r => mapReq({ ...r, reason: '', state: 'approved' }));
+  const reqs = a.map(mapReq), have = new Set(reqs.map(l => l.id));
+  const away = b.filter(r => !have.has(r.id)).map(r => mapReq({ ...r, reason: '', state: 'approved' }));
   return [...reqs, ...away];
 }
 
@@ -33,11 +33,14 @@ export async function persistLeaves(prev, next) {
   for (const l of next) {
     const old = before.get(l.id);
     if (!old) {
-      const { error } = await supabase.from('leave_requests').insert({ employee_id: l.emp, type: l.type, from_date: l.from, to_date: l.to, days: l.days, half: !!l.half, reason: l.reason || '' });
-      if (error) throw new Error(RULE.test(error.message) ? error.message : 'Could not send that request. Try again.');
+      const { error } = await supabase.from('leave_requests').insert({ employee_id: l.emp, type: l.type, from_date: l.from, to_date: l.to, days: l.days, half: !!l.half, reason: l.reason || '', client_key: String(l.id) });
+      if (error) {
+        const check = await supabase.from('leave_requests').select('id').eq('employee_id', l.emp).eq('client_key', String(l.id)).maybeSingle();
+        if (check.error || !check.data) throw new Error(RULE.test(error.message) ? error.message : 'Could not send that request. Try again.');
+      }
     } else if (old.state !== l.state) {
       const { data, error } = await supabase.from('leave_requests').update({ state: l.state }).eq('id', l.id).select('id');
-      if (error) throw new Error('Could not save that decision. Try again.');
+      if (error) throw new Error(RULE.test(error.message) ? error.message : 'Could not save that decision. Try again.');
       if (!data.length) throw new Error('You cannot decide this request.');
     }
   }

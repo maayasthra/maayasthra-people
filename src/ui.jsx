@@ -9,7 +9,11 @@ export const first = e => e.name.split(' ')[0];
 export const Switch = ({ on, set, label }) => html`<button type="button" className=${'sw' + (on ? ' on' : '')} role="switch" aria-checked=${on} aria-label=${label} onClick=${() => set(!on)}><i></i></button>`;
 
 export function downloadCSV(name, rows) {
-  const esc = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const esc = v => {
+    let text = String(v == null ? '' : v);
+    if (typeof v === 'string' && /^[\s\u0000-\u001f]*[=+@-]/.test(text)) text = "'" + text;
+    return '"' + text.replace(/"/g, '""') + '"';
+  };
   const blob = new Blob([rows.map(r => r.map(esc).join(',')).join('\n')], { type: 'text/csv' });
   const url = URL.createObjectURL(blob), a = document.createElement('a');
   a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();

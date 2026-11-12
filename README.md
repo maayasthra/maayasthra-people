@@ -10,26 +10,25 @@ npm run build      # static files in dist/
 ```
 Needs Node 20+. The build output is plain static files, so any host can serve it.
 
-## Status
-- Front end: working prototype. Code lives in `src/data.js` (sample data, leave policy, roles, date helpers), `src/ui.jsx` (shared pieces) and `src/screens/` (one file per screen).
-- Home differs by role: employees see presence, balances, announcements, who is away and their team; HR and Admin see headcount, approvals, probation reviews and quick actions; managers also see their team's approvals.
-- Also in: org chart, add and edit employees, photo and contact self-service, half-day leave, notice and note rules, leave CSV export, light and dark themes.
-- Data is sample data held in memory. Nothing persists yet, and sign-in is a demo check (password `maayasthra`).
+## Architecture and modes
 
-## Maayasthra Task
-The People and Task buttons (top left) switch between Maayasthra People and Maayasthra Task. Task has one General Kanban board with a column per person, two pinned columns (Priority Tasks, Retainer Tasks) and a Completed Tasks column at the end, plus My Tasks and an admin Team view. Code is in `src/task/` and `src/tasks.js`. Tasks and projects are sample data saved in the browser (localStorage) until the database exists.
+The live app is a React/Vite frontend backed by Supabase Auth, Postgres, RLS, RPCs and Realtime. It includes the staff directory, private contacts, attendance, leave, announcements, shared task boards, timers and EOD reports. `src/*Db.js`, `src/staff.js`, and `src/leave.js` contain data access; database rules live in `supabase/migrations/`.
 
-## Next steps
-1. Choose the backend once the existing hosting is confirmed (Supabase/Postgres, or a Node API on the current host).
-2. Replace the in-memory store in `src/data.js` with a data layer that reads and writes the database.
-3. Load the real employee roster, holidays and leave policy.
-4. Add real work-email sign-in for all employees.
-5. Deploy to a free host and point `people.maayasthra.com` at it.
-6. Write HANDOVER.md for the owner.
+Without both `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`, the app uses local demo data. Use a disposable staging project for integration testing. Never put a service-role key in frontend environment variables. Do not use `dev:live` or production credentials for local regression checks.
+
+## Change and recovery procedure
+
+1. Establish a backup and verify restoration into an isolated project before database changes. Confirm external recovery coverage if the plan has no managed backups.
+2. Compare the installed schema, functions and grants with migration history. A dashboard showing no migrations does not prove the schema is empty; SQL may have been applied manually.
+3. Test pending migrations against an isolated database with dummy accounts and the existing schema baseline. Do not rerun the entire historical migration list over a live database.
+4. Run unit tests, database tests and a production build in a safe environment, then exercise the affected UI against staging.
+5. Review the diff and staging results before approving a production release. Keep the previous frontend artifact and a database recovery plan.
+
+Migration `0035_subtask_order.sql` adds the reorder RPC used by the matching frontend. Validate and apply it in staging before testing subtask reordering. Migration `0036_inactive_rpc_access.sql` also denies task/timer and profile RPC mutations from deactivated accounts with an existing session. Migration `0037_security_integrity.sql` enforces subtask/comment/column/EOD JSON shapes, comment authorship and staff identity revocation. All three passed isolated staging and remain unapplied to production. The read-only production check on 2026-11-13 also found the pre-0034 EOD history policy; reconcile and include `0034_eod_own_history.sql` in the reviewed release plan. The new shape constraints deliberately fail if existing malformed records are found; do not discard or silently rewrite live records to make them pass.
 
 ## Database (Supabase)
 
-Run these in the Supabase SQL Editor, in order. Each file can be run again safely.
+For a new isolated database, apply the files in order. For an existing database, reconcile its baseline and apply only reviewed pending migrations. Historical migrations can overwrite newer function definitions.
 
 | File | What it sets up |
 |---|---|
@@ -68,7 +67,17 @@ Run these in the Supabase SQL Editor, in order. Each file can be run again safel
 | `0033_retainer_color.sql` | Each retainer card can have its own tint colour; duplicates keep it. Only admins and project managers can change it |
 | `0034_eod_own_history.sql` | Everyone can read back their own past day reports (My Tasks > Submitted work); only admins and project managers see other people's |
 
+| `0035_subtask_order.sql` | Authorized subtask reordering that preserves concurrent additions and stored content |
+| `0036_inactive_rpc_access.sql` | Active membership checks for task/timer and both profile RPC overloads |
+| `0037_security_integrity.sql` | JSON contracts, immutable author-bound comments and revocation of former staff identities |
+| `0038_concurrent_workflows.sql` | Serialize check-ins and leave allocation; keep missed-day EOD reports write-once |
+| `0039_timer_archive_and_groups.sql` | Retain closed timer history in read-only archive batches and validate group members |
+| `0040_retry_identity.sql` | Stable creation keys, repeat-safe task list additions and authorized deletion |
+| `0041_reporting_cycles.sql` | Serialize reporting-line writes and reject self/indirect manager cycles |
+
 ## Tests
+
+`npm run test:unit` checks save serialization, failure recovery, departure flushing and account disposal with dummy in-memory state.
 
 `npm run test:db` runs the real application code against a real Postgres (in memory) with every migration applied.
 It checks who can see and change what, the leave rules, check-ins, and people editing the same card at once.
@@ -77,3 +86,21 @@ Run it after any change to `supabase/migrations` or to the files in `src/` that 
 ## Design
 
 The visual rules (colours, type, spacing, components) are in [DESIGN.md](DESIGN.md). Styling lives in `src/styles.css` and `src/untitled.css`; new work uses the tokens in `untitled.css`.
+
+## Concurrency, pagination and timer history
+
+Check-in and leave allocation serialize on the employee row. Restoring declined leave to pending/approved consumes the configured allowance again; there is no implicit admin allowance override. Past-day EOD conflicts reject the second submission, while today's report remains editable.
+
+`readAll` loads leave/away data, announcement receipts, tasks and archived timer history with stable ordering, advancing by the actual server page size. A later-page error fails the load instead of returning an incomplete balance or report.
+
+At 500 hot timer entries, `task_timer` archives closed sessions transactionally before starting the next timer. Open sessions remain on the task. `loadBoard` merges archived history so total and date-range reports retain every session. Archives inherit task read permissions and are not writable through the client API. Do not deploy the frontend before migration 0039, or revert to a frontend that ignores archived history after archival has started.
+
+Before an approved release, verify backup/restore and the installed baseline, recheck existing JSON compatibility (including `board_groups.members`), and review migrations 0034–0041 as the observed pending set. Migration 0039 intentionally fails atomically if existing group member data is malformed. All testing here uses isolated synthetic data; production has not been changed.
+
+Lost-response recovery uses stable creation keys for employees, announcements and leave; task inserts ignore existing identities and reconcile newer local edits. Identical missed-day reports and matching attendance states can confirm a previously committed write. Different saved reports remain immutable. Retry identity is retained during the active edit session; this is not an offline queue that survives closing the browser.
+
+The directory/private contacts, attendance, EOD, holidays and groups use the shared paged reader. Manager selection excludes subordinates; the database rejects reporting cycles and the org chart keeps people with legacy invalid relationships visible for review. Preflight existing reporting relationships before release; 0041 prevents new cycles but does not silently rewrite old staff relationships.
+
+Task-list and timer RPCs recheck authorization after acquiring the task row lock, so assignment changes while a request waits take effect before its mutation. Uncertain list additions reconcile before newer edits/removals; discarded uncertain card creations are checked and removed safely. Timer-history loading deduplicates sessions that move into the archive during a read. Partial employee creation retains its core-field baseline until contacts and readback succeed.
+
+Directory refreshes reject superseded responses before publishing shared state, preventing a delayed admin contact read from replacing a newer restricted account's directory.

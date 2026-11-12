@@ -1,15 +1,13 @@
 import { supabase } from './auth.js';
+import { readAll } from './readAll.js';
 import { BY } from './data.js';
 import { dayKey, addDays, toTs } from './attendance.js';
 
 /* Check-ins kept in Supabase. The app still reads att = { [employeeNumber]: { [day]: { sessions, edited? } } }. */
-const PAGE = 1000;
 
 export async function loadAttendance(days = 120) {
   const from = addDays(dayKey(), -days), today = dayKey(), att = {};
-  for (let start = 0; ; start += PAGE) {
-    const { data, error } = await supabase.from('attendance_days').select('*').gte('day', from).order('day').order('employee_id').range(start, start + PAGE - 1);
-    if (error) throw new Error('Could not load attendance.');
+  const data = await readAll(() => supabase.from('attendance_days').select('*').gte('day', from).order('day').order('employee_id'), 'Could not load attendance.');
     data.forEach(r => {
       const e = BY[r.employee_id]; let sessions = r.sessions || [];
       // A check-in left open on an earlier day counts until that person's shift end.
@@ -21,8 +19,6 @@ export async function loadAttendance(days = 120) {
       if (r.edited_by) rec.edited = { by: (BY[r.edited_by] || {}).name || 'An admin', at: Date.parse(r.edited_at) || 0 };
       (att[r.employee_id] = att[r.employee_id] || {})[r.day] = rec;
     });
-    if (data.length < PAGE) break;
-  }
   return att;
 }
 
@@ -36,6 +32,14 @@ export const mergeAtt = (prev, fresh) => {
 const KNOWN = /EOD report|out of date|working hours have ended|already checked in|not checked in|not valid|another admin|cannot be before|future day/i;
 const fail = (error, fallback) => { throw new Error(KNOWN.test(error.message) ? error.message : fallback); };
 
+// Reconcile a lost acknowledgement against the durable state, including the
+// original session prefix so a different shift cannot be mistaken for this one.
+const sameSessions = (a, b) => a.length === b.length && a.every((x, i) => ['in', 'out', 'loc'].every(k => x[k] === b[i][k]));
+async function savedSessions(n, iso) {
+  const r = await supabase.from('attendance_days').select('sessions').eq('employee_id', Number(n)).eq('day', iso).maybeSingle();
+  return !r.error && r.data ? r.data.sessions : null;
+}
+
 // The screens change att in memory. This works out what happened and saves it.
 export async function persistAtt(prev, next) {
   for (const n of Object.keys(next)) {
@@ -48,10 +52,16 @@ export async function persistAtt(prev, next) {
         if (error) fail(error, 'Could not save those hours. Try again.');
       } else if (ns.length === os.length + 1) {
         const { error } = await supabase.rpc('check_in', { p_loc: ns[ns.length - 1].loc || 'office' });
-        if (error) fail(error, 'Could not check you in. Try again.');
+        if (error) {
+          const stored = await savedSessions(n, iso), last = stored?.[stored.length - 1];
+          if (!(stored && stored.length === ns.length && sameSessions(stored.slice(0,-1), os) && last.out == null && last.loc === (ns[ns.length-1].loc || 'office'))) fail(error, 'Could not check you in. Try again.');
+        }
       } else if (ns.length && ns.length === os.length && os[os.length - 1].out == null && ns[ns.length - 1].out != null) {
         const { error } = await supabase.rpc('check_out', { p_at: ns[ns.length - 1].out });
-        if (error) fail(error, 'Could not check you out. Try again.');
+        if (error) {
+          const stored = await savedSessions(n, iso);
+          if (!stored || !sameSessions(stored, ns)) fail(error, 'Could not check you out. Try again.');
+        }
       }
     }
   }

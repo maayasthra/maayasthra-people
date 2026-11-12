@@ -4,7 +4,7 @@ import { pendingSound, doneSound, deleteSound } from '../alerts.js';
 import { html, Icon, Av, Switch } from '../ui.jsx';
 import { Sheet } from './parts.jsx';
 import { BY, activeEmps } from '../data.js';
-import { PRIO, LABELS, PINNED, mkTask, colName, completeCard, reopenCard, statusOf, startTimer, pauseTimer } from '../tasks.js';
+import { PRIO, LABELS, PINNED, mkTask, colName, completeCard, reopenCard, statusOf, startTimer, pauseTimer, stopFor } from '../tasks.js';
 
 const RET_COLORS = ['#0A84FF', '#BF5AF2', '#FF375F', '#FF9F0A', '#FFD60A', '#30D158', '#30B0C7', '#8E8E93'];
 const ago = t => { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'Just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' d ago'; };

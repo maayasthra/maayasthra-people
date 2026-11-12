@@ -139,7 +139,10 @@ t('an employee cannot remove one, and is told', /Only admins/.test(await tryit((
 as('karthik'); m.att.setMe(ids.karthik); await m.loadStaff();
 let ax = {}; const stepA = async fn => { const prev = ax; ax = fn(ax); const e = await tryit(() => m.persistAtt(prev, ax)); ax = m.mergeAtt(ax, await m.loadAttendance(3)); return e; };
 t('check in', (await stepA(x => m.att.checkIn(x, ids.karthik))) === '');
-t('a second check-in while checked in is refused', /already checked in/.test(await stepA(x => m.att.checkIn({ ...x, [ids.karthik]: { [m.att.dayKey()]: { sessions: [...x[ids.karthik][m.att.dayKey()].sessions.map(s => ({ ...s })), { in: Date.now(), out: null, loc: 'office' }] } } }, ids.karthik))) || true);
+const beforeDuplicate = JSON.stringify((await q('select sessions from attendance_days where employee_id=$1 and day=public.today_ist()', [ids.karthik]))[0].sessions);
+const duplicateCheckIn = await m.supabase.rpc('check_in', { p_loc: 'office' });
+t('a second check-in while checked in is refused', /already checked in/i.test(duplicateCheckIn.error?.message || ''));
+t('refused check-in leaves sessions unchanged', JSON.stringify((await q('select sessions from attendance_days where employee_id=$1 and day=public.today_ist()', [ids.karthik]))[0].sessions) === beforeDuplicate);
 as('abines'); await m.loadStaff(); await m.supabase.rpc('check_in', { p_loc: 'office' });
 { const r = await m.supabase.rpc('check_out', { p_at: Date.now() }); t('an employee checking out without an EOD report is refused', /EOD report/.test((r.error && r.error.message) || '')); }
 as('karthik'); await m.loadStaff();
@@ -248,7 +251,7 @@ as('abines'); tb = await m.loadBoard();
 await m.persistBoard(tb, { ...tb, tasks: m.tasks.startTimer(tb.tasks, 'tm1', ids.abines) }, { mgr: false, me: ids.abines });
 tb = await m.loadBoard(); t('starting a completed card reopens it', !tb.tasks.find(x => x.id === 'tm1').done && m.tasks.isDoing(tb.tasks.find(x => x.id === 'tm1'), ids.abines));
 as('yogan'); tb = await m.loadBoard();
-t('someone not on the card cannot time it', /only change|Could not save/.test(await tryit(() => m.persistBoard(tb, { ...tb, tasks: m.tasks.startTimer([{ ...T('tm1', ids.vijay, { cols: [ids.abines, ids.arunkumar] }), time: [] }], 'tm1', ids.yogan) }, { mgr: false, me: ids.yogan }))) || true);
+t('someone not on the card cannot time it', /only change|Could not save/.test(await tryit(() => m.persistBoard(tb, { ...tb, tasks: m.tasks.startTimer([{ ...T('tm1', ids.vijay, { cols: [ids.abines, ids.arunkumar] }), time: [] }], 'tm1', ids.yogan) }, { mgr: false, me: ids.yogan }))));
 const direct = await globalThis.__q("select task_timer('tm1','start', null)");
 t('and the database refuses it directly', !!direct.error, direct.error && direct.error.message);
 as('abines'); tb = await m.loadBoard(); const stopOther = await globalThis.__q("select task_timer('tm1','stop'," + ids.arunkumar + ")");
@@ -284,11 +287,11 @@ t('a timer left running overnight is closed at the previous shift end', st.end =
 await db.exec("begin; select set_config('mp.timer','on',true); update tasks set time_log = '" + JSON.stringify([{ id: 'old2', emp: ids.vandhana, start: startMs, end: null }]) + "'::jsonb where id='st1'; commit;");
 as('vijay'); tb = await m.loadBoard();
 const st2 = tb.tasks.find(x => x.id === 'st1').time[0];
-t('a stale timer is closed when anyone opens the board, even if the owner never checked in', st2.end !== null && st2.end < Date.now() - 3600e3 && st2.end >= startMs, { end: st2.end });
+t('a stale timer is closed when anyone opens the board, even if the owner never checked in', st2.end === endMs, { end: st2.end });
 await db.exec("begin; select set_config('mp.timer','on',true); update tasks set time_log = '" + JSON.stringify([{ id: 'old3', emp: ids.vandhana, start: startMs, end: null }]) + "'::jsonb where id='st1'; commit;");
-await q("select public.task_timer('st1','stop_all')").catch(() => {});
-tb = await m.loadBoard();
-t('pressing a timer closes a leftover one at its own day’s end, not now', tb.tasks.find(x => x.id === 'st1').time[0].end < Date.now() - 3600e3);
+const staleStop = await m.supabase.rpc('task_timer', { p_task: 'st1', p_action: 'stop_all' });
+const stoppedStale = (await q("select time_log from tasks where id='st1'"))[0].time_log[0];
+t('pressing a timer closes a leftover one at its own day’s end, not now', !staleStop.error && stoppedStale.end === endMs);
 
 // A stale edit form only writes what it changed
 as('sanjay'); await m.loadStaff();
@@ -381,7 +384,7 @@ as('abines'); await m.loadStaff();
 const rowsOk = [{ project: 'Brand work', desc: 'Drafts', hours: 2, subs: [] }];
 t('a missed day can be sent late', !(await tryit(async () => m.submitEod(rowsOk, ids.abines, (await q("select (public.today_ist() - 3)::text d"))[0].d))));
 t('that late report is stored for the right day', (await q("select count(*)::int c from eod_reports where employee_id = " + ids.abines + " and day = public.today_ist() - 3"))[0].c === 1);
-t('the same missed day cannot be sent twice', /already sent/.test(await tryit(async () => m.submitEod(rowsOk, ids.abines, (await q("select (public.today_ist() - 3)::text d"))[0].d))));
+t('a different report cannot replace the same missed day', /already sent/.test(await tryit(async () => m.submitEod([{...rowsOk[0],desc:'Different report'}], ids.abines, (await q("select (public.today_ist() - 3)::text d"))[0].d))));
 t('a day more than 7 days back is refused', /Not allowed/.test(await tryit(async () => m.submitEod(rowsOk, ids.abines, (await q("select (public.today_ist() - 9)::text d"))[0].d))));
 t('a future day is refused', /Not allowed/.test(await tryit(async () => m.submitEod(rowsOk, ids.abines, (await q("select (public.today_ist() + 1)::text d"))[0].d))));
 
@@ -403,6 +406,303 @@ const cb2 = await m.loadBoard();
 await tryit(() => m.persistBoard(cb2, { ...cb2, tasks: cb2.tasks.map(x => x.id === cid ? { ...x, rcolor: '#FF375F' } : x) }));
 t('an employee cannot change a retainer colour', (await q("select retainer_color from tasks where id = '" + cid + "'"))[0].retainer_color === '#BF5AF2');
 
-console.log('--- done ---');
+// ================= CONFIRMED AUDIT REGRESSIONS =================
+as('vijay'); await m.loadStaff();
+const orderBase = await m.loadBoard();
+const orderTask = T('audit-order', ids.vijay, { subs: [{ id: 1, t: 'First', done: false }, { id: 2, t: 'Second', done: false }] });
+await m.persistBoard(orderBase, { ...orderBase, tasks: [...orderBase.tasks, orderTask] });
+const editorA = await m.loadBoard();
+// Another editor adds content after A's snapshot.
+await m.supabase.rpc('patch_task_list', { p_task: orderTask.id, p_kind: 'subs', p_op: 'add', p_item: { id: 3, t: 'Concurrent', done: false } });
+await m.persistBoard(editorA, { ...editorA, tasks: editorA.tasks.map(x => x.id === orderTask.id ? { ...x, subs: [...x.subs].reverse() } : x) });
+const reordered = (await m.loadBoard()).tasks.find(x => x.id === orderTask.id);
+t('subtask order survives reload and preserves concurrent additions', reordered.subs.map(x => x.id).join() === '2,1,3');
+t('reorder preserves the stored content', reordered.subs.find(x => x.id === 3).t === 'Concurrent');
+as('abines');
+const deniedOrder = await m.supabase.rpc('reorder_task_subs', { p_task: orderTask.id, p_ids: ['1', '2'] });
+t('an uninvolved employee cannot reorder another card', !!deniedOrder.error);
+as('vijay');
+const badOrder = await m.supabase.rpc('reorder_task_subs', { p_task: orderTask.id, p_ids: ['1', '1'] });
+t('duplicate reorder IDs are rejected', !!badOrder.error);
 
-if (process.exitCode) console.log('SOME CHECKS FAILED');
+// A successfully inserted card must not be inserted twice after a later failure.
+const retryBase = await m.loadBoard(), retryTask = T('audit-retry', ids.vijay);
+const retryNext = { ...retryBase, tasks: [...retryBase.tasks, retryTask], layout: { order: ['priority'], hidden: [] } };
+const realFrom = m.supabase.from; let failLayout = true, insertCalls = 0;
+m.supabase.from = table => {
+  if (table === 'board_layout' && failLayout) return { update: () => ({ eq: () => ({ select: async () => ({ data: null, error: { message: 'offline fixture' } }) }) }) };
+  const builder = realFrom(table);
+  if (table === 'tasks') { const insert = builder.upsert; builder.upsert = (...args) => { insertCalls++; return insert(...args); }; }
+  return builder;
+};
+try {
+  let acknowledged = retryBase;
+  const opts = { onProgress: b => { acknowledged = b; } };
+  t('a partial board failure is reported', !!(await tryit(() => m.persistBoard(acknowledged, retryNext, opts))));
+  failLayout = false;
+  await m.persistBoard(acknowledged, retryNext, opts);
+  t('retry skips the already acknowledged card insert', insertCalls === 1);
+} finally { m.supabase.from = realFrom; }
+
+// Keep the new identity if writing private contact details fails after insertion.
+let failPrivate = true;
+m.supabase.from = table => table === 'employee_private' && failPrivate
+  ? { upsert: async () => ({ error: { message: 'offline fixture' } }) } : realFrom(table);
+try {
+  const person = { n: 0, email: 'retry-person@example.test', name: 'Retry Person', role: 'Designer', dept: 'Studio', city: 'Chennai', status: 'Full-time', access: 'Employee', shiftStart: '09:00', shiftEnd: '18:00', phone: '123', emergency: '', emergencyPhone: '' };
+  let inserted = 0;
+  try { await m.saveEmployee(person); } catch (e) { inserted = e.employeeId; }
+  t('failed contact save returns the already-created employee identity', inserted > 0);
+  failPrivate = false;
+  const savedPerson = await m.saveEmployee({ ...person, n: inserted });
+  t('retry finishes the same employee without a duplicate insert', savedPerson.n === inserted && savedPerson.phone === '123');
+} finally { m.supabase.from = realFrom; }
+
+// An existing identity must lose RPC mutation access when deactivated.
+as('vijay');
+await db.query("update employees set status='Exited' where id=$1", [ids.abines]);
+as('abines');
+const inactiveTask = T('inactive-rpc', ids.abines);
+await db.query("insert into tasks (id,title,by_emp,cols) values ($1,$2,$3,$4::jsonb)", [inactiveTask.id, inactiveTask.title, ids.abines, JSON.stringify([ids.abines])]);
+t('inactive employee cannot add a subtask through RPC', !!(await m.supabase.rpc('patch_task_list', { p_task: inactiveTask.id, p_kind: 'subs', p_op: 'add', p_item: { id: 1, t: 'Blocked', done: false } })).error);
+t('inactive employee cannot start a timer through RPC', !!(await m.supabase.rpc('task_timer', { p_task: inactiveTask.id, p_action: 'start' })).error);
+for (const args of [
+  { p_phone: 'blocked', p_bio: '', p_photo: '', p_emergency_name: '', p_emergency_phone: '' },
+  { p_phone: 'blocked', p_bio: '', p_photo: '', p_emergency_name: '', p_emergency_phone: '', p_emergency_relation: '' }
+]) t('inactive employee cannot use profile RPC overload with ' + Object.keys(args).length + ' arguments', !!(await m.supabase.rpc('update_my_profile', args)).error);
+await db.query("update employees set status='Full-time' where id=$1", [ids.abines]);
+// Database-boundary regressions: REST-style JSON must obey the same contracts as RPC writes.
+as('abines');
+for (const patch of [{subs:[null]}, {subs:[{id:1,t:{bad:true},done:false}]}, {comments:[{id:1,by:ids.vijay,text:'forged',at:1}]}]) {
+  const r = await m.supabase.from('tasks').update(patch).eq('id',inactiveTask.id);
+  t('unsafe task JSON is rejected: ' + Object.keys(patch)[0] + JSON.stringify(patch), !!r.error);
+}
+as('vijay');
+t('malformed custom columns are rejected', !!(await m.supabase.from('task_board').update({columns:[null]}).eq('id',1)).error);
+as('abines');
+for (const rows of [[{project:{bad:true},desc:'test',hours:1,subs:[]}], [{project:'test',desc:'test',hours:1,subs:'bad'}], [{project:'test',desc:'test',hours:'1',subs:[]}]]) {
+  t('malformed EOD JSON is rejected: ' + JSON.stringify(rows), !!(await m.supabase.rpc('submit_eod',{p_rows:rows})).error);
+}
+as('vijay');
+await db.query("update employees set email='abines-new@example.test' where id=$1",[ids.abines]);
+t('old profile becomes inactive after staff email change',(await q("select active from profiles where email='abines@example.test'"))[0].active === false);
+await db.query("update employees set email='abines@example.test' where id=$1",[ids.abines]);
+t('matching profile is restored when staff email is restored',(await q("select active from profiles where email='abines@example.test'"))[0].active === true);
+// Capacity archival must retain raw sessions and their totals, with task-based RLS.
+as('vijay');
+const capacityTime=Array.from({length:500},(_,i)=>({id:'cap-'+i,emp:ids.abines,start:1000+i*1000,end:1500+i*1000}));
+const capacityInsert=await m.supabase.from('tasks').insert({id:'capacity-regression',title:'Capacity regression',by_emp:ids.vijay,cols:[ids.abines],time_log:capacityTime});
+t('admin can seed a full timer history',!capacityInsert.error);
+as('abines');
+t('timer starts at the historical 500-session limit',!(await m.supabase.rpc('task_timer',{p_task:'capacity-regression',p_action:'start'})).error);
+const historyTask=(await m.loadBoard()).tasks.find(x=>x.id==='capacity-regression');
+t('all 500 archived sessions remain intact',historyTask.time.length===501 && historyTask.time.slice(0,500).every((s,i)=>['id','emp','start','end'].every(k=>s[k]===capacityTime[i][k])));
+t('historical time-range totals survive archival',m.tasks.spentIn(historyTask,0,501000)===250000);
+as('arunkumar');
+t('unrelated employee cannot read archived sessions',(await m.supabase.from('task_time_archive').select('*').eq('task_id','capacity-regression')).data.length===0);
+as('vijay');
+t('client cannot forge archived sessions',!!(await m.supabase.from('task_time_archive').insert({task_id:'capacity-regression',sessions:[]})).error);
+t('admin group object members rejected',!!(await m.supabase.from('board_groups').insert({id:'bad-members',name:'Invalid',members:{bad:true}})).error);
+t('admin group null member rejected',!!(await m.supabase.from('board_groups').insert({id:'bad-members',name:'Invalid',members:[null]})).error);
+// Restoring declined leave consumes allowance again; ordinary approval remains valid.
+const savedAllowance=(await q('select allow from leave_policy where id=1'))[0].allow;
+await db.query("update leave_policy set allow=jsonb_set(allow,'{Emergency leave}','1') where id=1");
+const restoreDays=(await q("select d::date::text d from generate_series('2030-07-01'::date,'2030-07-10'::date,'1 day') d where extract(isodow from d)<6 limit 2")).map(x=>x.d);
+const restoreRequest=day=>({employee_id:ids.abines,type:'Emergency leave',from_date:day,to_date:day,days:1,reason:'Restoration regression'});
+as('abines');const declinedRequest=(await m.supabase.from('leave_requests').insert(restoreRequest(restoreDays[0])).select('id')).data[0].id;
+as('vijay');await m.supabase.from('leave_requests').update({state:'declined'}).eq('id',declinedRequest);
+as('abines');const consumingRequest=(await m.supabase.from('leave_requests').insert(restoreRequest(restoreDays[1])).select('id')).data[0].id;
+as('vijay');
+for(const state of ['pending','approved'])t('restored leave cannot exceed allowance: '+state,!!(await m.supabase.from('leave_requests').update({state}).eq('id',declinedRequest)).error);
+await m.supabase.from('leave_requests').update({state:'declined'}).eq('id',consumingRequest);
+t('restored leave is allowed when allowance is available',!(await m.supabase.from('leave_requests').update({state:'pending'}).eq('id',declinedRequest)).error);
+t('valid pending leave can still be approved',!(await m.supabase.from('leave_requests').update({state:'approved'}).eq('id',declinedRequest)).error);
+await db.query('update leave_policy set allow=$1::jsonb where id=1',[JSON.stringify(savedAllowance)]);
+// Replays must preserve both uniqueness and authorization.
+as('vijay');
+const replayItem={id:'retry-stable',t:'One copy',done:false};
+for(let i=0;i<2;i++)t('repeat subtask add succeeds '+i,!(await m.supabase.rpc('patch_task_list',{p_task:orderTask.id,p_kind:'subs',p_op:'add',p_item:replayItem})).error);
+t('repeat subtask add stores one copy',(await q("select subs from tasks where id='audit-order'"))[0].subs.filter(x=>x.id===replayItem.id).length===1);
+t('same item identity with different content is refused',!!(await m.supabase.rpc('patch_task_list',{p_task:orderTask.id,p_kind:'subs',p_op:'add',p_item:{...replayItem,t:'Replacement'}})).error);
+as('abines');
+t('replay cannot bypass task authorization',!!(await m.supabase.rpc('patch_task_list',{p_task:orderTask.id,p_kind:'subs',p_op:'add',p_item:replayItem})).error);
+t('employee cannot delete even a missing task',!!(await m.supabase.rpc('delete_tasks',{p_ids:['missing-retry-task']})).error);
+as('vijay');
+t('manager repeat deletion succeeds',!(await m.supabase.rpc('delete_tasks',{p_ids:['missing-retry-task']})).error);
+as('abines');
+t('identical missed-day report is reconciled',!(await tryit(async()=>m.submitEod(rowsOk,ids.abines,(await q("select (public.today_ist()-3)::text d"))[0].d))));
+// Follow-up: partial creation acknowledgements must retain the writer's own baseline.
+as('vijay');
+{
+  const base=await m.loadBoard(), card=T('second-retry',ids.vijay,{title:'Original title'});
+  let next={...base,tasks:[...base.tasks,card]},ack=base;
+  const realQuery=globalThis.__q;
+  let dropInsert=true, failPatch=false;
+  globalThis.__q=async(sql,params)=>{
+    if(failPatch && /^update tasks set/.test(sql)){failPatch=false;return {rows:[],error:{message:'offline second write'}};}
+    const result=await realQuery(sql,params);
+    if(dropInsert && /^insert into tasks /.test(sql) && !result.error){dropInsert=false;return {rows:[],error:{message:'lost committed response'}};}
+    return result;
+  };
+  try {
+    const opts={me:ids.vijay,mgr:true,onProgress:x=>ack=x};
+    t('lost creation response reports failure',!!(await tryit(()=>m.persistBoard(ack,next,opts))));
+    await db.query("update tasks set title='Other editor title' where id='second-retry'");
+    next={...next,tasks:next.tasks.map(x=>x.id===card.id?{...x,desc:'New local description'}:x)};
+    failPatch=true;t('second write failure is reported',!!(await tryit(()=>m.persistBoard(ack,next,opts))));
+    await m.persistBoard(ack,next,opts);
+    const saved=(await q("select title,descr from tasks where id='second-retry'"))[0];
+    t('second retry preserves other writer and newer local edit',saved.title==='Other editor title'&&saved.descr==='New local description');
+  } finally {globalThis.__q=realQuery;}
+}
+{
+  const realQuery=globalThis.__q;
+  let dropInsert=true, failLookup=true;
+  const e={n:0,email:'followup-retry@example.test',name:'Original name',role:'Tester',dept:'Studio',city:'Chennai',status:'Full-time',access:'Employee',shiftStart:'09:00',shiftEnd:'18:00',phone:'123'};
+  globalThis.__q=async(sql,params)=>{
+    if(failLookup && /^select id from employees where creation_key/.test(sql))return {rows:[],error:{message:'offline lookup'}};
+    const result=await realQuery(sql,params);
+    if(dropInsert && /^insert into employees /.test(sql) && !result.error){dropInsert=false;return {rows:[],error:{message:'lost insert response'}};}
+    return result;
+  };
+  try {
+    t('employee unknown creation reports a retryable failure',!!(await tryit(()=>m.saveEmployee(e))));
+    failLookup=false;
+    await db.query("update employees set city='Other editor city' where email='followup-retry@example.test'");
+    e.name='Updated name';const saved=await m.saveEmployee(e);
+    t('employee retry retains newer fields and private contact',saved.name==='Updated name'&&saved.phone==='123');
+    t('employee retry preserves another editor field',saved.city==='Other editor city');
+    t('employee retry does not duplicate the row',(await q("select count(*)::int n from employees where email='followup-retry@example.test'"))[0].n===1);
+  } finally {globalThis.__q=realQuery;}
+}
+// Real query builder with a smaller response cap, including omitted ranges.
+{
+ const realFrom=m.supabase.from;
+ m.supabase.from=table=>{
+   const b=realFrom(table);b.limit(2);const range=b.range;b.range=(a,z)=>range(a,Math.min(z,a+1));return b;
+ };
+ try {
+  await m.loadStaff();t('staff loader follows actual page sizes',m.data.EMP.length===(await q('select count(*)::int n from employees'))[0].n);
+  t('private contact pagination retains later staff',m.data.EMP.find(e=>e.email==='followup-retry@example.test').phone==='123');
+  const a=await m.loadAttendance();t('attendance loader follows actual page sizes',Object.values(a).reduce((n,v)=>n+Object.keys(v).length,0)===(await q("select count(*)::int n from attendance_days where day>=public.today_ist()-120"))[0].n);
+  t('EOD loader follows actual page sizes',(await m.loadEods('2000-01-01','2100-01-01')).length===(await q("select count(*)::int n from eod_reports where day between '2000-01-01' and '2100-01-01'"))[0].n);
+  await m.loadLeaveConfig();t('holiday loader follows actual page sizes',Object.keys(m.data.HOL).length===(await q('select count(*)::int n from holidays'))[0].n);
+  t('group loader follows actual page sizes',(await m.loadGroups()).length===(await q('select count(*)::int n from board_groups'))[0].n);
+ }finally{m.supabase.from=realFrom;}
+}
+// Reporting lines: valid hierarchy works; self and indirect cycles cannot be saved.
+as('vijay');
+{
+ const a=ids.abines,b=ids.karthik,c=ids.arunkumar;
+ const saved=await q('select id,manager_id from employees where id=any($1)',[[a,b,c]]);
+ try {
+  await db.query('update employees set manager_id=null where id=any($1)',[[a,b,c]]);
+  t('valid reporting manager saves',!(await m.supabase.from('employees').update({manager_id:b}).eq('id',a)).error);
+  t('self reporting is rejected',!!(await m.supabase.from('employees').update({manager_id:b}).eq('id',b)).error);
+  t('two-person reporting cycle is rejected',!!(await m.supabase.from('employees').update({manager_id:a}).eq('id',b)).error);
+  await m.supabase.from('employees').update({manager_id:c}).eq('id',b);
+  t('indirect reporting cycle is rejected',!!(await m.supabase.from('employees').update({manager_id:a}).eq('id',c)).error);
+  t('removing a manager remains allowed',!(await m.supabase.from('employees').update({manager_id:null}).eq('id',a)).error);
+ } finally {
+  await db.query('update employees set manager_id=null where id=any($1)',[[a,b,c]]);
+  for(const row of saved)await db.query('update employees set manager_id=$1 where id=$2',[row.manager_id,row.id]);
+ }
+}
+
+// Unknown additions must reconcile before applying the next local snapshot.
+as('vijay');
+for (const action of ['edit', 'remove', 'correct-rejected']) {
+  const id='review-list-'+action;
+  await m.supabase.from('tasks').insert({id,title:id,by_emp:ids.vijay,cols:[ids.vijay]});
+  const base=await m.loadBoard(); let ack=base;
+  const item={id:'uncertain',t:'Before',done:false};
+  let next={...base,tasks:base.tasks.map(x=>x.id===id?{...x,subs:[item]}:x)};
+  const realQuery=globalThis.__q; let dropped=false;
+  globalThis.__q=async(sql,params)=>{
+    if(!dropped && sql.startsWith('select * from patch_task_list')) {
+      dropped=true;
+      if(action!=='correct-rejected') {
+        const result=await realQuery(sql,params);if(result.error)return result;
+      }
+      return {rows:[],error:{message:'uncertain addition'}};
+    }
+    return realQuery(sql,params);
+  };
+  try {
+    const opts={me:ids.vijay,mgr:true,onProgress:x=>ack=x};
+    t('uncertain list addition surfaces failure: '+action,!!(await tryit(()=>m.persistBoard(ack,next,opts))));
+    next={...next,tasks:next.tasks.map(x=>x.id===id?{...x,subs:action==='remove'?[]:[{...item,t:'After'}]}:x)};
+    const error=await tryit(()=>m.persistBoard(ack,next,opts));
+    const subs=(await q('select subs from tasks where id=$1',[id]))[0].subs;
+    t('newer list intent survives retry: '+action,!error&&(action==='remove'?subs.length===0:subs.length===1&&subs[0].t==='After'),error);
+  } finally {globalThis.__q=realQuery;}
+}
+{
+ const base=await m.loadBoard(),card=T('review-ghost',ids.vijay);
+ let ack=base,next={...base,tasks:[...base.tasks,card]};
+ const realQuery=globalThis.__q;let lost=false;
+ globalThis.__q=async(sql,params)=>{const r=await realQuery(sql,params);if(!lost&&sql.startsWith('insert into tasks ')&&!r.error){lost=true;return {rows:[],error:{message:'lost insert response'}};}return r;};
+ try {
+  const opts={me:ids.vijay,mgr:true,onProgress:x=>ack=x};
+  t('unknown card creation surfaces failure',!!(await tryit(()=>m.persistBoard(ack,next,opts))));
+  next={...base,tasks:[...base.tasks]};await m.persistBoard(ack,next,opts);
+  t('discarded unknown creation leaves no ghost card',(await q("select id from tasks where id='review-ghost'")).length===0);
+ }finally{globalThis.__q=realQuery;}
+}
+{
+ const id='review-archive',sessions=Array.from({length:500},(_,i)=>({id:'race-'+i,emp:ids.vijay,start:1000+i*2000,end:2000+i*2000}));
+ await m.supabase.from('tasks').insert({id,title:id,by_emp:ids.vijay,cols:[ids.vijay],time_log:sessions});
+ const realQuery=globalThis.__q;let moved=false;
+ globalThis.__q=async(sql,params)=>{
+  const result=await realQuery(sql,params);
+  if(!moved&&sql.startsWith('select * from tasks order by')){moved=true;await realQuery("select task_timer('review-archive','start')",[]);}
+  return result;
+ };
+ try {
+  const card=(await m.loadBoard()).tasks.find(x=>x.id===id);
+  t('archive during load keeps each historical session once',moved&&card.time.filter(x=>x.id.startsWith('race-')).length===500);
+  t('archive during load preserves historical duration',m.tasks.spentIn(card,0,1000001)===500000);
+ }finally{globalThis.__q=realQuery;}
+}
+
+
+// A known partial employee identity still needs its original core baseline.
+{
+ const realFrom=m.supabase.from;let rejectContact=true;
+ const e={n:0,creationKey:m.newCreationKey(),email:'partial-review@example.test',name:'Before',role:'Tester',dept:'Studio',city:'Chennai',status:'Full-time',access:'Employee',shiftStart:'09:00',shiftEnd:'18:00',phone:'123'};
+ m.supabase.from=table=>table==='employee_private'&&rejectContact?{upsert:async()=>({error:{message:'contact offline'}})}:realFrom(table);
+ try {
+  try{await m.saveEmployee(e);}catch(error){e.n=error.employeeId;}
+  t('partial creation returns a durable employee identity',e.n>0);
+  await db.query('update employees set city=$1 where id=$2',['Other admin city',e.n]);
+  rejectContact=false;e.name='After';const saved=await m.saveEmployee(e);
+  t('partial creation retry preserves other core edits',saved.city==='Other admin city'&&saved.name==='After'&&saved.phone==='123');
+ }finally{m.supabase.from=realFrom;}
+}
+
+
+// A conflicting ID is not proof that our insertion committed.
+{
+ const base=await m.loadBoard(),card=T('review-collision',ids.vijay);
+ await db.query('insert into tasks(id,title,by_emp,cols) values($1,$2,$3,$4)',[card.id,'Other creator',ids.harish,JSON.stringify([ids.harish])]);
+ let ack=base;const opts={me:ids.vijay,mgr:true,onProgress:x=>ack=x};
+ t('different creator collision is refused',!!(await tryit(()=>m.persistBoard(ack,{...base,tasks:[...base.tasks,card]},opts))));
+ await m.persistBoard(ack,{...base,tasks:[...base.tasks]},opts);
+ t('discarding collided creation preserves the other card',(await q('select by_emp from tasks where id=$1',[card.id]))[0]?.by_emp===ids.harish);
+}
+
+
+// Ignore an older privileged directory read after a newer restricted load wins.
+{
+ as('vijay');const realQuery=globalThis.__q;let release,enteredResolve,held=false;
+ const entered=new Promise(r=>enteredResolve=r),gate=new Promise(r=>release=r);
+ globalThis.__q=async(sql,params)=>{const result=await realQuery(sql,params);if(!held&&sql.startsWith('select * from employee_private')){held=true;enteredResolve();await gate;}return result;};
+ try {
+  const old=m.loadStaff().catch(e=>e.message);await entered;
+  as('abines');await m.loadStaff();release();const result=await old;
+  t('stale directory response is rejected',typeof result==='string'&&result.includes('refreshed again'));
+  t('stale admin contacts do not replace employee-visible state',m.data.BY[ids.karthik].phone==='');
+ }finally{release?.();globalThis.__q=realQuery;as('vijay');}
+}
+
+console.log(process.exitCode ? 'SOME CHECKS FAILED' : 'ALL CHECKS PASSED');

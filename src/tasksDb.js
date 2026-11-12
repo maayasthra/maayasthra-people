@@ -1,9 +1,9 @@
 import { supabase } from './auth.js';
+import { readAll } from './readAll.js';
 import { BY } from './data.js';
 import { dayKey } from './attendance.js';
 
 /* The Kanban board and announcements, kept in Supabase and shared by everyone. */
-const PAGE = 1000;
 const toTask = r => ({
   id: r.id, title: r.title, client: r.client || '', cols: r.cols || [], prev: r.prev && r.prev.length ? r.prev : undefined, prio: r.prio,
   due: r.due || '', labels: r.labels || [], by: r.by_emp || 0, done: r.done, desc: r.descr || '', subs: r.subs || [], comments: r.comments || [],
@@ -16,12 +16,17 @@ const toRow = t => ({
 
 export async function loadBoard() {
   await supabase.rpc('close_stale_timers_all').then(() => {}, () => {}); // timers left from an earlier day end at that day's shift end
-  const rows = [];
-  for (let start = 0; ; start += PAGE) {
-    const { data, error } = await supabase.from('tasks').select('*').order('created_at').order('id').range(start, start + PAGE - 1);
-    if (error) throw new Error('Could not load the board.');
-    rows.push(...data); if (data.length < PAGE) break;
-  }
+  const rows = await readAll(() => supabase.from('tasks').select('*').order('created_at').order('id'), 'Could not load the board.');
+  const archives = await readAll(() => supabase.from('task_time_archive').select('task_id, sessions').order('id'), 'Could not load timer history.');
+  const history = new Map();
+  archives.forEach(r => history.set(r.task_id, [...(history.get(r.task_id) || []), ...r.sessions]));
+  rows.forEach(r => {
+    if (!history.has(r.id)) return;
+    // Archiving may commit between the task and archive reads. Prefer the
+    // archived (closed) copy when the same session appears in both responses.
+    const archived = history.get(r.id), ids = new Set(archived.map(s => s.id));
+    r.time_log = [...archived, ...(r.time_log || []).filter(s => !ids.has(s.id))];
+  });
   const b = await supabase.from('task_board').select('*').eq('id', 1).maybeSingle();
   if (b.error) throw new Error('Could not load the board.');
   const ord = (b.data && b.data.ord) || [], at = new Map(ord.map((id, i) => [id, i]));
@@ -43,64 +48,131 @@ const listChanges = (a, b) => {
 };
 
 const denied = 'You can only change cards you created or are on.';
+const creationAttempts = new Map(), listAttempts = new Map();
 // The screens change the board in memory. This works out what changed and saves it.
 export async function persistBoard(prev, next, opts = {}) {
   const before = new Map(prev.tasks.map(t => [t.id, t])), after = new Map(next.tasks.map(t => [t.id, t]));
-  const added = next.tasks.filter(t => !before.has(t.id));
-  if (added.length) {
-    const { error } = await supabase.from('tasks').insert(added.map(t => ({ id: t.id, by_emp: t.by, created_at: new Date(t.created).toISOString(), ...toRow(t) })));
-    if (error) throw new Error('Could not save the new card. Try again.');
-    // A card started right after it was created
-    for (const t of added) if ((t.time || []).some(x => x.end == null)) { const r = await supabase.rpc('task_timer', { p_task: t.id, p_action: 'start' }); if (r.error) throw new Error('Could not save the timer. Try again.'); }
+  // Advance the acknowledged baseline after each successful request. A retry
+  // diffs the latest edits against this baseline, including after partial saves.
+  let progress = prev;
+  const acknowledge = patch => { progress = { ...progress, ...patch }; opts.onProgress?.(progress); };
+  const taskPatch = (id, patch) => acknowledge({ tasks: progress.tasks.map(t => t.id === id ? { ...t, ...patch } : t) });
+  const run = async fn => {
+    if (opts.isActive && !opts.isActive()) throw new Error('The account changed before saving finished.');
+    await fn();
+  };
+  // An insert may have committed without an acknowledgement before the user
+  // removed the new card locally. Include that identity in the deletion diff.
+  for (const [key, original] of creationAttempts) {
+    if (original.by !== opts.me || before.has(original.id) || after.has(original.id)) continue;
+    await run(async () => {
+      const saved = await supabase.from('tasks').select('id, by_emp').eq('id', original.id).maybeSingle();
+      if (saved.error) throw new Error('Could not confirm the removed card. Try again.');
+      if (saved.data && saved.data.by_emp === original.by) {
+        const { error } = await supabase.rpc('delete_tasks', { p_ids: [original.id] });
+        if (error) throw new Error('Could not delete that card. Try again.');
+      }
+      creationAttempts.delete(key);
+    });
   }
+  const added = next.tasks.filter(t => !before.has(t.id));
+  for (const t of added) await run(async () => {
+    const key = t.by + ':' + t.id;
+    if (!creationAttempts.has(key)) creationAttempts.set(key, structuredClone({ ...t, time: [] }));
+    const original = creationAttempts.get(key);
+    const row = { id: t.id, by_emp: t.by, created_at: new Date(t.created).toISOString(), ...toRow(t) };
+    const { error } = await supabase.from('tasks').upsert(row, { onConflict: 'id', ignoreDuplicates: true });
+    if (error) throw new Error('Could not save the new card. Try again.');
+    const saved = await supabase.from('tasks').select('*').eq('id',t.id).single();
+    if (saved.error || saved.data.by_emp !== t.by) throw new Error('Could not confirm the new card. Refresh and try again.');
+    // Checkpoint this writer's original intent. A later failure must not make
+    // another writer's changes look like local edits that should be reversed.
+    acknowledge({ tasks: [...progress.tasks, original] });
+    before.set(t.id, original); // Only retry this user's newer edits, not other people's intervening changes.
+    creationAttempts.delete(key);
+  });
   for (const t of next.tasks) {
     const old = before.get(t.id);
-    if (!old || old === t) continue;
-    // Only the fields that changed are sent, so two people editing different parts of a card never undo each other.
+    if (!old || (old === t && !['subs', 'comments'].some(kind => listAttempts.has(JSON.stringify([opts.me, t.id, kind]))))) continue;
     const patch = changedFields(old, t);
-    if (Object.keys(patch).length) {
+    if (Object.keys(patch).length) await run(async () => {
       const { data, error } = await supabase.from('tasks').update(patch).eq('id', t.id).select('id');
       if (error) throw new Error(/assign cards/i.test(error.message) ? 'Only admins and project managers can give a card to someone else.' : 'Could not save that change. Try again.');
       if (!data.length) throw new Error(denied);
-    }
-    // Timers: the server stamps the start and stop times
+      taskPatch(t.id, Object.fromEntries(Object.entries(FIELDS).filter(([, col]) => col in patch).map(([key]) => [key, t[key]])));
+    });
     const wasOpen = (old.time || []).filter(s => s.end == null), nowOpen = (t.time || []).filter(s => s.end == null);
     const stopped = wasOpen.filter(s => !nowOpen.some(x => x.id === s.id)), started = nowOpen.filter(s => !(old.time || []).some(x => x.id === s.id));
     const calls = [];
     if (stopped.length && t.done && !old.done) calls.push({ p_action: 'stop_all' });
     else [...new Set(stopped.map(s => s.emp))].forEach(emp => calls.push(emp === opts.me ? { p_action: 'stop' } : { p_action: 'stop', p_emp: emp }));
     if (started.length) calls.push({ p_action: 'start' });
-    for (const c of calls) {
+    for (const c of calls) await run(async () => {
       const { error } = await supabase.rpc('task_timer', { p_task: t.id, ...c });
       if (error) throw new Error(/only change/i.test(error.message) ? denied : 'Could not save the timer. Try again.');
-    }
-    // Subtasks and comments are changed one item at a time on the server.
+      const time = progress.tasks.find(x => x.id === t.id).time || [];
+      taskPatch(t.id, { time: c.p_action === 'start' ? [...time, ...started] : time.map(s => {
+        const end = stopped.find(x => x.id === s.id);
+        return end && (c.p_action === 'stop_all' || s.emp === (c.p_emp ?? opts.me)) ? (t.time || []).find(x => x.id === s.id) || s : s;
+      }) });
+    });
     for (const kind of ['subs', 'comments']) {
-      for (const [op, item] of listChanges(old[kind] || [], t[kind] || [])) {
+      const key = JSON.stringify([opts.me, t.id, kind]);
+      let baseline = old[kind] || [];
+      const pending = listAttempts.get(key);
+      if (pending) await run(async () => {
+        // Read back an uncertain add before diffing newer edits or removals.
+        // Keep our original intent as the baseline, not another editor's values.
+        const { data, error } = await supabase.from('tasks').select(kind).eq('id', t.id).single();
+        if (error) throw new Error('Could not confirm the last change. Try again.');
+        if (data[kind].some(x => x.id === pending.id) && !baseline.some(x => x.id === pending.id)) {
+          baseline = [...baseline, pending];
+          taskPatch(t.id, { [kind]: baseline });
+        }
+        listAttempts.delete(key);
+      });
+      for (const [op, item] of listChanges(baseline, t[kind] || [])) await run(async () => {
+        if (op === 'add') listAttempts.set(key, structuredClone(item));
         const { error } = await supabase.rpc('patch_task_list', { p_task: t.id, p_kind: kind, p_op: op, p_item: item });
-        if (error) throw new Error(/only change|only remove/i.test(error.message) ? denied : 'Could not save that change. Try again.');
-      }
+        if (error) {
+          // A database rejection is definite; only an uncertain transport failure
+          // needs readback reconciliation on the next attempt.
+          if (error.code) listAttempts.delete(key);
+          throw new Error(/only change|only remove/i.test(error.message) ? denied : 'Could not save that change. Try again.');
+        }
+        if (op === 'add') listAttempts.delete(key);
+        const list = progress.tasks.find(x => x.id === t.id)[kind] || [];
+        taskPatch(t.id, { [kind]: op === 'add' ? [...list, item] : op === 'set' ? list.map(x => x.id === item.id ? item : x) : list.filter(x => x.id !== item.id) });
+      });
     }
+    // Reorder IDs only; the server preserves other users' content and additions.
+    if (JSON.stringify((old.subs || []).map(s => s.id)) !== JSON.stringify((t.subs || []).map(s => s.id))) await run(async () => {
+      const { error } = await supabase.rpc('reorder_task_subs', { p_task: t.id, p_ids: (t.subs || []).map(s => String(s.id)) });
+      if (error) throw new Error('Could not save the subtask order. Try again.');
+      taskPatch(t.id, { subs: t.subs || [] });
+    });
   }
   const ids = next.tasks.map(t => t.id), same = ids.length === prev.tasks.length && prev.tasks.every((t, i) => t.id === ids[i]);
   const cust = JSON.stringify(next.custom) !== JSON.stringify(prev.custom);
-  if ((!same || cust) && opts.mgr !== false) {
+  if ((!same || cust) && opts.mgr !== false) await run(async () => {
     const patch = {}; if (!same) patch.ord = ids; if (cust) patch.columns = next.custom;
     const { data, error } = await supabase.from('task_board').update(patch).eq('id', 1).select('id');
     if (error || !data.length) throw new Error('Could not save the board layout. Try again.');
-  }
-  // Column order and hidden columns: admins only
+    const at = new Map(ids.map((id, i) => [id, i]));
+    acknowledge({ tasks: [...progress.tasks].sort((a, b) => (at.get(a.id) ?? ids.length) - (at.get(b.id) ?? ids.length)), custom: cust ? next.custom : progress.custom });
+  });
   const nextLayout = next.layout || prev.layout;
-  if (opts.mgr !== false && nextLayout && JSON.stringify(nextLayout) !== JSON.stringify(prev.layout)) {
+  if (opts.mgr !== false && nextLayout && JSON.stringify(nextLayout) !== JSON.stringify(prev.layout)) await run(async () => {
     const { data, error } = await supabase.from('board_layout').update({ col_order: nextLayout.order, hidden: nextLayout.hidden }).eq('id', 1).select('id');
-    if (error || !data.length) throw new Error('Only admins can change which columns show, or their order.');
-  }
+    if (error || !data.length) throw new Error('Only admins and project managers can change which columns show, or their order.');
+    acknowledge({ layout: nextLayout });
+  });
   const gone = prev.tasks.filter(t => !after.has(t.id)).map(t => t.id);
-  if (gone.length) {
-    const { data, error } = await supabase.from('tasks').delete().in('id', gone).select('id');
-    if (error) throw new Error('Could not delete that card. Try again.');
-    if (data.length < gone.length) throw new Error(denied);
-  }
+  if (gone.length) await run(async () => {
+    const { error } = await supabase.rpc('delete_tasks', { p_ids: gone });
+    if (error) throw new Error(/Only admins/.test(error.message) ? denied : 'Could not delete that card. Try again.');
+    acknowledge({ tasks: progress.tasks.filter(t => !gone.includes(t.id)) });
+  });
 }
 
 export async function loadAnnouncements() {
@@ -111,7 +183,7 @@ export async function loadAnnouncements() {
 export async function persistAnnouncements(prev, next, me) {
   const before = new Set(prev.map(a => a.id)), after = new Set(next.map(a => a.id));
   for (const a of next) if (!before.has(a.id)) {
-    const { error } = await supabase.from('announcements').insert({ kind: a.kind, title: a.title, body: a.body || '', by_emp: me });
+    const { error } = await supabase.from('announcements').upsert({ kind: a.kind, title: a.title, body: a.body || '', by_emp: me, client_key: String(a.id) }, { onConflict: 'by_emp,client_key', ignoreDuplicates: true });
     if (error) throw new Error('Could not post that announcement. Try again.');
   }
   const gone = prev.filter(a => !after.has(a.id)).map(a => a.id);
