@@ -3,6 +3,7 @@ import { html, Icon } from '../ui.jsx';
 import { dayKey, addDays, weekStart, monthDays } from '../attendance.js';
 import { fmtDM, pd, TODISO, plural } from '../data.js';
 import { loadEods, fmtH } from '../eodDb.js';
+import { CopyEod } from './CopyEod.jsx';
 import { dayLabel } from './EodReports.jsx';
 
 const rowH = x => x.subs && x.subs.length ? x.subs.reduce((t, s) => t + (Number(s.hours) || 0), 0) : Number(x.hours) || 0;
@@ -11,7 +12,7 @@ const dateBits = iso => { const d = new Date(pd(iso)); return [d.toLocaleDateStr
 function DayCard({ r }) {
   const [wd, dd, mo] = dateBits(r.day);
   return html`<section className="wl-r">
-    <div className="wl-dt"><b>${r.day === dayKey() ? 'Today' : wd + ' ' + dd + ' ' + mo}</b>${r.total > 0 && html`<span>${fmtH(r.total)}</span>`}</div>
+    <div className="wl-dt"><b>${r.day === dayKey() ? 'Today' : wd + ' ' + dd + ' ' + mo}</b>${r.total > 0 && html`<span>${fmtH(r.total)}</span>`}<${CopyEod} days=${[r]} text="Copy"/></div>
     <ul>${r.rows.map((x, i) => html`<li key=${i}><div className="wl-p"><b>${x.project}</b>${r.total > 0 && html`<span>${fmtH(rowH(x))}</span>`}</div>
       ${x.desc && html`<p>${x.desc}</p>`}
       ${(x.subs || []).map((u, j) => html`<p className="wl-sb" key=${j}>${u.title}${u.desc ? ' – ' + u.desc : ''}${r.total > 0 ? ' · ' + fmtH(u.hours) : ''}</p>`)}</li>`)}</ul></section>`;
@@ -36,6 +37,7 @@ export function WorkLog({ user, tick }) {
       <button className="ib" onClick=${() => step(1)} aria-label="Later" disabled=${to >= TODISO}><${Icon} n="next" s=${16}/></button>
       ${to < TODISO || from > TODISO ? html`<button className="btn ghost sm" onClick=${() => setDay(dayKey())}>Today</button>` : null}
       <span style=${{ flex: 1 }}></span>
+      ${list && list.length > 0 && html`<${CopyEod} days=${[...list].reverse()} text=${'Copy ' + (view === 'day' ? 'report' : 'all')}/>`}
       ${list && list.length > 0 && html`<span className="wl-s">${plural(list.length, 'day')} reported${hrs > 0 ? ' · ' + fmtH(hrs) : ''}</span>`}</div>
     ${err && html`<div className="eod-e" role="alert">${err}</div>`}
     ${list === null && html`<div className="none">Loading…</div>`}

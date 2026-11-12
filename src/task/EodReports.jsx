@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { html, Icon, Av, Tile, HI } from '../ui.jsx';
 import { dayKey, addDays, weekStart, monthDays, getDay } from '../attendance.js';
 import { activeEmps, plural, HOL, fmtDM, pd, TODISO, ROLEMAP } from '../data.js';
+import { CopyEod } from './CopyEod.jsx';
 import { loadEods, fmtH } from '../eodDb.js';
 import { subscribeTables } from '../tasksDb.js';
 import { IS_DEMO } from '../env.js';
@@ -71,7 +72,7 @@ export function EodReports({ user, role, tick, onEditToday, checkedIn, att }) {
           <span className="row-t"><b>${r.e.name}</b><span>${r.e.role}</span></span>
           <span className="ph3-n"><b>${r.total > 0 ? fmtH(r.total) : plural(r.reps.length, 'report')}</b><small>${r.total > 0 ? (view === 'day' ? 'reported' : plural(r.reps.length, 'day')) : 'no hours'}</small></span>
           <${Icon} n=${openK === r.e.n ? 'chevL' : 'next'} s=${16}/></button>
-        ${openK === r.e.n && html`<div className="er-d">${r.reps.map(rep => html`<div key=${rep.day}>${view !== 'day' && html`<h3 className="er-day">${dayLabel(rep.day)}${rep.total > 0 ? ' · ' + fmtH(rep.total) : ''}</h3>`}<${Report} r=${rep}/></div>`)}</div>`}
+        ${openK === r.e.n && html`<div className="er-d">${r.reps.map(rep => html`<div key=${rep.day}>${view !== 'day' && html`<h3 className="er-day">${dayLabel(rep.day)}${rep.total > 0 ? ' · ' + fmtH(rep.total) : ''}</h3>`}<${Report} r=${rep}/>${!mgr && html`<div className="er-cp"><${CopyEod} days=${[rep]} text="Copy report"/></div>`}</div>`)}</div>`}
       </section>`)}
       ${missing.length > 0 && html`<section className="er-miss"><h3>Checked in, report not sent yet</h3><div>${missing.map(e => html`<span key=${e.n} className="er-chip"><${Av} e=${e} s=${22}/>${e.name}</span>`)}</div></section>`}
     </div>
