@@ -1203,3 +1203,9 @@ button.tile:active,.tile.click:active{background:var(--fill)}
 .mt3-k .mt3-a .mt3-rm:hover{background:var(--err-bg);border-color:var(--err-text)}
 .mt3-k .mt3-a .mt3-ok{border-color:var(--ok);background:var(--ok);color:#fff}
 .mt3-k .mt3-a .mt3-ok:hover{filter:brightness(1.08)}
+
+/* Board card footer: no tick circle any more (Mark complete is in the three-dots menu), so details sit on the left */
+.kc2 .kt-f{justify-content:flex-start}
+.kc2 .kt-s{justify-content:flex-start}
+/* Cards with no footer row keep the whole-pixel height rhythm (footer rows add 38px, so footerless cards need the 2px back) */
+.kc2 .kt:not(:has(.kt-f)) .kt-top{padding-bottom:2px}

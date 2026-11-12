@@ -6,7 +6,7 @@ import { BoardGroups } from './BoardGroups.jsx';
 import { PINNED, DONE, LABELS, LABEL_C, moveCard, copyCard, duplicateCard, deleteCard, completeCard, reopenCard, dropColumn, mkTask, colName, statusOf } from '../tasks.js';
 
 /* The three-dots menu: open, move, copy, duplicate to a column, or delete */
-function CardMenu({ m, user, custom, setTasks, openTask, close }) {
+function CardMenu({ m, user, custom, setTasks, openTask, close, onComplete, pendingDone }) {
   const [stage, setStage] = useState('root'), [q, setQ] = useState(''), [sure, setSure] = useState(false);
   const { t, col } = m, ql = q.toLowerCase();
   const people = activeEmps().sort((a, b) => a.name.localeCompare(b.name)).filter(e => e.name.toLowerCase().includes(ql));
@@ -22,6 +22,7 @@ function CardMenu({ m, user, custom, setTasks, openTask, close }) {
   const style = { left: Math.max(12, Math.min(m.x, window.innerWidth - 296)), top: Math.max(12, Math.min(m.y, window.innerHeight - 470)) };
   return html`<div className="cm" style=${style} role="menu" onMouseDown=${ev => ev.stopPropagation()}>
     ${stage === 'root' ? html`
+      ${onComplete && html`<button role="menuitem" onClick=${() => { close(); onComplete(t); }}><${Icon} n="check" s=${15}/> ${t.done ? 'Reopen' : pendingDone ? 'Undo complete' : 'Mark complete'}</button>`}
       <button role="menuitem" onClick=${() => { close(); openTask(t.id); }}><${Icon} n="edit" s=${15}/> Open details</button>
       <button role="menuitem" onClick=${() => setStage('move')}><${Icon} n="next" s=${15}/> Move to…</button>
       <button role="menuitem" onClick=${() => setStage('copy')}><${Icon} n="copy" s=${15}/> Copy to…</button>
@@ -211,10 +212,9 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
               </button>
               ${can && html`<button className="kt-dots" onMouseDown=${ev => ev.stopPropagation()} onClick=${ev => { const r = ev.currentTarget.getBoundingClientRect(); setMenu(menu && menu.t.id === t.id && menu.col === key ? null : { t, col: key, x: r.right - 216, y: r.bottom + 6 }); }} aria-label=${'Card actions for ' + t.title} aria-haspopup="menu"><${Icon} n="dots" s=${18}/></button>`}
             </div>
-            <div className="kt-f">
-              ${can ? html`<button className=${'kt-c' + (isDone ? ' on' : '')} onClick=${() => complete(t)} title=${t.done ? 'Reopen' : isDone ? 'Undo' : 'Mark complete'} aria-label=${t.done ? 'Reopen ' + t.title : isDone ? 'Undo complete' : 'Complete ' + t.title}><${Icon} n="check" s=${13}/></button>` : html`<span></span>`}
+            ${(!t.done && statusOf(t).k !== 'new') || t.comments.length > 0 || t.subs.length > 0 ? html`<div className="kt-f">
               <span className="kt-s">${!t.done && (st => st.k !== 'new' && html`<span className=${'kt-st ' + st.k} title=${st.who.length ? st.label + ': ' + st.who.map(n => BY[n] ? BY[n].name : '').filter(Boolean).join(', ') : st.label}><i></i><span className="lb">${st.label}</span></span>`)(statusOf(t))}${t.comments.length > 0 && html`<span className="kt-m" title=${t.comments.length + (t.comments.length === 1 ? ' comment' : ' comments')}><${Icon} n="comment" s=${14}/>${t.comments.length}</span>`}${t.subs.length > 0 && html`<button className=${'kt-sb' + (openSubs[t.id] ? ' open' : '')} aria-expanded=${!!openSubs[t.id]} aria-label=${(openSubs[t.id] ? 'Hide' : 'Show') + ' subtasks of ' + t.title} title=${openSubs[t.id] ? 'Hide subtasks' : 'Show subtasks'} onClick=${() => setOpenSubs(o => ({ ...o, [t.id]: !o[t.id] }))}><${Icon} n="check" s=${14}/><b>${t.subs.filter(x => x.done).length}/${t.subs.length}</b><${Icon} n="chevD" s=${14}/></button>`}</span>
-            </div>
+            </div>` : null}
             ${t.subs.length > 0 && openSubs[t.id] && html`<ul className="kt-subs">${t.subs.map(sb => html`<li key=${sb.id}><button className=${'kt-sc' + (sb.done ? ' on' : '')} disabled=${!can} aria-label=${(sb.done ? 'Mark not done: ' : 'Mark done: ') + sb.t} onClick=${() => setTasks(ts => ts.map(x => x.id === t.id ? { ...x, subs: x.subs.map(q => q.id === sb.id ? { ...q, done: !q.done } : q) } : x))}><${Icon} n="check" s=${11}/></button><span className=${sb.done ? 'dn' : ''}>${sb.t}</span></li>`)}</ul>`}
           </article>`; })}
         ${over && over.col === key && over.before === null && list.length > 0 && html`<div className="kc-drop"></div>`}
@@ -261,7 +261,7 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
         : html`<div className="addcol-f"><input autoFocus className="inp" value=${newCol} placeholder="Name" onChange=${ev => setNewCol(ev.target.value)} onKeyDown=${ev => { if (ev.key === 'Enter') addColumn(); if (ev.key === 'Escape') setNewCol(null); }} aria-label="New column name"/><div className="cm-a"><button className="btn ghost sm" onClick=${() => setNewCol(null)}>Cancel</button><button className="btn pri sm" onClick=${addColumn}>Add</button></div></div>`}</div>
     </div>
     ${jmenu && html`<${JumpMenu} m=${jmenu} cols=${[...visible.map(k => [k, defs[k].label, defs[k].kind === 'pin' ? defs[k].color : null]), [DONE, 'Completed Tasks', '#30D158']]} jump=${jump} close=${() => setJmenu(null)}/>`}
-    ${menu && html`<${CardMenu} m=${menu} user=${user} custom=${custom} setTasks=${setTasks} openTask=${openTask} close=${() => setMenu(null)}/>`}
+    ${menu && html`<${CardMenu} m=${menu} user=${user} custom=${custom} setTasks=${setTasks} openTask=${openTask} close=${() => setMenu(null)} onComplete=${canMove(menu.t) ? complete : null} pendingDone=${!!pending[menu.t.id]}/>`}
     ${cmenu && html`<${ColMenu} m=${cmenu} custom=${custom} setCustom=${setCustom} setTasks=${setTasks} close=${() => setCmenu(null)} onShift=${d => shiftCol(cmenu.id, d)} onHide=${() => hideCol(cmenu.id)} atStart=${visible.indexOf(cmenu.id) <= 0} atEnd=${visible.indexOf(cmenu.id) >= visible.length - 1}/>`}
     ${gdlg !== false && role === 'admin' && html`<${BoardGroups} groups=${groups} setGroups=${setGroups} columns=${groupable} focusId=${gdlg || undefined} onClose=${() => setGdlg(false)}/>`}
   </div>`;
