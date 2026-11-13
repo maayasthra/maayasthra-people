@@ -384,7 +384,7 @@ as('abines'); await m.loadStaff();
 const rowsOk = [{ project: 'Brand work', desc: 'Drafts', hours: 2, subs: [] }];
 t('a missed day can be sent late', !(await tryit(async () => m.submitEod(rowsOk, ids.abines, (await q("select (public.today_ist() - 3)::text d"))[0].d))));
 t('that late report is stored for the right day', (await q("select count(*)::int c from eod_reports where employee_id = " + ids.abines + " and day = public.today_ist() - 3"))[0].c === 1);
-t('a different report cannot replace the same missed day', /already sent/.test(await tryit(async () => m.submitEod([{...rowsOk[0],desc:'Different report'}], ids.abines, (await q("select (public.today_ist() - 3)::text d"))[0].d))));
+t('a report from the last 7 days can be edited', !(await tryit(async () => m.submitEod([{ ...rowsOk[0], desc: 'Edited later' }], ids.abines, (await q("select (public.today_ist() - 3)::text d"))[0].d))) && (await q("select rows->0->>'desc' d from eod_reports where employee_id = " + ids.abines + " and day = public.today_ist() - 3"))[0].d === 'Edited later');
 t('a day more than 7 days back is refused', /Not allowed/.test(await tryit(async () => m.submitEod(rowsOk, ids.abines, (await q("select (public.today_ist() - 9)::text d"))[0].d))));
 t('a future day is refused', /Not allowed/.test(await tryit(async () => m.submitEod(rowsOk, ids.abines, (await q("select (public.today_ist() + 1)::text d"))[0].d))));
 

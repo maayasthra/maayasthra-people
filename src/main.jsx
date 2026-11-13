@@ -133,7 +133,7 @@ function App() {
     const next = typeof fn === 'function' ? fn(g.current) : fn;
     g.set(next); setGroupsRaw(next);
   };
-  const [eodAsk, setEodAsk] = useState(null), [eodTick, setEodTick] = useState(0), [eodLate, setEodLate] = useState(null);
+  const [eodAsk, setEodAsk] = useState(null), [eodTick, setEodTick] = useState(0), [eodLate, setEodLate] = useState(null), [eodEdit, setEodEdit] = useState(null);
   const [bootErr, setBootErr] = useState('');
   const [seenVer, setSeenVer] = useState(() => { try { return localStorage.getItem('mp-seen-version'); } catch (x) { return null; } });
   useEffect(() => { if (nav.view === 'about' && seenVer !== VERSION) { try { localStorage.setItem('mp-seen-version', VERSION); } catch (x) {} setSeenVer(VERSION); } }, [nav.view]);
@@ -343,6 +343,7 @@ function App() {
     if (eodAsk === 'out') { setAtt(a => checkOut(a, user.n)); stopMyTimers(Date.now()); checkOutSound(); }
     setEodAsk(null); setEodTick(t => t + 1);
   };
+  const sendEdit = async rows => { await submitEod(rows, user.n, eodEdit); setEodEdit(null); setEodTick(t => t + 1); };
   const sendLate = async rows => { await submitEod(rows, user.n, eodLate); setEodLate(null); setEodTick(t => t + 1); };
   const keys = app === 'task' ? (isMgr ? ['board', 'mytasks', 'eod', 'team'] : ['mytasks', 'eod']) : peopleKeys;
   const setApp = a => { setAppState(a); setNav({ view: a === 'task' ? (isMgr ? 'board' : 'mytasks') : 'home' }); setTaskSel(null); setSOpen(false); window.scrollTo({ top: 0 }); };
@@ -376,7 +377,7 @@ function App() {
 
   const home = html`<${Home} role=${role} user=${user} leaves=${leaves} setLeaves=${setLeaves} ann=${ann} setAnn=${setAnn} att=${att} setAtt=${setAtt} onOut=${requestOut} tasks=${tasks} goTask=${goTask} go=${go} openForm=${openForm} open=${open} eodTick=${eodTick} onLateEod=${setEodLate}/>`;
   const taskScreen = nav.view === 'eod' ? html`<${EodReports} user=${user} role=${role} tick=${eodTick} checkedIn=${isIn(sessionsOf(att, user.n))} att=${att} onEditToday=${() => setEodAsk('save')}/>`
-    : nav.view === 'mytasks' || !isMgr ? html`<${MyTasks} tasks=${tasks} setTasks=${setTasks} user=${user} tq=${tq} openTask=${openTask} canDelete=${isMgr} tick=${eodTick}/>`
+    : nav.view === 'mytasks' || !isMgr ? html`<${MyTasks} tasks=${tasks} setTasks=${setTasks} user=${user} tq=${tq} openTask=${openTask} canDelete=${isMgr} tick=${eodTick} onEdit=${setEodEdit}/>`
     : nav.view === 'team' && isMgr ? html`<${TeamView} tasks=${tasks} onPick=${n => { setTf(f => ({ ...f, dept: 'All' })); setFocus(n); go('board'); }}/>`
     : html`<${TaskBoard} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} tf=${tf} setTf=${setTf} tq=${tq} openTask=${openTask} focus=${focus} collapsed=${collapsed} setCollapsed=${setCollapsed} custom=${custom} setCustom=${setCustom} groups=${groups} setGroups=${setGroups} layout=${layout} setLayout=${setLayout}/>`;
   const screen = nav.view === 'about' ? html`<${About}/>` : app === 'task' ? taskScreen : nav.view === 'home' ? home
@@ -417,6 +418,7 @@ function App() {
     ${tour && html`<${Tour} name=${user.name.split(' ')[0]} role=${role} onClose=${() => { setUstate(st => ({ ...(st || {}), tourDone: true })); saveState({ tourDone: true }); setTour(false); }}/>`}
     ${pwOpen && html`<${ChangePassword} user=${user} onClose=${() => setPwOpen(false)}/>`}
     ${alerts.current && html`<${AnnouncementAlert} a=${alerts.current} count=${alerts.count} perm=${alerts.perm} askPerm=${alerts.askPerm} onClose=${() => alerts.dismiss(alerts.current.id)}/>`}
+    ${eodEdit && html`<${EodDialog} user=${user} tasks=${tasks} worked=${0} mode="edit" day=${eodEdit} noHours=${isMgr} onSend=${sendEdit} onCancel=${() => setEodEdit(null)}/>`}
     ${eodLate && html`<${EodDialog} user=${user} tasks=${tasks} worked=${0} mode="late" day=${eodLate} noHours=${false} onSend=${sendLate} onCancel=${() => setEodLate(null)}/>`}
     ${eodAsk && html`<${EodDialog} user=${user} tasks=${tasks} worked=${workedMs(sessionsOf(att, user.n), Date.now())} mode=${eodAsk} noHours=${isMgr} onSend=${sendEod} onCancel=${() => setEodAsk(null)}/>`}
     ${taskSel && html`<${TaskDetail} key=${taskSel.id} id=${taskSel.id} ctx=${taskSel.ctx} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} leaves=${leaves} custom=${custom} close=${() => setTaskSel(null)}/>`}

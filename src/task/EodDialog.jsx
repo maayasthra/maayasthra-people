@@ -28,7 +28,7 @@ export const clearEodDraft = (n, d) => { try { localStorage.removeItem(draftKey(
 /* The end-of-day report. Opens when someone checks out, and nobody can check out without sending it.
    mode 'out' sends the report and then checks out; mode 'save' only updates today's report. */
 export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel, day }) {
-  const D = day || dayKey(), late = mode === 'late';
+  const D = day || dayKey(), late = mode === 'late', edit = mode === 'edit';
   const mine = tasks.filter(t => (t.cols || []).includes(user.n) && !t.done);
   const [rows, setRows] = useState(null);
   const [err, setErr] = useState(''), [busy, setBusy] = useState(false), [restored, setRestored] = useState(null), [savedAt, setSavedAt] = useState(0);
@@ -92,8 +92,8 @@ export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel
   return html`<div className="dlg-bg"></div>
     <div className=${'dlg eod' + (noHours ? ' nh' : '')} role="dialog" aria-modal="true" aria-labelledby="eod-t">
       <div className="eod-h"><div className="dlg-i"><${Icon} n="timer" s=${22}/></div>
-        <div><h2 id="eod-t">${late ? 'Missed report' : mode === 'out' ? 'End-of-day report' : 'Today’s report'}</h2>
-          <p>${late ? 'Fill in what you worked on ' + new Date(D + 'T00:00:00Z').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }) + ', with the time.' : mode === 'out' ? 'Fill in what you worked on today' + (noHours ? '' : ', with the time') + '. You can check out once it is sent.' : 'Save it now, then check out when you are done. A later save replaces this one.'}</p></div></div>
+        <div><h2 id="eod-t">${edit ? 'Edit report' : late ? 'Missed report' : mode === 'out' ? 'End-of-day report' : 'Today’s report'}</h2>
+          <p>${edit ? 'Change what you sent for ' + new Date(D + 'T00:00:00Z').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }) + '.' : late ? 'Fill in what you worked on ' + new Date(D + 'T00:00:00Z').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }) + ', with the time.' : mode === 'out' ? 'Fill in what you worked on today' + (noHours ? '' : ', with the time') + '. You can check out once it is sent.' : 'Save it now, then check out when you are done. A later save replaces this one.'}</p></div></div>
       ${restored && html`<div className="eod-note" role="status"><span>We brought back your draft from ${hm2(restored)}.</span><button className="link" onClick=${() => { clearEodDraft(user.n, D); setRestored(null); setRows([blankRow()]); }}>Start over</button></div>`}
       <div className="eod-t" role="table" aria-label="Today's work">
         <div className="eod-hd" role="row"><span>Project</span><span>Description</span>${!noHours && html`<span>Time</span>`}<span></span></div>
@@ -121,6 +121,6 @@ export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel
       ${!noHours && html`<div className="eod-f"><span>Total <b>${fmtH(total)}</b></span>${worked > 0 && html`<span className=${over ? 'eod-warn' : ''}>Checked in today: ${hm(worked)}${over ? ' · more than you were here' : ''}</span>`}</div>`}
       ${err && html`<div className="eod-e" role="alert">${err}</div>`}
       <div className="dlg-a"><span className="eod-ds">${savedAt ? 'Draft saved' : ''}</span><button className="btn ghost" disabled=${busy} onClick=${onCancel}>${mode === 'out' ? 'Keep working' : late ? 'Close' : 'Cancel'}</button>
-        <button className="btn pri" disabled=${busy} onClick=${send}>${busy ? 'Sending…' : mode === 'out' ? 'Send and check out' : late ? 'Send report' : 'Save report'}</button></div>
+        <button className="btn pri" disabled=${busy} onClick=${send}>${busy ? (edit ? 'Saving…' : 'Sending…') : mode === 'out' ? 'Send and check out' : edit ? 'Save changes' : late ? 'Send report' : 'Save report'}</button></div>
     </div>`;
 }

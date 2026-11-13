@@ -9,17 +9,17 @@ import { dayLabel } from './EodReports.jsx';
 const rowH = x => x.subs && x.subs.length ? x.subs.reduce((t, s) => t + (Number(s.hours) || 0), 0) : Number(x.hours) || 0;
 const dateBits = iso => { const d = new Date(pd(iso)); return [d.toLocaleDateString('en-IN', { weekday: 'short', timeZone: 'UTC' }), d.getUTCDate(), d.toLocaleDateString('en-IN', { month: 'short', timeZone: 'UTC' })]; };
 
-function DayCard({ r }) {
+function DayCard({ r, onEdit }) {
   const [wd, dd, mo] = dateBits(r.day);
   return html`<section className="wl-r">
-    <div className="wl-dt"><b>${r.day === dayKey() ? 'Today' : wd + ' ' + dd + ' ' + mo}</b>${r.total > 0 && html`<span>${fmtH(r.total)}</span>`}<${CopyEod} days=${[r]} text="Copy"/></div>
+    <div className="wl-dt"><b>${r.day === dayKey() ? 'Today' : wd + ' ' + dd + ' ' + mo}</b>${r.total > 0 && html`<span>${fmtH(r.total)}</span>`}<${CopyEod} days=${[r]} text="Copy"/>${onEdit && r.day >= addDays(dayKey(), -7) && html`<button className="btn ghost sm" onClick=${() => onEdit(r.day)}><${Icon} n="edit" s=${15}/>Edit</button>`}</div>
     <ul>${r.rows.map((x, i) => html`<li key=${i}><div className="wl-p"><b>${x.project}</b>${r.total > 0 && html`<span>${fmtH(rowH(x))}</span>`}</div>
       ${x.desc && html`<p>${x.desc}</p>`}
       ${(x.subs || []).map((u, j) => html`<p className="wl-sb" key=${j}>${u.title}${u.desc ? ' – ' + u.desc : ''}${r.total > 0 ? ' · ' + fmtH(u.hours) : ''}</p>`)}</li>`)}</ul></section>`;
 }
 
 // My Tasks > Submitted work: my own day reports, by Day, Week or Month.
-export function WorkLog({ user, tick }) {
+export function WorkLog({ user, tick, onEdit }) {
   const [view, setView] = useState('week'), [day, setDay] = useState(dayKey()), [list, setList] = useState(null), [err, setErr] = useState('');
   const [from, to] = view === 'day' ? [day, day] : view === 'week' ? [weekStart(day), addDays(weekStart(day), 6)] : (() => { const d = new Date(pd(day)), md = monthDays(d.getUTCFullYear(), d.getUTCMonth()); return [md[0], md[md.length - 1]]; })();
   useEffect(() => {
@@ -42,6 +42,6 @@ export function WorkLog({ user, tick }) {
     ${err && html`<div className="eod-e" role="alert">${err}</div>`}
     ${list === null && html`<div className="none">Loading…</div>`}
     ${list !== null && list.length === 0 && !err && html`<div className="none"><b>Nothing submitted ${view === 'day' ? 'on this day' : 'in this period'}</b>Your day reports appear here after you send them.</div>`}
-    ${list && list.length > 0 && html`<div className="wl-l">${list.map(r => html`<${DayCard} key=${r.day + '-' + r.at} r=${r}/>`)}</div>`}
+    ${list && list.length > 0 && html`<div className="wl-l">${list.map(r => html`<${DayCard} key=${r.day + '-' + r.at} r=${r} onEdit=${onEdit}/>`)}</div>`}
   </div>`;
 }

@@ -6,7 +6,7 @@ import { WorkLog } from './WorkLog.jsx';
 import { mkTask, completeCard, reopenCard, startTimer, pauseTimer, isDoing, myTasksOf } from '../tasks.js';
 
 // My Tasks: Pending, In progress, Completed. In progress is a marker for what you are on right now; it resets when you check out.
-export function MyTasks({ tasks, setTasks, user, tq, openTask, canDelete, tick }) {
+export function MyTasks({ tasks, setTasks, user, tq, openTask, canDelete, tick, onEdit }) {
   const [title, setTitle] = useState(''), [drag, setDrag] = useState(null), [over, setOver] = useState(null), [allDone, setAllDone] = useState(false), [adding, setAdding] = useState(false), [ask, setAsk] = useState(null), [tab, setTab] = useState('tasks');
   const term = tq.trim().toLowerCase();
   const mine = myTasksOf(tasks, user.n).filter(t => !term || t.title.toLowerCase().includes(term));
@@ -51,7 +51,7 @@ export function MyTasks({ tasks, setTasks, user, tq, openTask, canDelete, tick }
     <div className="pg-h"><div><h1><${HI} n="mytasks" tone="blue"/>My Tasks</h1><p>${tab === 'log' ? 'Your day reports, by date' : doing.length ? doing.length + ' in progress' : 'Nothing in progress'}</p></div>
       <div className="seg" role="group" aria-label="View">${[['tasks', 'Tasks'], ['log', 'Submitted work']].map(([k, l]) => html`<button key=${k} className=${tab === k ? 'on' : ''} onClick=${() => setTab(k)}>${l}</button>`)}</div>
     </div>
-    ${tab === 'log' ? html`<${WorkLog} user=${user} tick=${tick}/>` : html`<div className="mt3">
+    ${tab === 'log' ? html`<${WorkLog} user=${user} tick=${tick} onEdit=${onEdit}/>` : html`<div className="mt3">
       ${Col({ id: 'todo', label: 'Pending', list: todo, empty: 'Nothing waiting.' })}
       ${Col({ id: 'doing', label: 'In progress', list: doing, empty: 'Drag a card here, or press Start, to mark what you are on.' })}
       ${Col({ id: 'done', label: 'Completed', list: shownDone, empty: 'Finished tasks appear here.' })}

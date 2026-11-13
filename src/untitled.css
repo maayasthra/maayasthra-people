@@ -1213,3 +1213,6 @@ button.tile:active,.tile.click:active{background:var(--fill)}
 .wl-dt .btn{margin-top:10px;width:max-content}
 .er-cp{display:flex;padding:12px 0 4px}
 @media (max-width:640px){.wl-dt{justify-content:flex-start;align-items:center;gap:12px}.wl-dt .btn{margin:0 0 0 auto}}
+
+.wl-dt .btn+.btn{margin-top:8px}
+@media (max-width:640px){.wl-dt .btn+.btn{margin:0}}

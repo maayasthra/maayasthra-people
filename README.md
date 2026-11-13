@@ -74,6 +74,7 @@ For a new isolated database, apply the files in order. For an existing database,
 | `0039_timer_archive_and_groups.sql` | Retain closed timer history in read-only archive batches and validate group members |
 | `0040_retry_identity.sql` | Stable creation keys, repeat-safe task list additions and authorized deletion |
 | `0041_reporting_cycles.sql` | Serialize reporting-line writes and reject self/indirect manager cycles |
+| `0042_eod_edit_recent.sql` | A report already sent can be edited for today and the last 7 days; older reports stay locked |
 
 ## Tests
 
