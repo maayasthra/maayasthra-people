@@ -1219,3 +1219,5 @@ button.tile:active,.tile.click:active{background:var(--fill)}
 /* Copy and Edit: same width and height */
 .wl-dt .btn{width:100%;max-width:112px;justify-content:center}
 @media (max-width:640px){.wl-dt .btn{width:auto;min-width:96px;max-width:none}.wl-dt .btn:first-of-type{margin-left:auto}}
+
+.er-cp{gap:8px;flex-wrap:wrap}

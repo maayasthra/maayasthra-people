@@ -61,7 +61,7 @@ export function EodReports({ user, role, tick, onEditToday, checkedIn, att }) {
       ${mgr ? html`<${Tile} icon="clock" tone="orange" label="Not sent" value=${missing.length} sub=${view === 'day' ? 'checked in, no report yet' : 'pick a day to see who'}/>`
         : html`<${Tile} icon="board" tone="purple" label="Average a day" value=${rows.length && rows[0].reps.length ? fmtH(total / rows[0].reps.length) : '0h'} sub=${title.toLowerCase()}/>`}
     </div>`}
-    ${!mgr && (checkedIn || mine) && html`<div className="er-nav"><span style=${{ flex: 1 }}></span><button className="btn sec2 sm" onClick=${onEditToday}>${mine ? 'Update today’s report' : 'Write today’s report'}</button></div>`}
+    ${!mgr && checkedIn && !mine && html`<div className="er-nav"><span style=${{ flex: 1 }}></span><button className="btn sec2 sm" onClick=${onEditToday}>Write today’s report</button></div>`}
     ${err && html`<div className="eod-e" role="alert">${err}</div>`}
     <div className="ph3">
       ${list === null && html`<div className="none">Loading…</div>`}
@@ -72,7 +72,7 @@ export function EodReports({ user, role, tick, onEditToday, checkedIn, att }) {
           <span className="row-t"><b>${r.e.name}</b><span>${r.e.role}</span></span>
           <span className="ph3-n"><b>${r.total > 0 ? fmtH(r.total) : plural(r.reps.length, 'report')}</b><small>${r.total > 0 ? (view === 'day' ? 'reported' : plural(r.reps.length, 'day')) : 'no hours'}</small></span>
           <${Icon} n=${openK === r.e.n ? 'chevL' : 'next'} s=${16}/></button>
-        ${openK === r.e.n && html`<div className="er-d">${r.reps.map(rep => html`<div key=${rep.day}>${view !== 'day' && html`<h3 className="er-day">${dayLabel(rep.day)}${rep.total > 0 ? ' · ' + fmtH(rep.total) : ''}</h3>`}<${Report} r=${rep}/>${!mgr && html`<div className="er-cp"><${CopyEod} days=${[rep]} text="Copy report"/></div>`}</div>`)}</div>`}
+        ${openK === r.e.n && html`<div className="er-d">${r.reps.map(rep => html`<div key=${rep.day}>${view !== 'day' && html`<h3 className="er-day">${dayLabel(rep.day)}${rep.total > 0 ? ' · ' + fmtH(rep.total) : ''}</h3>`}<${Report} r=${rep}/>${!mgr && html`<div className="er-cp"><${CopyEod} days=${[rep]} text="Copy report"/>${rep.day === dayKey() && html`<button className="btn sec2 sm" onClick=${onEditToday}><${Icon} n="edit" s=${15}/>Update today’s report</button>`}</div>`}</div>`)}</div>`}
       </section>`)}
       ${missing.length > 0 && html`<section className="er-miss"><h3>Checked in, report not sent yet</h3><div>${missing.map(e => html`<span key=${e.n} className="er-chip"><${Av} e=${e} s=${22}/>${e.name}</span>`)}</div></section>`}
     </div>
