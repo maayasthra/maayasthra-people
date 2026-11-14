@@ -1292,60 +1292,6 @@ button.tile:active,.tile.click:active{background:var(--fill)}
 .aw-ch button svg{flex:none;color:var(--muted)}
 .aw-ch button.on{font-weight:600}.aw-ch button.on svg{color:var(--brand-text)}
 
-/* End-of-day report: tracked time */
-.eod-tk{display:flex;align-items:center;gap:6px;margin:2px 0 4px;padding-left:2px;font-size:12.5px;color:var(--muted)}
-.eod-tk svg{flex:none;color:var(--faint)}.eod-tk b{font-weight:600;color:var(--text-2)}
-.eod-trk{display:flex;align-items:center;justify-content:space-between;gap:12px}.eod-trk span{display:inline-flex;align-items:center;gap:6px}
-
-/* ---------- EOD hours charts. Series colours are the validated chart palette (light / dark), not the brand orange, so both pass contrast ---------- */
-.eh-c{--rep:#eb6834;--trk:#2a78d6;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--shadow-xs);padding:20px;margin-top:16px;min-width:0}
-:root[data-theme="dark"] .eh-c{--rep:#d95926;--trk:#3987e5}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .eh-c{--rep:#d95926;--trk:#3987e5}}
-.eh-c>header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
-.eh-c h2{font-size:16px;line-height:24px;font-weight:600}.eh-c header p{font-size:13.5px;color:var(--muted);margin-top:2px}
-.eh-seg button{height:30px;padding:0 12px;font-size:13px}
-.eh-lg{display:flex;flex-wrap:wrap;gap:6px 18px;margin:14px 0 6px;font-size:13px;color:var(--text-2)}.eh-lg span{display:inline-flex;align-items:center;gap:8px}
-.eh-k{display:inline-block;width:10px;height:10px;border-radius:3px;flex:none;background:var(--rep)}.eh-k.trk{background:var(--trk)}.eh-k.tgt{width:2px;height:12px;border-radius:0;background:var(--text-2);opacity:.7}
-.eh-body{position:relative;margin-top:10px}
-.eh-r{display:grid;grid-template-columns:176px minmax(0,1fr);align-items:center;gap:14px;width:100%;padding:7px 8px;margin:0 -8px;border-radius:var(--r-ctl);text-align:left;cursor:pointer;width:calc(100% + 16px)}
-.eh-r.pj{cursor:default}.eh-r:hover,.eh-r:focus-visible{background:var(--card-hover)}
-.eh-n{display:flex;align-items:center;gap:10px;min-width:0}.eh-n b{font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.eh-b{display:block;padding-right:64px}.eh-b.one{padding-right:92px}
-.eh-t{position:relative;display:block;height:24px}.eh-b.one .eh-t{height:14px}
-.eh-m{position:absolute;left:0;height:11px;border-radius:0 4px 4px 0;background:var(--rep);min-width:0}
-.eh-m.rep{top:0}.eh-m.trk{top:13px;background:var(--trk)}
-.eh-b.one .eh-m{height:14px;top:0}.eh-m.other{opacity:.55}
-.eh-tg{position:absolute;top:-2px;height:28px;width:2px;background:var(--text-2);opacity:.6;border-radius:1px}
-.eh-v{position:absolute;top:0;margin-left:8px;font-size:13px;line-height:11px;font-weight:600;color:var(--text);white-space:nowrap;font-variant-numeric:tabular-nums}
-.eh-b.one .eh-v{line-height:14px}.eh-v small{font-weight:400;color:var(--muted);margin-left:4px}
-.eh-tip{position:absolute;z-index:5;min-width:170px;padding:10px 12px;border-radius:10px;background:var(--dlg-bg,var(--card));border:1px solid var(--line-hi);box-shadow:var(--shadow-lg);pointer-events:none;font-size:13px}
-.eh-tip .h{font-weight:600;color:var(--text);margin-bottom:6px}.eh-tip .r{display:flex;align-items:center;gap:8px;color:var(--text-2);padding:1px 0}.eh-tip .r b{margin-left:auto;padding-left:14px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
-/* per day columns */
-.eh-cv{display:grid;grid-template-columns:34px minmax(0,1fr);gap:8px;margin-top:8px}
-.eh-y{display:flex;flex-direction:column;justify-content:space-between;height:168px;font-size:12px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums;line-height:1;transform:translateY(-1px)}
-.eh-pl{position:relative;padding-bottom:24px}
-.eh-gl{position:absolute;left:0;right:0;top:0;height:168px;display:flex;flex-direction:column;justify-content:space-between;pointer-events:none}
-.eh-gl i{height:1px;background:var(--line)}
-.eh-tl{position:absolute;left:0;right:0;height:0;border-top:1px solid color-mix(in srgb,var(--text-2) 55%,transparent);margin-bottom:24px;pointer-events:none}.eh-tl span{position:absolute;right:0;top:-18px;font-size:12px;color:var(--muted);background:var(--card);padding-left:6px}
-.eh-cs{position:relative;display:flex;align-items:stretch;gap:2px;height:192px}
-.eh-col{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;border-radius:6px;outline-offset:0}
-.eh-col:hover,.eh-col:focus-visible{background:var(--card-hover)}
-.eh-pr{flex:1;width:100%;display:flex;align-items:flex-end;justify-content:center;gap:2px}
-.eh-cb{display:block;flex:1;max-width:14px;min-height:0;border-radius:4px 4px 0 0;background:var(--rep)}.eh-cb.trk{background:var(--trk)}
-.eh-x{height:24px;line-height:24px;font-size:12px;color:var(--muted);white-space:nowrap}.eh-col.now .eh-x{color:var(--text);font-weight:600}.eh-col.off .eh-x{opacity:.5}
-.eh-cv.eh-mon .eh-cb{max-width:9px}.eh-cv.eh-mon .eh-x{font-size:11.5px}
-/* table view */
-.eh-tw{overflow-x:auto;margin-top:12px}.eh-tbl{width:100%;border-collapse:collapse;font-size:14px}
-.eh-tbl th{font-size:12px;font-weight:500;color:var(--muted);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
-.eh-tbl td{padding:10px;border-bottom:1px solid var(--line);color:var(--text-2);font-variant-numeric:tabular-nums}.eh-tbl td:first-child{color:var(--text);font-weight:500}
-.eh-tbl .r{text-align:right}.eh-tbl tr:last-child td{border-bottom:0}
-@media (max-width:640px){
-  .eh-c{padding:16px}.eh-r{grid-template-columns:1fr;gap:6px}.eh-b,.eh-b.one{padding-right:72px}
-  .eh-cv{grid-template-columns:28px minmax(0,1fr);gap:4px}
-}
-
-.eh-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px;align-items:start}
-@media (max-width:1100px){.eh-g{grid-template-columns:minmax(0,1fr)}}
 
 /* Tiles on phones: icon on top, everything on one left edge (the icon used to be centred while the text was not) */
 @media (max-width:560px){

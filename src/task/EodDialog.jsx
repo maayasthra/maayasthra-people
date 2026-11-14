@@ -3,7 +3,6 @@ import { html, Icon } from '../ui.jsx';
 import { hoursOf, totalOf, fmtH, loadEods } from '../eodDb.js';
 import { dayKey, hm } from '../attendance.js';
 import { isDoing } from '../tasks.js';
-import { trackedForDay, toHours, totalMs } from '../eodTrack.js';
 
 let uid = 0;
 const blankSub = (title = '') => ({ id: 's' + ++uid, title, desc: '', hours: '' });
@@ -44,8 +43,7 @@ export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel
       if (!live) return;
       const r = l.find(x => x.emp === user.n);
       const start = r && r.rows.length ? r.rows.map(x => ({ ...blankRow(), ...x, id: 'r' + ++uid, hours: x.hours || '', subs: (x.subs || []).map(s => ({ ...s, id: 's' + ++uid, hours: s.hours || '' })) }))
-        : trackedForDay(tasks, user.n, D).map(x => blankRow({ project: x.title, task: x.id, hours: noHours ? '' : String(toHours(x.ms)) })).concat(
-          trackedForDay(tasks, user.n, D).length || late ? [] : mine.filter(t => isDoing(t, user.n)).map(t => blankRow({ project: t.title, task: t.id })));
+        : late ? [] : mine.filter(t => isDoing(t, user.n)).map(t => blankRow({ project: t.title, task: t.id }));
       setRows(start.length ? start : [blankRow()]);
     }).catch(() => live && setRows([blankRow()]));
     return () => { live = false; };
@@ -68,10 +66,6 @@ export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel
   const removeRow = id => setRows(rs => rs.length > 1 ? rs.filter(r => r.id !== id) : [blankRow()]);
 
   const total = totalOf(rows);
-  // Time tracked with the Start / Pause timers on this day: shown beside each line, and offered for tasks not yet in the report
-  const trk = trackedForDay(tasks, user.n, D, Date.now()), trkBy = Object.fromEntries(trk.map(x => [x.id, x.ms]));
-  const missing = trk.filter(x => !rows.some(r => r.task === x.id || r.project.trim().toLowerCase() === x.title.trim().toLowerCase()));
-  const addTracked = () => setRows(rs => [...rs.filter(r => r.project.trim() || r.desc.trim() || Number(r.hours) > 0 || r.subs.length), ...missing.map(x => blankRow({ project: x.title, task: x.id, hours: noHours ? '' : String(toHours(x.ms)) }))]);
   const check = () => {
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i], n = 'Line ' + (i + 1) + ': ';
@@ -101,7 +95,6 @@ export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel
         <div><h2 id="eod-t">${edit ? 'Edit report' : late ? 'Missed report' : mode === 'out' ? 'End-of-day report' : 'Today’s report'}</h2>
           <p>${edit ? 'Change what you sent for ' + new Date(D + 'T00:00:00Z').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }) + '.' : late ? 'Fill in what you worked on ' + new Date(D + 'T00:00:00Z').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }) + ', with the time.' : mode === 'out' ? 'Fill in what you worked on today' + (noHours ? '' : ', with the time') + '. You can check out once it is sent.' : 'Save it now, then check out when you are done. A later save replaces this one.'}</p></div></div>
       ${restored && html`<div className="eod-note" role="status"><span>We brought back your draft from ${hm2(restored)}.</span><button className="link" onClick=${() => { clearEodDraft(user.n, D); setRestored(null); setRows([blankRow()]); }}>Start over</button></div>`}
-      ${missing.length > 0 && html`<div className="eod-note eod-trk" role="status"><span><${Icon} n="timer" s=${15}/> ${missing.length === 1 ? '1 task has' : missing.length + ' tasks have'} tracked time that is not in this report${noHours ? '' : ' (' + fmtH(toHours(totalMs(missing))) + ')'}.</span><button className="link" onClick=${addTracked}>Add ${missing.length === 1 ? 'it' : 'them'}</button></div>`}
       <div className="eod-t" role="table" aria-label="Today's work">
         <div className="eod-hd" role="row"><span>Project</span><span>Description</span>${!noHours && html`<span>Time</span>`}<span></span></div>
         ${rows.map((r, i) => {
@@ -114,7 +107,6 @@ export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel
                 : html`<${HM} label=${'Time, line ' + (i + 1)} value=${r.hours} onChange=${v => patch(r.id, { hours: v })} onKeyDown=${ev => { if (ev.key === 'Enter' && i === rows.length - 1) { ev.preventDefault(); setRows(rs => [...rs, blankRow()]); } }}/>`}
               <button className="ib" onClick=${() => removeRow(r.id)} aria-label=${'Remove line ' + (i + 1)} title="Remove this line"><${Icon} n="x" s=${14}/></button>
             </div>
-            ${!noHours && r.task && trkBy[r.task] ? html`<div className="eod-tk"><${Icon} n="timer" s=${13}/><span>Tracked <b>${fmtH(toHours(trkBy[r.task]))}</b> on this task</span>${!r.subs.length && Math.abs(Number(r.hours || 0) - toHours(trkBy[r.task])) > 1 / 120 ? html`<button className="link" onClick=${() => patch(r.id, { hours: String(toHours(trkBy[r.task])) })}>Use tracked time</button>` : null}</div>` : null}
             ${r.subs.map(s => html`<div className="eod-r eod-sub" key=${s.id} role="row">
               <input className="inp" value=${s.title} placeholder="Subtask" aria-label="Subtask" maxLength="200" onChange=${ev => patchSub(r.id, s.id, { title: ev.target.value })}/>
               <textarea className="inp" rows="1" value=${s.desc} placeholder="What did you do?" aria-label="Subtask description" maxLength="1000" onChange=${ev => patchSub(r.id, s.id, { desc: ev.target.value })}></textarea>
