@@ -19,17 +19,21 @@ function Card({ r, admin, open }) {
   const decline = () => run(async () => { await declinePayslip(admin.n, r.id, reason); setDeclining(false); setReason(''); });
   const first = e.name.split(' ')[0], editing = !!f || declining;      // while sending a file or declining, the form takes the whole card
   const choose = () => file.current && file.current.click();
-  const fileRow = r.status === 'downloaded'
-    ? html`<div className="pay-file gone"><${Icon} n="eod" s=${16}/><span><b>${r.fileName}</b><small>${fmtSize(r.fileSize)} · delivered ${when(r.decidedAt)}${r.decidedBy && BY[r.decidedBy] ? ' by ' + (r.decidedBy === admin.n ? 'you' : BY[r.decidedBy].name) : ''} · downloaded ${when(r.downloadedAt)} · file removed from the server</small></span></div>`
-    : html`<div className="pay-file"><${Icon} n="eod" s=${16}/><span><b>${r.fileName}</b><small>${fmtSize(r.fileSize)} · delivered ${when(r.decidedAt)}${r.decidedBy && BY[r.decidedBy] ? ' by ' + (r.decidedBy === admin.n ? 'you' : BY[r.decidedBy].name) : ''} · removed from the server once ${first} downloads it</small></span></div>`;
-  return html`<article className=${'rq3-c' + (pend ? '' : ' done') + (editing ? ' pay-solo' : '')}>
-    <button className="rq3-av" onClick=${() => open(e.n)} aria-label=${'Open ' + e.name}><${Av} e=${e} s=${46}/></button>
+  const who = r.decidedBy && BY[r.decidedBy] ? (r.decidedBy === admin.n ? 'you' : BY[r.decidedBy].name) : '';
+  // History (anything already answered): one line of small icon-led facts instead of boxes and sentences
+  const meta = html`<div className="pay-meta">
+    <span className="pay-i strong"><${Icon} n="payslips" s=${15}/>${monthLong(r.month)}</span>
+    ${(r.status === 'delivered' || r.status === 'downloaded') && html`<span className="pay-i" title=${'Delivered' + (who ? ' by ' + who : '')}><${Icon} n="eod" s=${15}/>${r.fileName} · ${fmtSize(r.fileSize)}</span><span className="pay-i" title=${'Delivered' + (who ? ' by ' + who : '')}><${Icon} n="check" s=${15}/>${when(r.decidedAt)}${who ? ' · ' + who : ''}</span>`}
+    ${r.status === 'downloaded' && html`<span className="pay-i ok" title="The file has been removed from the server"><${Icon} n="download" s=${15}/>${when(r.downloadedAt)}</span>`}
+    ${r.status === 'declined' && html`<span className="pay-i"><${Icon} n="x" s=${15}/>Declined ${when(r.decidedAt)}</span>${r.reason && html`<span className="pay-i note" title=${r.reason}><${Icon} n="comment" s=${15}/><span>${r.reason}</span></span>`}`}
+    ${r.status === 'cancelled' && html`<span className="pay-i"><${Icon} n="x" s=${15}/>Cancelled ${when(r.decidedAt)}</span>`}
+    ${r.note && html`<span className="pay-i note" title=${'Their note: ' + r.note}><${Icon} n="comment" s=${15}/><span>${r.note}</span></span>`}</div>`;
+  return html`<article className=${'rq3-c' + (pend ? '' : ' done pay-compact') + (editing ? ' pay-solo' : '')}>
+    <button className="rq3-av" onClick=${() => open(e.n)} aria-label=${'Open ' + e.name}><${Av} e=${e} s=${pend ? 46 : 40}/></button>
     <div className="rq3-m">
-      <div className="rq3-n"><b>${e.name}</b><span>${e.dept}</span>${ROLEMAP[e.n] === 'Project manager' && html`<em className="pay-role">Project manager</em>`}${e.n === admin.n && html`<em className="rq3-you">Your request</em>`}</div>
-      <div className="rq3-d"><span className="pay-mo"><${Icon} n="payslips" s=${15}/>${monthLong(r.month)}</span><span className=${'pay-s ' + st.tone}><i></i>${st.label}</span><span className="pay-when">Requested ${when(r.requestedAt)}</span></div>
-      ${r.note && html`<p className="rq3-r">${r.note}</p>`}
-      ${(r.status === 'delivered' || r.status === 'downloaded') && !editing && fileRow}
-      ${r.status === 'declined' && html`<p className="rq3-r">Declined${r.reason ? ': ' + r.reason : ''} <small>${when(r.decidedAt)}</small></p>`}
+      <div className="rq3-n"><b>${e.name}</b><span>${e.dept}</span>${ROLEMAP[e.n] === 'Project manager' && html`<em className="pay-role">Project manager</em>`}${e.n === admin.n && html`<em className="rq3-you">Your request</em>`}${!pend && html`<span className=${'pay-s ' + st.tone}><i></i>${st.label}</span>`}</div>
+      ${pend ? html`<div className="rq3-d"><span className="pay-mo"><${Icon} n="payslips" s=${15}/>${monthLong(r.month)}</span><span className=${'pay-s ' + st.tone}><i></i>${st.label}</span><span className="pay-when">Requested ${when(r.requestedAt)}</span></div>
+        ${r.note && html`<p className="rq3-r">${r.note}</p>`}` : meta}
       ${f && html`<div className="pay-form">
         <div className="pay-file chosen"><${Icon} n="eod" s=${16}/><span><b>${f.name}</b><small>${fmtSize(f.size)} · ready to send to ${first}</small></span></div>
         <div className="pay-bar"><button className="btn pri sm" disabled=${busy} onClick=${send}><${Icon} n="check" s=${15}/> ${busy ? 'Sending…' : 'Send payslip'}</button><button className="btn ghost sm" disabled=${busy} onClick=${choose}>Choose another file</button><button className="btn ghost sm" disabled=${busy} onClick=${() => { setF(null); setErr(''); }}>Cancel</button></div></div>`}

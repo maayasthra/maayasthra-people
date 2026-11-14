@@ -1369,3 +1369,14 @@ button.tile:active,.tile.click:active{background:var(--fill)}
 
 .pay-note{display:block;margin-top:4px;font-size:13px;color:var(--muted)}
 .pay-file.gone{opacity:.8}
+
+/* Payslip history rows: compact, one line of small icon-led facts */
+.rq3-c.pay-compact{padding:12px 18px 12px 14px;gap:14px}
+.rq3-c.pay-compact .rq3-n b{font-size:15px}
+.rq3-c.pay-compact .pay-s{margin-left:2px}
+.pay-meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 16px;margin-top:5px;font-size:13px;color:var(--muted)}
+.pay-i{display:inline-flex;align-items:center;gap:6px;min-width:0;white-space:nowrap}
+.pay-i svg{flex:none;color:var(--faint)}
+.pay-i.strong{color:var(--text);font-weight:600}.pay-i.strong svg{color:var(--muted)}
+.pay-i.ok{color:var(--ok-text)}.pay-i.ok svg{color:var(--ok-text)}
+.pay-i.note{max-width:260px}.pay-i.note>span{overflow:hidden;text-overflow:ellipsis}
