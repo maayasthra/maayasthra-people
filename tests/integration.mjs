@@ -736,17 +736,18 @@ for (const action of ['edit', 'remove', 'correct-rejected']) {
 
 // ================= 0044: HOME COVER =================
 {
-  const tiny = 'data:image/jpeg;base64,/9j/4AAQSkZJRg==';
+  const tiny = 'data:image/jpeg;base64,/9j/4AAQSkZJRg==', tiny2 = 'data:image/png;base64,iVBORw0KGgo=';
   as('abines'); await m.loadStaff();
-  t('cover: an employee cannot change it', /Not allowed/.test((await m.supabase.rpc('set_cover', { p_image: tiny })).error?.message || ''));
+  t('cover: an employee can set their own', !(await m.supabase.rpc('set_my_cover', { p_image: tiny })).error);
+  t('cover: they can read it back', (await m.supabase.from('employee_covers').select('image').maybeSingle()).data?.image === tiny);
+  t('cover: only pictures are accepted', /not a picture/.test((await m.supabase.rpc('set_my_cover', { p_image: 'hello' })).error?.message || ''));
+  t('cover: too large is refused', /too large/.test((await m.supabase.rpc('set_my_cover', { p_image: 'data:image/jpeg;base64,' + 'A'.repeat(700001) })).error?.message || ''));
   as('vijay'); await m.loadStaff();
-  t('cover: an admin can set it', !(await m.supabase.rpc('set_cover', { p_image: tiny })).error);
-  t('cover: only pictures are accepted', /not a picture/.test((await m.supabase.rpc('set_cover', { p_image: 'hello' })).error?.message || ''));
-  t('cover: too large is refused', /too large/.test((await m.supabase.rpc('set_cover', { p_image: 'data:image/jpeg;base64,' + 'A'.repeat(700001) })).error?.message || ''));
+  t('cover: an admin does not see an employee\'s cover', ((await m.supabase.from('employee_covers').select('image').maybeSingle()).data?.image || '') !== tiny);
+  t('cover: an admin can set their own', !(await m.supabase.rpc('set_my_cover', { p_image: tiny2 })).error);
   as('abines'); await m.loadStaff();
-  t('cover: an employee can read it', (await m.supabase.from('app_cover').select('image').eq('id', 1).maybeSingle()).data?.image === tiny);
-  as('vijay'); await m.loadStaff();
-  t('cover: an admin can go back to the default', !(await m.supabase.rpc('set_cover', { p_image: '' })).error && (await q("select image from app_cover where id = 1"))[0].image === '');
+  t('cover: setting another cover does not change mine', (await m.supabase.from('employee_covers').select('image').maybeSingle()).data?.image === tiny);
+  t('cover: going back to the default clears it', !(await m.supabase.rpc('set_my_cover', { p_image: '' })).error && (await q("select image from employee_covers where employee_id = " + ids.abines))[0].image === '');
 }
 
 console.log(process.exitCode ? 'SOME CHECKS FAILED' : 'ALL CHECKS PASSED');

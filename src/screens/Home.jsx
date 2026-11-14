@@ -196,7 +196,7 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
     const inNow = infos.filter(i => i.state === 'in').length;
     const expected = infos.filter(i => !['leave', 'off'].includes(i.state)).length;
     return html`<div>
-      <${Cover} canEdit=${true}><div className="date-l">${dateL}</div>
+      <${Cover} user=${user}><div className="date-l">${dateL}</div>
       <div className="home-h"><div>
       <h1 className="h-greet">${greet}, ${first(user)}.</h1></div>
       <${Actions} leaves=${leaves} go=${go} openForm=${openForm} compose=${compose}/></div><//>
@@ -230,7 +230,7 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
   const recent = [...mine].filter(l => !l.past).sort((a, b) => b.from.localeCompare(a.from)).slice(0, 4);
   return html`<div>
     <${MissedEod} days=${missed} onSend=${onLateEod}/>
-    <${Cover} canEdit=${false}><div className="date-l">${dateL}</div>
+    <${Cover} user=${user}><div className="date-l">${dateL}</div>
     <h1 className="h-greet">${greet}, ${first(user)}.</h1>
     <p className="lede"><span>${hols[0] ? html`Next holiday: <b>${HOL[hols[0]]}</b>, ${fmtDay(pd(hols[0]))}` : 'No holidays coming up'}</span></p><//>
     <${ProfileSetup} user=${user} openForm=${openForm}/>
