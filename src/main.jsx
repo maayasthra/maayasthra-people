@@ -329,6 +329,7 @@ function App() {
   if (!auth) return html`<${Login} onLogin=${(user, role) => { setMe(user.n); setNav({ view: 'home' }); setAuth({ user, role }); window.scrollTo({ top: 0 }); }}/>`;
   // The live record, so a change to your own details (shift times, name) shows straight away
   const user = (!IS_DEMO && BY[auth.user.n]) || auth.user, role = auth.role;
+  const NAVGROUPS = [[null, ['home']], ['Company', ['announcements', 'members', 'org', 'calendar']], ['Time and leave', ['attendance', 'hours', 'leaves', 'requests']], ['Admin', ['settings']]];
   const peopleKeys = role === 'admin' ? ['home', 'announcements', 'members', 'org', 'calendar', 'attendance', 'leaves', 'requests', 'settings'] : ['home', 'announcements', 'members', 'org', 'calendar', 'hours', 'leaves', 'requests'];
   // These stay in the menu for everyone but only admins can open them. Everyone else sees them switched off.
   const locked = k => app === 'people' && role !== 'admin' && ['members', 'leaves', 'requests'].includes(k);
@@ -398,8 +399,8 @@ function App() {
   return html`<div inert=${leaving ? '' : undefined} aria-busy=${leaving} className=${'app' + (navHidden ? ' no-side' : '') + (app === 'task' && nav.view === 'board' ? ' wide' : '')}>
     <aside className="side">${brand}
       <${AppSwitch} app=${app} setApp=${setApp}/>
-      <nav className="nav" aria-label="Main">${keys.map(k => html`<button key=${k} className=${'nav-b' + (active === k ? ' on' : '') + (locked(k) ? ' dis' : '')} onClick=${() => go(k)} aria-current=${active === k ? 'page' : undefined} disabled=${locked(k)} title=${locked(k) ? 'Only admins can open this' : undefined}>
-        <${Icon} n=${k}/>${ALL[k]}${locked(k) ? html`<span className="nav-lock" aria-hidden="true"><${Icon} n="lock" s=${14}/></span>` : k === 'requests' && pending > 0 && html`<span className="cnt">${pending}</span>`}</button>`)}</nav>
+      <nav className="nav" aria-label="Main">${(app === 'task' ? [[null, keys]] : NAVGROUPS.map(g => [g[0], g[1].filter(k => keys.includes(k))]).filter(g => g[1].length)).map((g, gi) => html`<div className=${'nav-sec' + (g[0] ? ' lb' : '')} key=${g[0] || 'top'} role="group" aria-label=${g[0] || undefined}>${g[0] && html`<span className="nav-g" aria-hidden="true">${g[0]}</span>`}${g[1].map(k => html`<button key=${k} className=${'nav-b' + (active === k ? ' on' : '') + (locked(k) ? ' dis' : '')} onClick=${() => go(k)} aria-current=${active === k ? 'page' : undefined} disabled=${locked(k)} title=${locked(k) ? 'Only admins can open this' : undefined}>
+        <${Icon} n=${k}/>${ALL[k]}${locked(k) ? html`<span className="nav-lock" aria-hidden="true"><${Icon} n="lock" s=${14}/></span>` : k === 'requests' && pending > 0 && html`<span className="cnt">${pending}</span>`}</button>`)}</div>`)}</nav>
       <button className=${'side-about' + (active === 'about' ? ' on' : '')} onClick=${() => go('about')} aria-current=${active === 'about' ? 'page' : undefined}><${Icon} n="info" s=${17}/><span>About</span><small>v${VERSION}</small>${!seenNow && html`<em className="new-p">New</em>`}</button>
     </aside>
     <div className="col">
