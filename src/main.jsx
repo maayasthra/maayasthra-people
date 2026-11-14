@@ -24,6 +24,8 @@ import { QuickSearch } from './QuickSearch.jsx';
 import { CheckWidget } from './Attendance.jsx';
 import { EarlyDialog } from './AwayDialog.jsx';
 import { MySettings } from './screens/MySettings.jsx';
+import { Payslips } from './screens/Payslips.jsx';
+import { usePayslips } from './payslipsDb.js';
 import { applySettings, withChange, normalize } from './settings.js';
 import { loadAtt, saveAtt, setMe, checkOut, dayKey as dayKeyNow, sessionsOf, isIn, workedNet, getDay, toTs, setEarly, minuteOfDay } from './attendance.js';
 import { MyHours } from './screens/Hours.jsx';
@@ -54,7 +56,7 @@ import './untitled.css';
 import { startExitMotion } from './exit.js';
 import { startTooltips } from './tooltips.js';
 
-const ALL = { about: 'About', mysettings: 'My settings', announcements: 'Announcements', members: 'Members', board: 'Board', mytasks: 'My Tasks', eod: 'EOD reports', team: 'Team', home: 'Home', people: 'People', org: 'Org chart', calendar: 'Calendar', attendance: 'Attendance', hours: 'My Hours', leaves: 'My Leaves', requests: 'Requests', settings: 'Settings' };
+const ALL = { about: 'About', mysettings: 'My settings', payslips: 'Payslips', announcements: 'Announcements', members: 'Members', board: 'Board', mytasks: 'My Tasks', eod: 'EOD reports', team: 'Team', home: 'Home', people: 'People', org: 'Org chart', calendar: 'Calendar', attendance: 'Attendance', hours: 'My Hours', leaves: 'My Leaves', requests: 'Requests', settings: 'Settings' };
 const SHORT = { mytasks: 'Mine', eod: 'EOD', org: 'Org', leaves: 'Leaves', attendance: 'Hours', hours: 'Hours' };
 
 const SEED_ANN = IS_DEMO ? [
@@ -278,6 +280,7 @@ function App() {
     return () => { unsub(); clearInterval(poll); clearTimeout(t); document.removeEventListener('visibilitychange', vis); };
   }, [auth && auth.user.n]);
   const notif = useNotifications(auth ? auth.user.n : null);
+  const pay = usePayslips(auth ? auth.user.n : null);
   // Per-person settings (tour seen, tasks already announced) come from the database
   const [ustate, setUstate] = useState(null), prefsReady = useRef(false), prefsRef = useRef({}), [mySet, setMySet] = useState(() => normalize(null));
   useEffect(() => {
@@ -335,8 +338,8 @@ function App() {
   // The live record, so a change to your own details (shift times, name) shows straight away
   const user = (!IS_DEMO && BY[auth.user.n]) || auth.user, role = auth.role;
   const TASKGROUPS = [['Tasks', ['board', 'mytasks']], ['Reports', ['eod', 'team']]];
-  const NAVGROUPS = [[null, ['home']], ['Company', ['announcements', 'members', 'org', 'calendar']], ['Time and leave', ['attendance', 'hours', 'leaves', 'requests']], ['Admin', ['settings']]];
-  const peopleKeys = role === 'admin' ? ['home', 'announcements', 'members', 'org', 'calendar', 'attendance', 'leaves', 'requests', 'settings'] : ['home', 'announcements', 'members', 'org', 'calendar', 'hours', 'leaves', 'requests'];
+  const NAVGROUPS = [[null, ['home']], ['Company', ['announcements', 'members', 'org', 'calendar']], ['Time, leave and pay', ['attendance', 'hours', 'leaves', 'requests', 'payslips']], ['Admin', ['settings']]];
+  const peopleKeys = role === 'admin' ? ['home', 'announcements', 'members', 'org', 'calendar', 'attendance', 'leaves', 'requests', 'payslips', 'settings'] : ['home', 'announcements', 'members', 'org', 'calendar', 'hours', 'leaves', 'requests', 'payslips'];
   // These stay in the menu for everyone but only admins can open them. Everyone else sees them switched off.
   const locked = k => app === 'people' && role !== 'admin' && ['members', 'leaves', 'requests'].includes(k);
   // Admins and project managers get the whole task app. Everyone else gets only their own tasks.
@@ -361,7 +364,7 @@ function App() {
   const setApp = a => { setAppState(a); setNav({ view: a === 'task' ? (isMgr ? 'board' : 'mytasks') : 'home' }); setTaskSel(null); setSOpen(false); window.scrollTo({ top: 0 }); };
   const openTask = (id, ctx) => setTaskSel({ id, ctx });
   // Where a bell entry takes you: a new task opens it, an EOD reminder opens today's report
-  const onNotif = i => { if (i.kind === 'task') { if (tasks.some(t => t.id === i.ref)) { if (app !== 'task') setAppState('task'); setTaskSel({ id: i.ref }); } } else if (i.kind === 'eod') setEodAsk('save'); };
+  const onNotif = i => { if (i.kind === 'task') { if (tasks.some(t => t.id === i.ref)) { if (app !== 'task') setAppState('task'); setTaskSel({ id: i.ref }); } } else if (i.kind === 'eod') setEodAsk('save'); else if (i.kind === 'payslip') { setAppState('people'); setNav({ view: 'payslips' }); setTaskSel(null); window.scrollTo({ top: 0 }); } };
   const goTask = id => { setAppState('task'); setNav({ view: 'mytasks' }); setTaskSel(id ? { id } : null); window.scrollTo({ top: 0 }); };
   const top = () => window.scrollTo({ top: 0 });
   const startTour = () => { setAppState('people'); setNav({ view: 'home' }); setTaskSel(null); setTimeout(() => setTour(true), 150); };
@@ -385,14 +388,16 @@ function App() {
   const mob = app === 'task' ? keys : role === 'admin' ? ['home', 'org', 'attendance', 'requests', 'more'] : ['home', 'org', 'hours', 'leaves', 'more'];
   const more = keys.filter(k => !mob.includes(k));
   const active = nav.view === 'profile' || nav.view === 'form' ? (nav.from || 'home') : nav.view;
-  const pending = role === 'admin' ? leaves.filter(l => !l.past && l.state === 'pending').length : 0;
+  const leavePending = role === 'admin' ? leaves.filter(l => !l.past && l.state === 'pending').length : 0;
+  const payWaiting = role === 'admin' ? (pay.list || []).filter(r => r.status === 'requested').length : 0;
+  const pending = leavePending + payWaiting;       // what the Requests badge counts
 
-  const home = html`<${Home} role=${role} user=${user} leaves=${leaves} setLeaves=${setLeaves} ann=${ann} setAnn=${setAnn} att=${att} setAtt=${setAtt} onOut=${requestOut} tasks=${tasks} goTask=${goTask} go=${go} openForm=${openForm} open=${open} eodTick=${eodTick} onLateEod=${setEodLate}/>`;
+  const home = html`<${Home} role=${role} user=${user} leaves=${leaves} setLeaves=${setLeaves} ann=${ann} setAnn=${setAnn} att=${att} setAtt=${setAtt} onOut=${requestOut} tasks=${tasks} goTask=${goTask} go=${go} openForm=${openForm} open=${open} eodTick=${eodTick} onLateEod=${setEodLate} payWaiting=${payWaiting}/>`;
   const taskScreen = nav.view === 'eod' ? html`<${EodReports} user=${user} role=${role} tick=${eodTick} checkedIn=${isIn(sessionsOf(att, user.n))} att=${att} onEditToday=${() => setEodAsk('save')}/>`
     : nav.view === 'mytasks' || !isMgr ? html`<${MyTasks} tasks=${tasks} setTasks=${setTasks} user=${user} tq=${tq} openTask=${openTask} canDelete=${isMgr} tick=${eodTick} onEdit=${setEodEdit}/>`
     : nav.view === 'team' && isMgr ? html`<${TeamView} tasks=${tasks} onPick=${n => { setTf(f => ({ ...f, dept: 'All' })); setFocus(n); go('board'); }}/>`
     : html`<${TaskBoard} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} tf=${tf} setTf=${setTf} tq=${tq} openTask=${openTask} focus=${focus} collapsed=${collapsed} setCollapsed=${setCollapsed} custom=${custom} setCustom=${setCustom} groups=${groups} setGroups=${setGroups} layout=${layout} setLayout=${setLayout}/>`;
-  const screen = nav.view === 'about' ? html`<${About}/>` : nav.view === 'mysettings' ? html`<${MySettings} user=${user} role=${role} st=${mySet} change=${changeSettings} reset=${resetSettings} onPassword=${() => setPwOpen(true)} onTour=${startTour}/>` : app === 'task' ? taskScreen : nav.view === 'home' ? home
+  const screen = nav.view === 'about' ? html`<${About}/>` : nav.view === 'payslips' ? html`<${Payslips} user=${user} pay=${pay}/>` : nav.view === 'mysettings' ? html`<${MySettings} user=${user} role=${role} st=${mySet} change=${changeSettings} reset=${resetSettings} onPassword=${() => setPwOpen(true)} onTour=${startTour}/>` : app === 'task' ? taskScreen : nav.view === 'home' ? home
     : nav.view === 'org' ? html`<${OrgChart} open=${open} user=${user} key=${ver}/>`
     : nav.view === 'profile' ? html`<${Profile} key=${nav.id + '-' + ver + (nav.tab || '')} id=${nav.id} tab=${nav.tab} from=${nav.from} back=${back} open=${open} openForm=${openForm} user=${user} role=${role} leaves=${leaves} att=${att} setAtt=${setAtt} ver=${ver}/>`
     : nav.view === 'form' ? html`<${EmployeeForm} key=${'f' + nav.id} id=${nav.id} role=${role} user=${user} done=${formDone} bump=${bump}/>`
@@ -400,7 +405,7 @@ function App() {
     : nav.view === 'attendance' && role === 'admin' ? html`<${AttendancePage} att=${att} leaves=${leaves} open=${open} user=${user}/>`
     : nav.view === 'hours' ? html`<${MyHours} user=${user} att=${att} setAtt=${setAtt} leaves=${leaves}/>`
     : nav.view === 'leaves' ? html`<${MyLeaves} leaves=${leaves} setLeaves=${setLeaves} user=${user} key=${ver}/>`
-    : nav.view === 'requests' && role === 'admin' ? html`<${Requests} user=${user} leaves=${leaves} setLeaves=${setLeaves} open=${open}/>`
+    : nav.view === 'requests' && role === 'admin' ? html`<${Requests} user=${user} leaves=${leaves} setLeaves=${setLeaves} open=${open} pay=${pay}/>`
     : nav.view === 'announcements' ? html`<${Announcements} ann=${ann} setAnn=${setAnn} user=${user} role=${role}/>`
     : nav.view === 'members' && role === 'admin' ? html`<${Members} open=${open} openForm=${openForm}/>`
     : nav.view === 'settings' && role === 'admin' ? html`<${Settings} onChange=${bump}/>`

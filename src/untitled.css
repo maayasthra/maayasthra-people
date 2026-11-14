@@ -1315,3 +1315,29 @@ button.tile:active,.tile.click:active{background:var(--fill)}
 .side-acct{margin-top:auto;display:flex;flex-direction:column;gap:2px;padding-top:12px;border-top:1px solid var(--line)}
 .side-acct .side-about{margin-top:0;height:36px;padding:0 10px}
 @media (min-width:861px){.app:not(.no-side) .tr .menu .dup{display:none}}
+
+/* Payslips */
+.pay{max-width:820px}
+.pay-req,.pay-list{margin-top:24px}
+.pay-req{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:20px}
+.pay-f{display:grid;grid-template-columns:minmax(150px,200px) minmax(0,1fr) auto;gap:14px;align-items:end;margin-top:12px}
+.pay-f .fld{margin:0}.pay-f .fld>label{display:block;font-size:14px;font-weight:500;color:var(--text-2);margin-bottom:6px}
+.pay-none{margin:10px 0 0;color:var(--muted);font-size:14px}
+.pay-ok{display:flex;align-items:center;gap:8px;margin-top:12px;padding:10px 14px;border-radius:var(--r-ctl);background:var(--ok-bg,rgb(48 209 88 / .12));color:var(--ok-text);font-size:14px}
+.pay-l{display:grid;gap:12px;margin-top:12px}
+.pay-c{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:16px 18px;display:grid;gap:8px}
+.pay-h{display:flex;align-items:center;justify-content:space-between;gap:12px}.pay-h b{font-size:16px;font-weight:600}
+.pay-d{font-size:14px;color:var(--muted);line-height:20px;overflow-wrap:anywhere}
+.pay-a{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.pay-s{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:500;color:var(--text-2);white-space:nowrap}
+.pay-s i{width:8px;height:8px;border-radius:50%;background:var(--faint)}
+.pay-s.warn i{background:var(--warn-text,#DC6803)}.pay-s.ok i{background:var(--ok-text,#079455)}.pay-s.err i{background:var(--err-text,#D92D20)}
+.pay-mo{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--text)}.pay-mo svg{color:var(--muted)}
+.pay-when{font-size:13px;color:var(--muted)}
+.pay-file{display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px 12px;border-radius:var(--r-ctl);background:var(--fill);color:var(--text-2)}
+.pay-file>span{display:flex;flex-direction:column;min-width:0}.pay-file b{font-size:14px;font-weight:500;color:var(--text);overflow-wrap:anywhere}.pay-file small{font-size:12.5px;color:var(--muted)}
+.pay-file.chosen{background:var(--brand-tint);color:var(--brand-text)}
+.pay-dec{margin-top:12px}
+.rq-kind{margin-top:16px}.rq-kind button{display:inline-flex;align-items:center;gap:7px}
+.rq-kind em,.seg em.hot{font-style:normal}
+@media (max-width:640px){.pay-f{grid-template-columns:1fr}.pay-f .btn{width:100%}}

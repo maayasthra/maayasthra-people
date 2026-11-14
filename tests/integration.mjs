@@ -777,4 +777,74 @@ for (const action of ['edit', 'remove', 'correct-rejected']) {
   await q("delete from eod_reports where employee_id = " + ids.abines + " and day in ('2026-10-08','2026-10-09','2026-09-30')");
 }
 
+// ================= 0046: PAYSLIP REQUESTS =================
+{
+  const rpc = async (fn, a) => { const r = await m.supabase.rpc(fn, a); const d = Array.isArray(r.data) && r.data.length === 1 && r.data[0] && fn in r.data[0] ? r.data[0][fn] : r.data; return { ...r, data: d }; };
+  const msg = r => r.error?.message || '';
+  const mon = async n => (await q("select (date_trunc('month', public.today_ist()) - interval '" + n + " month')::date::text d"))[0].d;
+  const [m1, m2, m3, m13, cur] = [await mon(1), await mon(2), await mon(3), await mon(13), await mon(0)];
+  const pdf = Buffer.concat([Buffer.from('%PDF-1.4\n'), Buffer.from('payslip body '.repeat(50))]), pdfB64 = pdf.toString('base64');
+  await q("delete from payslip_requests");
+  await q("delete from notifications where kind = 'payslip'");
+
+  as('abines'); await m.loadStaff();
+  const r1 = await rpc('request_payslip', { p_month: m1, p_note: 'For a bank form' });
+  t('payslip: an employee can ask for last month', !r1.error && typeof r1.data === 'string' && r1.data.length === 36);
+  t('payslip: asking twice for the same month is refused', /already asked/.test(msg(await rpc('request_payslip', { p_month: m1 }))));
+  t('payslip: the current month is refused', /not finished/.test(msg(await rpc('request_payslip', { p_month: cur }))));
+  t('payslip: more than 12 months back is refused', /last 12 months/.test(msg(await rpc('request_payslip', { p_month: m13 }))));
+  t('payslip: a date that is not the first of a month is refused', /Choose a month/.test(msg(await rpc('request_payslip', { p_month: m2.slice(0, 8) + '15' }))));
+  await q("update employees set join_date = (date_trunc('month', public.today_ist()) - interval '1 month')::date where id = " + ids.abines);
+  t('payslip: a month before they joined is refused', /not joined/.test(msg(await rpc('request_payslip', { p_month: m3 }))));
+  await q("update employees set join_date = null where id = " + ids.abines);
+  t('payslip: a long note is refused', /too long/.test(msg(await rpc('request_payslip', { p_month: m3, p_note: 'x'.repeat(301) }))));
+  const r2 = await rpc('request_payslip', { p_month: m2 });
+  t('payslip: a second month is fine', !r2.error);
+  t('payslip: a request can be cancelled, then asked for again', !(await rpc('cancel_payslip_request', { p_id: r2.data })).error && !(await rpc('request_payslip', { p_month: m2 })).error);
+
+  as('karthik'); await m.loadStaff();
+  const rk = await rpc('request_payslip', { p_month: m1 });
+  const mineK = (await m.supabase.from('payslip_requests').select('*')).data || [];
+  t('payslip: a person sees only their own requests', mineK.length === 1 && mineK[0].employee_id === ids.karthik);
+  t('payslip: nobody else can cancel your request', /cannot be cancelled/.test(msg(await rpc('cancel_payslip_request', { p_id: r1.data }))));
+  t('payslip: the file table cannot be read directly', ((await m.supabase.from('payslip_files').select('*')).data || []).length === 0);
+  t('payslip: only an admin can deliver', /Not allowed/.test(msg(await rpc('deliver_payslip', { p_id: r1.data, p_name: 'a.pdf', p_type: 'application/pdf', p_data: pdfB64 }))));
+  t('payslip: only an admin can decline', /Not allowed/.test(msg(await rpc('decline_payslip', { p_id: r1.data, p_reason: 'x' }))));
+
+  as('vijay'); await m.loadStaff();
+  const all = (await m.supabase.from('payslip_requests').select('*')).data || [];
+  t('payslip: an admin sees everyone\'s requests', all.length >= 3 && all.some(x => x.employee_id === ids.abines) && all.some(x => x.employee_id === ids.karthik));
+  const D = (id, o = {}) => rpc('deliver_payslip', { p_id: id, p_name: 'Payslip Oct.pdf', p_type: 'application/pdf', p_data: pdfB64, ...o });
+  t('payslip: a wrong file type is refused', /PDF, PNG or JPG/.test(msg(await D(r1.data, { p_type: 'application/zip' }))));
+  t('payslip: a file that is not what it says is refused', /does not look like a PDF/.test(msg(await D(r1.data, { p_data: Buffer.from('hello world').toString('base64') }))));
+  t('payslip: an empty file is refused', /empty/.test(msg(await D(r1.data, { p_data: '' }))));
+  t('payslip: a file over 2 MB is refused', /over 2 MB/.test(msg(await D(r1.data, { p_data: Buffer.concat([Buffer.from('%PDF-'), Buffer.alloc(2 * 1024 * 1024)]).toString('base64') }))));
+  t('payslip: a missing name is refused', /needs a name/.test(msg(await D(r1.data, { p_name: '  ' }))));
+  t('payslip: an unknown request is refused', /not waiting/.test(msg(await D('00000000-0000-0000-0000-000000000000'))));
+  t('payslip: nothing downloads before it is delivered', /Not allowed/.test(msg(await rpc('get_payslip_file', { p_id: r1.data }))));
+  t('payslip: an admin delivers a file', !(await D(r1.data)).error);
+  const dl = (await m.supabase.from('payslip_requests').select('*').eq('id', r1.data).maybeSingle()).data;
+  t('payslip: the request shows delivered, with the file details', dl.status === 'delivered' && dl.file_name === 'Payslip Oct.pdf' && dl.file_type === 'application/pdf' && dl.file_size === pdf.length && dl.decided_by === ids.vijay);
+  t('payslip: the employee gets a notification', (await q("select title, kind, read from notifications where employee_id = " + ids.abines + " and key = 'payslip-" + r1.data + "'")).some(n => n.kind === 'payslip' && /ready/.test(n.title) && n.read === false));
+  const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47]), Buffer.from('pngdata')]);
+  t('payslip: an admin can replace the file', !(await D(r1.data, { p_name: 'Payslip Oct.png', p_type: 'image/png', p_data: png.toString('base64') })).error && (await q("select file_size, file_type from payslip_requests where id = '" + r1.data + "'"))[0].file_type === 'image/png');
+  t('payslip: an admin can open the file', (await rpc('get_payslip_file', { p_id: r1.data })).data?.type === 'image/png');
+  await D(r1.data);
+  const decl = await rpc('decline_payslip', { p_id: rk.data, p_reason: 'Payroll is not closed yet' });
+  t('payslip: an admin can decline with a reason', !decl.error && (await q("select status, decline_reason from payslip_requests where id = '" + rk.data + "'"))[0].status === 'declined');
+  t('payslip: the decline notifies the employee', (await q("select body from notifications where employee_id = " + ids.karthik + " and key = 'payslip-" + rk.data + "'"))[0]?.body === 'Payroll is not closed yet');
+  t('payslip: a declined request cannot be declined again', /not waiting/.test(msg(await rpc('decline_payslip', { p_id: rk.data, p_reason: '' }))));
+  t('payslip: a long reason is refused', /too long/.test(msg(await rpc('decline_payslip', { p_id: r1.data, p_reason: 'x'.repeat(301) }))));
+
+  as('abines'); await m.loadStaff();
+  const own = await rpc('get_payslip_file', { p_id: r1.data });
+  t('payslip: the owner downloads exactly what was delivered', !own.error && own.data.name === 'Payslip Oct.pdf' && Buffer.from(own.data.data, 'base64').equals(pdf));
+  t('payslip: the base64 has no line breaks', !/\s/.test(own.data.data));
+  as('karthik'); await m.loadStaff();
+  t('payslip: someone else cannot download it', /Not allowed/.test(msg(await rpc('get_payslip_file', { p_id: r1.data }))));
+  t('payslip: a declined month can be asked for again', !(await rpc('request_payslip', { p_month: m1 })).error);
+  await q("delete from payslip_requests");
+  await q("delete from notifications where kind = 'payslip'");
+}
+
 console.log(process.exitCode ? 'SOME CHECKS FAILED' : 'ALL CHECKS PASSED');

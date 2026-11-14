@@ -5,11 +5,13 @@ import { BY, TODISO, pd, fmtDay, fmtDM, plural, range, workDays, awayList, balan
 import { dayKey } from '../attendance.js';
 import { typeIcon } from './Home.jsx';
 import { CopyLeave } from '../CopyLeave.jsx';
+import { PayslipRequests } from './PayslipRequests.jsx';
 
 const STATE_C = { approved: '#30D158', declined: '#FF453A' };
 
-export function Requests({ user, leaves: all, setLeaves, open }) {
-  const [tab, setTab] = useState('pending');
+export function Requests({ user, leaves: all, setLeaves, open, pay }) {
+  const [tab, setTab] = useState('pending'), [kind, setKind] = useState('leave');
+  const payWaiting = (pay && pay.list ? pay.list : []).filter(r => r.status === 'requested').length;
   const leaves = all.filter(l => !l.past && BY[l.emp]);
   const waiting = leaves.filter(l => l.state === 'pending').sort((a, b) => a.from.localeCompare(b.from));
   const decided = leaves.filter(l => l.state !== 'pending').sort((a, b) => b.from.localeCompare(a.from));
@@ -45,11 +47,14 @@ export function Requests({ user, leaves: all, setLeaves, open }) {
 
   const Tab = ({ k, label, n }) => html`<button className=${tab === k ? 'on' : ''} onClick=${() => setTab(k)}>${label}${n > 0 && html`<em className=${k === 'pending' ? 'hot' : ''}>${n}</em>`}</button>`;
   return html`<div>
-    <div className="pg-h"><div><h1><${HI} n="requests" tone="orange"/>Requests</h1><p>${waiting.length ? waiting.length + ' waiting for you' : 'All clear'}</p></div>
-      <button className="btn sec2" onClick=${() => downloadLeaveReport(all)}><${Icon} n="download" s=${16}/> Export</button></div>
+    <div className="pg-h"><div><h1><${HI} n="requests" tone="orange"/>Requests</h1><p>${waiting.length + payWaiting ? [waiting.length ? waiting.length + ' leave' : '', payWaiting ? payWaiting + (payWaiting === 1 ? ' payslip' : ' payslips') : ''].filter(Boolean).join(' and ') + ' waiting for you' : 'All clear'}</p></div>
+      ${kind === 'leave' && html`<button className="btn sec2" onClick=${() => downloadLeaveReport(all)}><${Icon} n="download" s=${16}/> Export</button>`}</div>
+    <div className="seg rq-kind" role="group" aria-label="Kind of request"><button className=${kind === 'leave' ? 'on' : ''} onClick=${() => setKind('leave')}><${Icon} n="leaves" s=${15}/>Leave${waiting.length > 0 ? html`<em className="hot">${waiting.length}</em>` : null}</button><button className=${kind === 'payslips' ? 'on' : ''} onClick=${() => setKind('payslips')}><${Icon} n="payslips" s=${15}/>Payslips${payWaiting > 0 ? html`<em className="hot">${payWaiting}</em>` : null}</button></div>
+    ${kind === 'payslips' ? html`<${PayslipRequests} user=${user} pay=${pay || { list: [], err: '' }} open=${open}/>` : html`<div>
     <div className="seg seg-t" role="group" aria-label="Requests"><${Tab} k="pending" label="Pending" n=${waiting.length}/><${Tab} k="decided" label="Decided" n=${decided.length}/></div>
     ${list.length === 0
       ? html`<div className="rq3-e"><span><${Icon} n=${tab === 'pending' ? 'check' : 'requests'} s=${22}/></span><div><b>${tab === 'pending' ? 'You are all caught up' : 'Nothing decided yet'}</b><p>${tab === 'pending' ? 'New leave requests will show up here.' : 'Approved and declined requests will be listed here.'}</p></div></div>`
       : html`<div className="rq3-l">${list.map(l => html`<${Card} key=${l.id} l=${l}/>`)}</div>`}
+  </div>`}
   </div>`;
 }
