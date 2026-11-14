@@ -1341,3 +1341,5 @@ button.tile:active,.tile.click:active{background:var(--fill)}
 .rq-kind{margin-top:16px}.rq-kind button{display:inline-flex;align-items:center;gap:7px}
 .rq-kind em,.seg em.hot{font-style:normal}
 @media (max-width:640px){.pay-f{grid-template-columns:1fr}.pay-f .btn{width:100%}}
+
+.pay-role{font-style:normal;font-size:12px;font-weight:500;padding:2px 8px;border-radius:999px;background:var(--fill);color:var(--text-2)}

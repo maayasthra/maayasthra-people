@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { html, Icon, Av } from '../ui.jsx';
-import { BY, fmtDM } from '../data.js';
+import { BY, ROLEMAP, fmtDM } from '../data.js';
 import { dayKey } from '../attendance.js';
 import { monthLong, STATUS, fmtSize } from '../payslipMonths.js';
 import { readPayslipFile, deliverPayslip, declinePayslip, downloadPayslip } from '../payslipsDb.js';
@@ -21,7 +21,7 @@ function Card({ r, admin, open }) {
   return html`<article className=${'rq3-c' + (pend ? '' : ' done')}>
     <button className="rq3-av" onClick=${() => open(e.n)} aria-label=${'Open ' + e.name}><${Av} e=${e} s=${46}/></button>
     <div className="rq3-m">
-      <div className="rq3-n"><b>${e.name}</b><span>${e.dept}</span>${e.n === admin.n && html`<em className="rq3-you">Your request</em>`}</div>
+      <div className="rq3-n"><b>${e.name}</b><span>${e.dept}</span>${ROLEMAP[e.n] === 'Project manager' && html`<em className="pay-role">Project manager</em>`}${e.n === admin.n && html`<em className="rq3-you">Your request</em>`}</div>
       <div className="rq3-d"><span className="pay-mo"><${Icon} n="payslips" s=${15}/>${monthLong(r.month)}</span><span className=${'pay-s ' + st.tone}><i></i>${st.label}</span><span className="pay-when">Requested ${when(r.requestedAt)}</span></div>
       ${r.note && html`<p className="rq3-r">${r.note}</p>`}
       ${r.status === 'delivered' && html`<div className="pay-file"><${Icon} n="eod" s=${16}/><span><b>${r.fileName}</b><small>${fmtSize(r.fileSize)} · delivered ${when(r.decidedAt)}${r.decidedBy && BY[r.decidedBy] ? ' by ' + (r.decidedBy === admin.n ? 'you' : BY[r.decidedBy].name) : ''}</small></span></div>`}
