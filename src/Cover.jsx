@@ -21,7 +21,7 @@ export function Cover({ user, children }) {
   return html`<section className=${'cv' + (img ? ' has' : '')} style=${img ? { '--cv': 'url("' + img + '")' } : undefined} aria-busy=${busy}>
     <div className="cv-in">${children}</div>
     ${html`<div className=${'cv-e' + (menu || busy ? ' open' : '')} ref=${box}>
-      <button className="cv-b" onClick=${() => setMenu(m => !m)} aria-haspopup="menu" aria-expanded=${menu} disabled=${busy}><${Icon} n="edit" s=${15}/>${busy ? 'Saving…' : 'Change cover'}</button>
+      <button className="cv-b" onClick=${() => setMenu(m => !m)} aria-label="Change cover" aria-haspopup="menu" aria-expanded=${menu} disabled=${busy}><${Icon} n="edit" s=${15}/><span className="cv-l">${busy ? 'Saving…' : 'Change cover'}</span></button>
       ${menu && html`<div className="menu cv-m" role="menu">
         <button role="menuitem" onClick=${() => file.current && file.current.click()}><${Icon} n="download" s=${15}/> Upload a picture</button>
         ${img && html`<button role="menuitem" onClick=${reset}><${Icon} n="x" s=${15}/> Use the default</button>`}

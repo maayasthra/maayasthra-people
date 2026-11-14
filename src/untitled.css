@@ -1467,3 +1467,16 @@ button.tile:active,.tile.click:active{background:var(--fill)}
 .dlg.cf .dlg-a{margin-top:20px}
 .flt .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .tc-act:empty{display:none!important}
+
+/* Phone: the cover's actions are one tidy block. Add employee on its own row, then the other three share a row, each with its label. */
+@media (max-width:720px){
+  .cv-in .acts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%;margin-top:14px}
+  .cv-in .acts .btn.pri{grid-column:1/-1;width:100%}
+  .cv-in .acts .btn.ghost{width:100%;padding:0 8px;justify-content:center;gap:6px}
+  .cv-in .acts .btn.ghost .lb{display:inline;font-size:13px}
+}
+@media (max-width:720px){
+  .cv-b{width:34px;height:34px;padding:0;justify-content:center}
+  .cv-b .cv-l{display:none}
+  .cv-in .date-l{padding-right:44px}
+}
