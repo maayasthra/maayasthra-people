@@ -45,18 +45,20 @@ function Card({ r, admin, open }) {
 }
 
 /* Admin: payslip requests. Upload the file for a request to deliver it; the employee is notified and downloads it from their Payslips page. */
+// A quiet link under the waiting list that reveals the older, decided requests. Used by both kinds of request.
+export const DecidedToggle = ({ n, open, set, label }) => n > 0 ? html`<button className="rq-more" onClick=${() => set(!open)} aria-expanded=${open}><span>${open ? 'Hide' : 'Show'} ${label} (${n})</span><${Icon} n=${open ? 'up' : 'chevD'} s=${16}/></button>` : null;
+
 export function PayslipRequests({ user, pay, open }) {
-  const [tab, setTab] = useState('pending');
+  const [past, setPast] = useState(false);
   const all = (pay.list || []).filter(r => BY[r.emp]);
   const waiting = all.filter(r => r.status === 'requested').sort((a, b) => a.requestedAt - b.requestedAt);
   const done = all.filter(r => r.status !== 'requested').sort((a, b) => (b.decidedAt || b.requestedAt) - (a.decidedAt || a.requestedAt));
-  const list = tab === 'pending' ? waiting : done;
-  const Tab = ({ k, label, n }) => html`<button className=${tab === k ? 'on' : ''} onClick=${() => setTab(k)}>${label}${n > 0 && html`<em className=${k === 'pending' ? 'hot' : ''}>${n}</em>`}</button>`;
-  return html`<div>
-    <div className="seg seg-t" role="group" aria-label="Payslip requests"><${Tab} k="pending" label="Waiting" n=${waiting.length}/><${Tab} k="done" label="Done" n=${done.length}/></div>
-    ${pay.err && html`<div className="eod-e" role="alert" style=${{ marginTop: 16 }}>${pay.err}</div>`}
+  return html`<div className="rq-body">
+    ${pay.err && html`<div className="eod-e" role="alert">${pay.err}</div>`}
     ${pay.list === null ? html`<div className="none">Loading…</div>`
-      : list.length === 0 ? html`<div className="rq3-e"><span><${Icon} n=${tab === 'pending' ? 'check' : 'payslips'} s=${22}/></span><div><b>${tab === 'pending' ? 'No payslip requests waiting' : 'Nothing delivered yet'}</b><p>${tab === 'pending' ? 'When an employee asks for a payslip it appears here. Upload the file to deliver it.' : 'Delivered and closed requests appear here.'}</p></div></div>`
-      : html`<div className="rq3-l">${list.map(r => html`<${Card} key=${r.id} r=${r} admin=${user} open=${open}/>`)}</div>`}
+      : waiting.length === 0 ? html`<div className="rq3-e"><span><${Icon} n="check" s=${22}/></span><div><b>No payslip requests waiting</b><p>When an employee asks for a payslip it appears here. Upload the file to deliver it.</p></div></div>`
+      : html`<div className="rq3-l">${waiting.map(r => html`<${Card} key=${r.id} r=${r} admin=${user} open=${open}/>`)}</div>`}
+    <${DecidedToggle} n=${done.length} open=${past} set=${setPast} label="delivered and declined"/>
+    ${past && html`<div className="rq3-l rq-past">${done.map(r => html`<${Card} key=${r.id} r=${r} admin=${user} open=${open}/>`)}</div>`}
   </div>`;
 }
