@@ -1278,3 +1278,9 @@ button.tile:active,.tile.click:active{background:var(--fill)}
 .an-h b{color:var(--text);font-weight:600}
 .an-b p,.an p{color:var(--muted)}
 .an-b>small,.an small{color:color-mix(in srgb,var(--muted) 80%,var(--bg))}
+
+/* Change cover: hidden until the pointer is over the cover (or the button has keyboard focus). Touch screens have no hover, so it stays visible there. */
+.cv-e{opacity:0;transform:translateY(-4px);transition:opacity .18s ease,transform .18s var(--ease);pointer-events:none}
+.cv:hover .cv-e,.cv-e:focus-within,.cv-e.open{opacity:1;transform:none;pointer-events:auto}
+@media (hover:none){.cv-e{opacity:1;transform:none;pointer-events:auto}}
+@media (prefers-reduced-motion:reduce){.cv-e{transition:none}}

@@ -151,6 +151,13 @@ export const doneSound = () => sfx([[659.25, 0, 0.16], [830.61, 0.1, 0.16], [987
 export const moveSound = () => sfx([[698.46, 0, 0.1], [880, 0.07, 0.2]]);                         // moved to another column: a soft double tick
 export const deleteSound = () => sfx([[311.13, 0, 0.1], [233.08, 0.07, 0.12], [155.56, 0.14, 0.3]]); // deleted: a low falling thud
 
+// Away time: each kind of away has its own short sound, and coming back has a warm rise.
+export const powerSound = () => sfx([[392, 0, 0.12], [261.63, 0.1, 0.18], [174.61, 0.2, 0.45]]);   // power cut or internet down: a low power-down fall
+export const breakSound = () => sfx([[783.99, 0, 0.3], [622.25, 0.22, 0.5]]);                    // break: a relaxed two-note ding-dong
+export const awaySound = () => sfx([[523.25, 0, 0.1], [523.25, 0.14, 0.1], [392, 0.3, 0.4]]);   // stepped out, meeting, other: two taps then a low note
+export const backSound = () => sfx([[440, 0, 0.12], [659.25, 0.1, 0.12], [880, 0.2, 0.45]]);     // back at the desk: a welcoming rise
+export const awayStartSound = why => (why === 'power' || why === 'net' ? powerSound : why === 'break' ? breakSound : awaySound)();
+
 const dueText = iso => { const [, m, d] = String(iso).split('-').map(Number); return d + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m - 1]; };
 
 /* ---------- a desktop notification, only when the page is in the background ---------- */

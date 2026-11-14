@@ -20,7 +20,7 @@ export function Cover({ user, children }) {
   const reset = async () => { setBusy(true); setErr(''); setMenu(false); try { await saveCover(user.n, ''); } catch (e) { setErr(e.message); } setBusy(false); };
   return html`<section className=${'cv' + (img ? ' has' : '')} style=${img ? { '--cv': 'url("' + img + '")' } : undefined} aria-busy=${busy}>
     <div className="cv-in">${children}</div>
-    ${html`<div className="cv-e" ref=${box}>
+    ${html`<div className=${'cv-e' + (menu || busy ? ' open' : '')} ref=${box}>
       <button className="cv-b" onClick=${() => setMenu(m => !m)} aria-haspopup="menu" aria-expanded=${menu} disabled=${busy}><${Icon} n="edit" s=${15}/>${busy ? 'Saving…' : 'Change cover'}</button>
       ${menu && html`<div className="menu cv-m" role="menu">
         <button role="menuitem" onClick=${() => file.current && file.current.click()}><${Icon} n="download" s=${15}/> Upload a picture</button>

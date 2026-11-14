@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { html, Icon } from './ui.jsx';
 import { fmtTime } from './data.js';
-import { checkInSound } from './alerts.js';
+import { checkInSound, awayStartSound, backSound, moveSound } from './alerts.js';
 import { sessionsOf, isIn, workedNet, hms, hm, clock, lunchInfo, startDelta, checkIn, checkOut, useNow, getDay, dayKey, AWAY_WHY, whyLabel, awayOpen, goAway, comeBack, addAway } from './attendance.js';
 import { AddAwayDialog } from './AwayDialog.jsx';
 
@@ -35,8 +35,8 @@ export function CheckWidget({ user, att, setAtt, onOut, onAway }) {
     : live ? 'Shift ends ' + fmtTime(user.shiftEnd)
     : sessions.length ? 'Checked out ' + clock(sessions[sessions.length - 1].out) : fmtTime(user.shiftStart) + ' – ' + fmtTime(user.shiftEnd);
   const main = live ? hms(worked) : sessions.length ? hm(worked) + ' worked' : 'Not checked in';
-  const act = () => { if (open) { setAtt(a => comeBack(a, user.n)); } else if (live) onOut(); else { checkInSound(); setAtt(a => checkIn(a, user.n)); } };
-  const step = why => { setAw(false); setAtt(a => goAway(a, user.n, why)); if (onAway) onAway(); };
+  const act = () => { if (open) { backSound(); setAtt(a => comeBack(a, user.n)); } else if (live) onOut(); else { checkInSound(); setAtt(a => checkIn(a, user.n)); } };
+  const step = why => { setAw(false); awayStartSound(why); setAtt(a => goAway(a, user.n, why)); if (onAway) onAway(); };
   const awayTotal = away.reduce((t, a) => t + ((a.to == null ? now : a.to) - a.from), 0);
   return html`<div className="ck" ref=${ref}>
     <button className="ck-t" onClick=${() => { setPop(p => !p); setAw(false); }} aria-expanded=${pop} aria-label="Today's check-ins">
@@ -52,7 +52,7 @@ export function CheckWidget({ user, att, setAtt, onOut, onAway }) {
       ${sessions.length > 0 && html`<div className="ck-sum"><span>Worked today</span><b>${hm(worked)}</b></div>`}
       ${away.length > 0 && html`<div className="ck-sum"><span>Away</span><b>${hm(awayTotal)}</b></div>`}
       <div className="ck-acts">${open && html`<button className="btn ghost sm" onClick=${() => { setPop(false); onOut(); }}>Check out</button>`}<button className="btn ghost sm" onClick=${() => { setPop(false); setAdd(true); }}><${Icon} n="plus" s=${14}/> Add time I was away</button></div></div>`}
-    ${add && html`<${AddAwayDialog} user=${user} att=${att} onCancel=${() => setAdd(false)} onSave=${(day, a, b, why, note) => { setAtt(x => addAway(x, user.n, day, a, b, why, note)); setAdd(false); }}/>`}
+    ${add && html`<${AddAwayDialog} user=${user} att=${att} onCancel=${() => setAdd(false)} onSave=${(day, a, b, why, note) => { moveSound(); setAtt(x => addAway(x, user.n, day, a, b, why, note)); setAdd(false); }}/>`}
   </div>`;
 }
 
