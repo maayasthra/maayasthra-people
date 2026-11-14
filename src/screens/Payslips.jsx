@@ -15,14 +15,15 @@ function Mine({ r, again }) {
     <div className="pay-h"><b>${monthLong(r.month)}</b><span className=${'pay-s ' + st.tone}><i></i>${st.label}</span></div>
     <div className="pay-d">
       ${r.status === 'requested' && html`<span>Requested ${when(r.requestedAt)}${r.note ? ' · “' + r.note + '”' : ''}</span>`}
-      ${r.status === 'delivered' && html`<span>Delivered ${when(r.decidedAt)} · ${r.fileName} · ${fmtSize(r.fileSize)}</span>`}
+      ${r.status === 'delivered' && html`<span>Delivered ${when(r.decidedAt)} · ${r.fileName} · ${fmtSize(r.fileSize)}</span><span className="pay-note">When you download it, the file is removed from our servers, so keep your copy safe.</span>`}
+      ${r.status === 'downloaded' && html`<span>Delivered ${when(r.decidedAt)} · Downloaded ${when(r.downloadedAt)}</span><span className="pay-note">The file is no longer stored here. Request it again if you need another copy.</span>`}
       ${r.status === 'declined' && html`<span>${r.reason ? 'Declined: ' + r.reason : 'Your request was declined.'}</span>`}
       ${r.status === 'cancelled' && html`<span>You cancelled this request on ${when(r.decidedAt)}.</span>`}</div>
     ${err && html`<div className="lg-err" role="alert">${err}</div>`}
     <div className="pay-a">
-      ${r.status === 'delivered' && html`<button className="btn pri sm" disabled=${busy} onClick=${() => run(() => downloadPayslip(r.id))}><${Icon} n="download" s=${15}/> ${busy ? 'Opening…' : 'Download'}</button>`}
+      ${r.status === 'delivered' && html`<button className="btn pri sm" disabled=${busy} onClick=${() => run(() => downloadPayslip(r.id, r.emp))}><${Icon} n="download" s=${15}/> ${busy ? 'Downloading…' : 'Download'}</button>`}
       ${r.status === 'requested' && html`<button className="btn ghost sm" disabled=${busy} onClick=${() => run(() => cancelPayslip(r.emp, r.id))}>Cancel request</button>`}
-      ${(r.status === 'declined' || r.status === 'cancelled') && html`<button className="btn sec2 sm" onClick=${() => again(r.month)}>Request again</button>`}</div>
+      ${(r.status === 'declined' || r.status === 'cancelled' || r.status === 'downloaded') && html`<button className="btn sec2 sm" onClick=${() => again(r.month)}>Request again</button>`}</div>
   </article>`;
 }
 

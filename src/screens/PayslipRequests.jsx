@@ -19,14 +19,16 @@ function Card({ r, admin, open }) {
   const decline = () => run(async () => { await declinePayslip(admin.n, r.id, reason); setDeclining(false); setReason(''); });
   const first = e.name.split(' ')[0], editing = !!f || declining;      // while sending a file or declining, the form takes the whole card
   const choose = () => file.current && file.current.click();
-  const fileRow = html`<div className="pay-file"><${Icon} n="eod" s=${16}/><span><b>${r.fileName}</b><small>${fmtSize(r.fileSize)} · delivered ${when(r.decidedAt)}${r.decidedBy && BY[r.decidedBy] ? ' by ' + (r.decidedBy === admin.n ? 'you' : BY[r.decidedBy].name) : ''}</small></span></div>`;
+  const fileRow = r.status === 'downloaded'
+    ? html`<div className="pay-file gone"><${Icon} n="eod" s=${16}/><span><b>${r.fileName}</b><small>${fmtSize(r.fileSize)} · delivered ${when(r.decidedAt)}${r.decidedBy && BY[r.decidedBy] ? ' by ' + (r.decidedBy === admin.n ? 'you' : BY[r.decidedBy].name) : ''} · downloaded ${when(r.downloadedAt)} · file removed from the server</small></span></div>`
+    : html`<div className="pay-file"><${Icon} n="eod" s=${16}/><span><b>${r.fileName}</b><small>${fmtSize(r.fileSize)} · delivered ${when(r.decidedAt)}${r.decidedBy && BY[r.decidedBy] ? ' by ' + (r.decidedBy === admin.n ? 'you' : BY[r.decidedBy].name) : ''} · removed from the server once ${first} downloads it</small></span></div>`;
   return html`<article className=${'rq3-c' + (pend ? '' : ' done') + (editing ? ' pay-solo' : '')}>
     <button className="rq3-av" onClick=${() => open(e.n)} aria-label=${'Open ' + e.name}><${Av} e=${e} s=${46}/></button>
     <div className="rq3-m">
       <div className="rq3-n"><b>${e.name}</b><span>${e.dept}</span>${ROLEMAP[e.n] === 'Project manager' && html`<em className="pay-role">Project manager</em>`}${e.n === admin.n && html`<em className="rq3-you">Your request</em>`}</div>
       <div className="rq3-d"><span className="pay-mo"><${Icon} n="payslips" s=${15}/>${monthLong(r.month)}</span><span className=${'pay-s ' + st.tone}><i></i>${st.label}</span><span className="pay-when">Requested ${when(r.requestedAt)}</span></div>
       ${r.note && html`<p className="rq3-r">${r.note}</p>`}
-      ${r.status === 'delivered' && !editing && fileRow}
+      ${(r.status === 'delivered' || r.status === 'downloaded') && !editing && fileRow}
       ${r.status === 'declined' && html`<p className="rq3-r">Declined${r.reason ? ': ' + r.reason : ''} <small>${when(r.decidedAt)}</small></p>`}
       ${f && html`<div className="pay-form">
         <div className="pay-file chosen"><${Icon} n="eod" s=${16}/><span><b>${f.name}</b><small>${fmtSize(f.size)} · ready to send to ${first}</small></span></div>
@@ -58,7 +60,7 @@ export function PayslipRequests({ user, pay, open }) {
     ${pay.list === null ? html`<div className="none">Loading…</div>`
       : waiting.length === 0 ? html`<div className="rq3-e"><span><${Icon} n="check" s=${22}/></span><div><b>No payslip requests waiting</b><p>When an employee asks for a payslip it appears here. Upload the file to deliver it.</p></div></div>`
       : html`<div className="rq3-l">${waiting.map(r => html`<${Card} key=${r.id} r=${r} admin=${user} open=${open}/>`)}</div>`}
-    <${DecidedToggle} n=${done.length} open=${past} set=${setPast} label="delivered and declined"/>
+    <${DecidedToggle} n=${done.length} open=${past} set=${setPast} label="past requests"/>
     ${past && html`<div className="rq3-l rq-past">${done.map(r => html`<${Card} key=${r.id} r=${r} admin=${user} open=${open}/>`)}</div>`}
   </div>`;
 }

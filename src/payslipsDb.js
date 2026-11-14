@@ -14,8 +14,8 @@ const KEY = 'mp-payslips';
 const readDemo = () => { try { const v = JSON.parse(localStorage.getItem(KEY) || 'null'); return v && Array.isArray(v.list) ? v : { list: [], files: {} }; } catch (x) { return { list: [], files: {} }; } };
 const writeDemo = v => { try { localStorage.setItem(KEY, JSON.stringify(v)); window.dispatchEvent(new Event('mp-payslips')); } catch (x) { throw new Error('This browser has no room left to keep that file.'); } };
 
-const toApp = r => ({ id: r.id, emp: r.employee_id, month: String(r.month).slice(0, 10), status: r.status, note: r.note || '', requestedAt: Date.parse(r.requested_at) || 0, decidedBy: r.decided_by, decidedAt: r.decided_at ? Date.parse(r.decided_at) : 0, reason: r.decline_reason || '', fileName: r.file_name || '', fileType: r.file_type || '', fileSize: r.file_size || 0 });
-const KNOWN = /Choose a month|not finished|last 12 months|not joined|too long|already asked|cannot be cancelled|not waiting|Send a PDF|needs a name|could not be read|is empty|over 2 MB|does not look like|Not allowed|file is missing/i;
+const toApp = r => ({ id: r.id, emp: r.employee_id, month: String(r.month).slice(0, 10), status: r.status, note: r.note || '', requestedAt: Date.parse(r.requested_at) || 0, decidedBy: r.decided_by, decidedAt: r.decided_at ? Date.parse(r.decided_at) : 0, downloadedAt: r.downloaded_at ? Date.parse(r.downloaded_at) : 0, reason: r.decline_reason || '', fileName: r.file_name || '', fileType: r.file_type || '', fileSize: r.file_size || 0 });
+const KNOWN = /Choose a month|not finished|last 12 months|not joined|too long|already asked|cannot be cancelled|not waiting|Send a PDF|needs a name|could not be read|is empty|over 2 MB|does not look like|Not allowed|file is missing|downloaded and the file has been removed/i;
 const fail = (error, fallback) => { throw new Error(KNOWN.test(error.message) ? error.message : fallback); };
 const newId = () => (crypto.randomUUID ? crypto.randomUUID() : 'p' + Date.now() + Math.random().toString(16).slice(2));
 
@@ -30,7 +30,7 @@ export async function requestPayslip(me, month, note) {
   if (IS_DEMO) {
     const d = readDemo();
     if (d.list.some(r => r.emp === me && r.month === month && (r.status === 'requested' || r.status === 'delivered'))) throw new Error('You already asked for that month');
-    d.list.push({ id: newId(), emp: me, month, status: 'requested', note: String(note || '').trim().slice(0, 300), requestedAt: Date.now(), decidedBy: null, decidedAt: 0, reason: '', fileName: '', fileType: '', fileSize: 0 });
+    d.list.push({ id: newId(), emp: me, month, status: 'requested', note: String(note || '').trim().slice(0, 300), requestedAt: Date.now(), decidedBy: null, decidedAt: 0, downloadedAt: 0, reason: '', fileName: '', fileType: '', fileSize: 0 });
     writeDemo(d); return;
   }
   const { error } = await supabase.rpc('request_payslip', { p_month: month, p_note: String(note || '').trim() });
@@ -74,14 +74,24 @@ export async function deliverPayslip(admin, id, f) {
   if (error) fail(error, 'Could not send the file. Check your connection and try again.');
 }
 
-// Hands the file to the browser as a download
-export async function downloadPayslip(id) {
+// Once the person the payslip is for has downloaded it, the file is deleted from the server and only the history stays.
+// An admin looking at the file does not remove it.
+async function confirmDownloaded(me, id) {
+  if (IS_DEMO) { const d = readDemo(); d.list = d.list.map(r => r.id === id && r.emp === me && r.status === 'delivered' ? { ...r, status: 'downloaded', downloadedAt: Date.now() } : r); delete d.files[id]; writeDemo(d); return; }
+  const { error } = await supabase.rpc('confirm_payslip_downloaded', { p_id: id });
+  if (error) fail(error, 'The file was saved, but could not be cleared from the server. It will be cleared the next time you open it.');
+}
+
+// Hands the file to the browser as a download. Pass the employee's number only when they are downloading their own payslip:
+// then, a moment after the download starts, the file is removed from the server.
+export async function downloadPayslip(id, owner = null) {
   let f;
   if (IS_DEMO) { f = readDemo().files[id]; if (!f) throw new Error('That file is missing.'); }
   else { const { data, error } = await supabase.rpc('get_payslip_file', { p_id: id }); if (error) fail(error, 'Could not open the file. Try again.'); f = data; }
   const bin = atob(f.data), bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
   const url = URL.createObjectURL(new Blob([bytes], { type: f.type })), a = document.createElement('a');
-  a.href = url; a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000);
+  a.href = url; a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 8000);
+  if (owner != null) { await new Promise(r => setTimeout(r, 1200)); await confirmDownloaded(owner, id); }
 }
 
 // The list, kept fresh: reloads when requests change anywhere (live) or in another tab (demo)

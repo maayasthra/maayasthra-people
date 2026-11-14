@@ -847,4 +847,38 @@ for (const action of ['edit', 'remove', 'correct-rejected']) {
   await q("delete from notifications where kind = 'payslip'");
 }
 
+// ================= 0047: PAYSLIP FILES ARE REMOVED AFTER DOWNLOAD =================
+{
+  const rpc = async (fn, a) => { const r = await m.supabase.rpc(fn, a); const d = Array.isArray(r.data) && r.data.length === 1 && r.data[0] && fn in r.data[0] ? r.data[0][fn] : r.data; return { ...r, data: d }; };
+  const msg = r => r.error?.message || '';
+  const mon = async n => (await q("select (date_trunc('month', public.today_ist()) - interval '" + n + " month')::date::text d"))[0].d;
+  const m1 = await mon(1);
+  const pdf = Buffer.concat([Buffer.from('%PDF-1.4\n'), Buffer.from('payslip body '.repeat(40))]), pdfB64 = pdf.toString('base64');
+  await q("delete from payslip_requests"); await q("delete from notifications where kind = 'payslip'");
+  as('abines'); await m.loadStaff();
+  const r1 = (await rpc('request_payslip', { p_month: m1 })).data;
+  t('download: nothing to confirm before delivery', /Not allowed/.test(msg(await rpc('confirm_payslip_downloaded', { p_id: r1 }))));
+  as('vijay'); await m.loadStaff();
+  await rpc('deliver_payslip', { p_id: r1, p_name: 'Payslip.pdf', p_type: 'application/pdf', p_data: pdfB64 });
+  t('download: an admin opening the file does not remove it', !(await rpc('get_payslip_file', { p_id: r1 })).error && (await q("select count(*)::int c from payslip_files where request_id = '" + r1 + "'"))[0].c === 1);
+  t('download: an admin cannot confirm someone else\'s download', /Not allowed/.test(msg(await rpc('confirm_payslip_downloaded', { p_id: r1 }))));
+  as('karthik'); await m.loadStaff();
+  t('download: another person cannot confirm it', /Not allowed/.test(msg(await rpc('confirm_payslip_downloaded', { p_id: r1 }))));
+  as('abines'); await m.loadStaff();
+  t('download: the owner can still fetch the file before confirming', Buffer.from((await rpc('get_payslip_file', { p_id: r1 })).data.data, 'base64').equals(pdf));
+  t('download: confirming removes the file', !(await rpc('confirm_payslip_downloaded', { p_id: r1 })).error && (await q("select count(*)::int c from payslip_files where request_id = '" + r1 + "'"))[0].c === 0);
+  const h = (await m.supabase.from('payslip_requests').select('*').eq('id', r1).maybeSingle()).data;
+  t('download: the history stays as text', h.status === 'downloaded' && !!h.downloaded_at && h.file_name === 'Payslip.pdf' && h.file_size === pdf.length && h.file_type === 'application/pdf' && h.decided_by === ids.vijay);
+  t('download: confirming twice is harmless', !(await rpc('confirm_payslip_downloaded', { p_id: r1 })).error);
+  t('download: the file cannot be fetched again', /downloaded and the file has been removed/.test(msg(await rpc('get_payslip_file', { p_id: r1 }))));
+  as('vijay'); await m.loadStaff();
+  t('download: not even an admin can fetch a removed file', /removed/.test(msg(await rpc('get_payslip_file', { p_id: r1 }))));
+  t('download: an admin cannot deliver into a downloaded request', /not waiting/.test(msg(await rpc('deliver_payslip', { p_id: r1, p_name: 'x.pdf', p_type: 'application/pdf', p_data: pdfB64 }))));
+  as('abines'); await m.loadStaff();
+  const again = await rpc('request_payslip', { p_month: m1 });
+  t('download: the same month can be asked for again', !again.error && again.data !== r1);
+  t('download: the old history is kept next to the new request', (await m.supabase.from('payslip_requests').select('id,status').eq('month', m1)).data.length === 2);
+  await q("delete from payslip_requests"); await q("delete from notifications where kind = 'payslip'");
+}
+
 console.log(process.exitCode ? 'SOME CHECKS FAILED' : 'ALL CHECKS PASSED');

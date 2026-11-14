@@ -8,7 +8,7 @@ Test commands: `npm run test:db` (PGlite plus a PostgREST-like shim, `tests/inte
 
 ## Migrations to review and run, in this order
 
-`0043_away_time.sql`, then `0044_home_cover.sql`, then `0045_eod_sheet_export.sql`. All three are written to be re-runnable (`if not exists`, `drop ... if exists`).
+`0043_away_time.sql`, `0044_home_cover.sql`, `0045_eod_sheet_export.sql`, `0046_payslip_requests.sql`, then `0047_payslip_download_cleanup.sql`. All three are written to be re-runnable (`if not exists`, `drop ... if exists`).
 
 ### 0043 `away_time` (largest change)
 A person who is checked in can step away (power cut, stepped out, break...) and come back. Away time is not counted as worked. If they could not press anything (a power cut), they can add the time afterwards for today or yesterday. A reason for leaving early can be noted.
@@ -30,6 +30,13 @@ Each person can set their own cover picture for the top of Home. Only they see i
 - Image is a base64 data URL, at most 700,000 characters, must start with `data:image/`. The app rejects files over 2 MB and shrinks to roughly 100 to 300 KB first.
 - The migration starts with `drop function/table ... app_cover` because an earlier unpushed draft had one shared cover; this is harmless if that was never run.
 - **Check:** images in a text column (consider Supabase Storage if usage grows); no realtime on this table; the size check lives in a column constraint and in the RPC.
+
+### 0046 `payslip_requests` and 0047 `payslip_download_cleanup`
+Employees and project managers request a payslip for a past month; an admin delivers a PDF or image (up to 2 MB) under Requests > Payslips.
+- Tables `payslip_requests` (the history) and `payslip_files` (the bytes, `bytea`). RLS: a person reads their own requests, admins read all; `payslip_files` has RLS on and no policies, so only the functions below can touch it.
+- RPCs (`security definer`): `request_payslip` (finished months only, 12 back, not before joining, one live request per month), `cancel_payslip_request`, `decline_payslip`, `deliver_payslip` (admin; checks type, 2 MB and the file's first bytes), `get_payslip_file` (owner or admin), `confirm_payslip_downloaded` (owner only).
+- **0047:** once the employee downloads, the browser calls `confirm_payslip_downloaded`, which **deletes the file row** and sets status `downloaded`; only the text history stays. The delete is triggered by the client after the download starts, so a failed save is possible; the fix is to request the month again.
+- **Check:** files stored as `bytea` in Postgres; a delivered file that is never downloaded stays until it is (there is no expiry job yet); all admins can read all payslips; the `payslip` kind was added to the notifications check constraint; the download-then-delete step is client-driven and not atomic with the browser saving the file.
 
 ### 0045 `eod_sheet_export` (read-only export for a Google Sheet)
 Lets a Google Sheet ("Employee EOD Updates - (Review)") list every end-of-day report, one tab per month.

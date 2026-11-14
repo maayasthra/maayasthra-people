@@ -22,7 +22,8 @@ export function requestableMonths(todayIso, joinIso) {
 
 export const STATUS = {
   requested: { label: 'Requested', tone: 'warn' },
-  delivered: { label: 'Delivered', tone: 'ok' },
+  delivered: { label: 'Ready to download', tone: 'ok' },
+  downloaded: { label: 'Downloaded', tone: 'ok' },
   declined: { label: 'Declined', tone: 'err' },
   cancelled: { label: 'Cancelled', tone: 'mute' }
 };

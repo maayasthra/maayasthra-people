@@ -19,6 +19,7 @@ test('labels', () => { assert.equal(monthLabel('2026-10-01'), 'Oct 2026'); asser
 test('open requests block asking again, closed ones do not', () => {
   assert.equal(isOpen({ status: 'requested' }), true); assert.equal(isOpen({ status: 'delivered' }), true);
   assert.equal(isOpen({ status: 'declined' }), false); assert.equal(isOpen({ status: 'cancelled' }), false);
+  assert.equal(isOpen({ status: 'downloaded' }), false);   // once downloaded, the month can be asked for again
 });
 test('file sizes read naturally', () => { assert.equal(fmtSize(900), '900 B'); assert.equal(fmtSize(86 * 1024), '86 KB'); assert.equal(fmtSize(1.5 * 1048576), '1.5 MB'); });
-test('every status has a label and tone', () => { ['requested', 'delivered', 'declined', 'cancelled'].forEach(k => assert.ok(STATUS[k].label && STATUS[k].tone)); });
+test('every status has a label and tone', () => { ['requested', 'delivered', 'downloaded', 'declined', 'cancelled'].forEach(k => assert.ok(STATUS[k].label && STATUS[k].tone)); });
