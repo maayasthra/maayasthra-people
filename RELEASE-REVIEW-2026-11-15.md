@@ -1,4 +1,4 @@
-# Attendance, Sheets and cover fixes — not deployed
+# Attendance, Sheets and cover fixes — release validation
 
 Base: bb49037131d02778e052c925800df33ac4351512. Branch: fix/attendance-sheets-cover.
 
@@ -19,15 +19,15 @@ Run in an isolated environment with dummy data and no production credentials:
 - `npm run build`, and live-mode build using dummy local Supabase configuration.
 - `node tests/cover-browser.mjs` needs the isolated Playwright runner's `/pwdeps/node_modules/playwright` and `/scratch` locations. It uses real React/Supabase JS/auth helpers with synthetic loopback Auth/PostgREST, not hosted Supabase.
 
-## Future rollout order — requires separate deployment authorization
+## Rollout order
 
 1. Review this patch and the completed staging evidence. Validate Google-to-Supabase HTTP configuration and the intended sharing/trigger setup before enabling production export.
 2. Apply forward migrations 0046, 0047 and 0048 in order, after 0045, using the approved migration procedure. Do not rerun old migrations after these replacements.
 3. Deploy the corresponding frontend. Migration 0048 deliberately makes the legacy one-argument cover RPC return a refresh-required message; older tabs need refresh before changing covers. Other features remain available.
 4. Update Apps Script with automatic sync stopped, rebuild all generated months and verify totals before enabling automatic sync. See SETUP-SHEET.md.
 
-No production deployment, configuration update or data repair was performed. Backup work was explicitly skipped.
+Deployment authorized on 15 November after staging validation. Production migration preflight matched18 definitions and the guarded0046–48 transaction committed successfully. Final rollout evidence is retained outside the repository. Backup work remains skipped.
 
 ## Limits
 
-Follow-up validation passed 87 checks against an isolated full local Supabase stack (real Auth, PostgREST, PostgreSQL and Realtime), including actual admin/manager/employee browser journeys and cover account switching. Nine checks passed in a disposable native Google Sheet using real Apps Script and the formula engine, including replay of an actual dummy staging export RPC response. Two Google runtime failures were fixed: merging a summary title across the frozen column, and partially unmerging old headings during rebuild. The updated unit suite passed 42/42. Google-to-Supabase HTTP transport and automatic trigger setup were not connected: the private staging network was deliberately not exposed. Weekday announcement popup tests simulated the weekday only; timestamps and authentication expiry stayed real. Sunday suppression was tested separately. Hosted production configuration was not checked in this run. Existing historical overlapping breaks are not deduplicated: reviewing/recalculating those hours requires a separate data-repair plan. The existing large JavaScript bundle warning remains. Other source-supported audit leads outside these fixes remain in the prior NEEDS-VALIDATION report.
+Follow-up validation passed 87 checks against an isolated full local Supabase stack (real Auth, PostgREST, PostgreSQL and Realtime), including actual admin/manager/employee browser journeys and cover account switching. Nine checks passed in a disposable native Google Sheet using real Apps Script and the formula engine, including replay of an actual dummy staging export RPC response. Two Google runtime failures were fixed: merging a summary title across the frozen column, and partially unmerging old headings during rebuild. The updated unit suite passed 42/42. Follow-up direct HTTPS transport and actual one-minute Google trigger executions passed against real local Supabase through a temporary export-only proxy: baseline5hours, scheduled edit7hours, final-report deletion removed the generated month. Repeated Start created only one trigger. The temporary proxy initially rejected a valid null p_since; its test-only allowlist was corrected. The trigger and tunnel were stopped afterward. Weekday announcement popup tests simulated the weekday only; timestamps and authentication expiry stayed real. Sunday suppression was tested separately. Production schema preflight passed; production export token was unconfigured. Activation of a real employee export requires the intended production workbook. Existing historical overlapping breaks are not deduplicated: reviewing/recalculating those hours requires a separate data-repair plan. The existing large JavaScript bundle warning remains. Other source-supported audit leads outside these fixes remain in the prior NEEDS-VALIDATION report.
