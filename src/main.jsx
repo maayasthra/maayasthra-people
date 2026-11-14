@@ -414,8 +414,8 @@ function App() {
         <${Icon} n=${k}/>${ALL[k]}${locked(k) ? html`<span className="nav-lock" aria-hidden="true"><${Icon} n="lock" s=${14}/></span>` : k === 'requests' && pending > 0 && html`<span className="cnt">${pending}</span>`}</button>`)}</div>`)}</nav>
       <div className="side-acct">
         <button className=${'side-about' + (nav.view === 'profile' && nav.id === user.n ? ' on' : '')} onClick=${() => open(user.n)} aria-current=${nav.view === 'profile' && nav.id === user.n ? 'page' : undefined}><${Icon} n="user" s=${17}/><span>My profile</span></button>
-        <button className=${'side-about' + (active === 'mysettings' ? ' on' : '')} onClick=${() => go('mysettings')} aria-current=${active === 'mysettings' ? 'page' : undefined}><${Icon} n="settings" s=${17}/><span>My settings</span></button>
-        <button className=${'side-about' + (active === 'about' ? ' on' : '')} onClick=${() => go('about')} aria-current=${active === 'about' ? 'page' : undefined}><${Icon} n="info" s=${17}/><span>About</span><small>v${VERSION}</small>${!seenNow && html`<em className="new-p">New</em>`}</button>
+        <button className=${'side-about' + (nav.view === 'mysettings' ? ' on' : '')} onClick=${() => go('mysettings')} aria-current=${nav.view === 'mysettings' ? 'page' : undefined}><${Icon} n="settings" s=${17}/><span>My settings</span></button>
+        <button className=${'side-about' + (nav.view === 'about' ? ' on' : '')} onClick=${() => go('about')} aria-current=${nav.view === 'about' ? 'page' : undefined}><${Icon} n="info" s=${17}/><span>About</span><small>v${VERSION}</small>${!seenNow && html`<em className="new-p">New</em>`}</button>
       </div>
     </aside>
     <div className="col">
