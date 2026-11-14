@@ -1226,3 +1226,29 @@ button.tile:active,.tile.click:active{background:var(--fill)}
 .nav-sec{display:flex;flex-direction:column;gap:2px}
 .nav-sec+.nav-sec{margin-top:16px}
 .nav-g{font-size:12px;line-height:16px;font-weight:500;color:var(--faint);padding:0 10px 6px}
+
+/* Away time */
+.ck-dot.away{background:var(--warn-text);box-shadow:0 0 0 4px color-mix(in srgb,var(--warn-text) 22%,transparent)}
+.ck-tx span.away{color:var(--warn-text)}
+.ck-aw{flex:none;width:36px;height:36px;display:grid;place-items:center;color:var(--muted)}
+.ck-away{width:236px;padding:6px}
+.ck-away .menu-h{padding:6px 8px 8px}
+.ck-away button{display:block;width:100%;text-align:left;height:36px;padding:0 10px;border-radius:var(--r-ctl);font-size:14px;color:var(--text)}
+.ck-awl{display:flex;flex-direction:column;gap:6px;padding:8px 8px 2px;border-top:1px solid var(--line);margin-top:6px}
+.ck-awl>b{font-size:12px;font-weight:500;color:var(--faint)}
+.ck-awl>div{display:flex;justify-content:space-between;gap:10px;font-size:13.5px}.ck-awl small{color:var(--muted);font-size:12.5px;text-align:right}
+.ck-acts{display:flex;flex-wrap:wrap;gap:8px;padding:10px 8px 0}
+.aw .fld{margin-top:14px}.aw .fld>label{display:block;font-size:14px;font-weight:500;color:var(--text-2);margin-bottom:6px}
+.aw-t{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.aw-opt{color:var(--faint);font-weight:400;margin-left:4px}
+.aw-ch{display:flex;flex-wrap:wrap;gap:8px}
+.aw-ch button{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:var(--r-ctl);border:1px solid var(--line-hi);background:var(--card);color:var(--text-2);font-size:14px;font-weight:500}
+.aw-ch button.on{border-color:var(--accent);background:var(--brand-tint);color:var(--brand-text)}
+@media (max-width:640px){.aw-t{grid-template-columns:1fr}}
+
+.hd-aw{display:flex;flex-direction:column;gap:4px;padding:0 0 12px 2px}
+.hd-aw>div{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;font-size:13.5px;color:var(--muted)}
+.hd-aw>div>span{display:inline-flex;align-items:center;gap:6px}
+.hd-aw b{font-weight:500;color:var(--text-2)}
+.hd-aw small{font-size:13px;color:var(--muted)}
+.dlg.aw{max-height:calc(100dvh - 32px);overflow-y:auto;overscroll-behavior:contain;width:min(460px,calc(100vw - 32px))}

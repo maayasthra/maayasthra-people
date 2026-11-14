@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { html, Icon, Tile, HI } from '../ui.jsx';
 import { HOL, MONL, TODISO, TOD, fmtDay, pd, fmtTime, plural, awayList } from '../data.js';
-import { dayInfo, saveDay, toHM, toTs, monthDays, useNow, hm, clock, dayKey } from '../attendance.js';
+import { dayInfo, saveDay, toHM, toTs, monthDays, useNow, hm, clock, dayKey, whyLabel, EARLY_WHY, removeAway, awayMs } from '../attendance.js';
 
 const STATE_L = { off: '', leave: 'On leave', absent: 'No check-in', notyet: 'Not in yet', na: '', future: '' };
 
@@ -70,6 +70,9 @@ export function HoursPanel({ emp, att, setAtt, leaves, canEdit, editor }) {
             <span className="hd-b">${has && i.lateFlag ? html`<${Badge} c="#FF9F0A">Late ${i.late} min<//>` : null}${has && i.short ? html`<${Badge} c="#FF453A">Short<//>` : null}${has && i.over ? html`<${Badge} c="#30D158">Overtime<//>` : null}${i.edited ? html`<${Badge} c="#0A84FF">Edited by ${i.edited.by.split(' ')[0]}<//>` : null}</span>
             ${canEdit && !['off', 'na', 'future'].includes(i.state) ? html`<button className="link" onClick=${() => setEdit(edit === d ? null : d)}>${edit === d ? 'Close' : 'Edit'}</button>` : html`<span></span>`}
           </div>
+          ${has && (i.breaks.length > 0 || i.early) && html`<div className="hd-aw">
+            ${i.breaks.slice().sort((x, y) => x.from - y.from).map(x => html`<div key=${x.from}><span><${Icon} n="cup" s=${14}/>Away ${clock(x.from)} – ${x.to == null ? 'now' : clock(x.to)} · ${hm((x.to == null ? now : x.to) - x.from)}</span><b>${whyLabel(x.why)}</b>${x.later && html`<${Badge} c="#8E8E93">Added later<//>`}${x.note && html`<small>${x.note}</small>`}${canEdit && x.to != null && html`<button className="link" onClick=${() => setAtt(a => removeAway(a, emp.n, d, x.from))}>Remove</button>`}</div>`)}
+            ${i.early && html`<div><span><${Icon} n="logout" s=${14}/>Left early</span><b>${whyLabel(i.early.why, EARLY_WHY)}</b>${i.early.note && html`<small>${i.early.note}</small>`}</div>`}</div>`}
           ${edit === d && html`<${DayEditor} iso=${d} rec=${{ sessions: i.sessions }} onCancel=${() => setEdit(null)} onSave=${ss => { setAtt(a => saveDay(a, emp.n, d, ss, editor.name)); setEdit(null); }}/>`}
         </div>`; })}
     </div>

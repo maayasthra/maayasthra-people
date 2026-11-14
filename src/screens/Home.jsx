@@ -8,7 +8,7 @@ import { ProfileSetup } from './ProfileSetup.jsx';
 import { CopyLeave } from '../CopyLeave.jsx';
 import { isOpen } from '../tasks.js';
 import { SessionList, useDay, dayNote } from '../Attendance.jsx';
-import { hm, lunchInfo, checkIn, checkOut, dayInfo, useNow, clock, minuteOfDay, getDay, addDays } from '../attendance.js';
+import { hm, lunchInfo, checkIn, checkOut, dayInfo, useNow, clock, minuteOfDay, getDay, addDays, whyLabel, awayOpen } from '../attendance.js';
 import { myEodDays } from '../eodDb.js';
 import {
   TOD, DAY, WDL, MONL, pd, fmtDM, fmtDay, rel, plural, range, addMonths, isoOf, TODISO, HOL, BY,
@@ -129,7 +129,7 @@ function WhoIsIn({ att, leaves, open }) {
   const total = inn.length + out.length + wait.length;
   const [sel, setSel] = useState('in');
   if (!total) return null;
-  const tabs = [['in', 'In now', inn, x => 'Since ' + clock(x.i.first)], ['out', 'Checked out', out, x => 'Out ' + clock(x.i.last)], ['wait', 'Not in yet', wait, x => x.i.state === 'absent' ? 'Late' : 'Starts ' + fmtTime(x.e.shiftStart)]];
+  const tabs = [['in', 'In now', inn, x => x.i.paused ? 'Away · ' + whyLabel(awayOpen(x.i.breaks).why) : 'Since ' + clock(x.i.first)], ['out', 'Checked out', out, x => 'Out ' + clock(x.i.last)], ['wait', 'Not in yet', wait, x => x.i.state === 'absent' ? 'Late' : 'Starts ' + fmtTime(x.e.shiftStart)]];
   const cur = tabs.find(t => t[0] === sel) || tabs[0];
   return html`<${Panel} title="Who is in">
     <div className="wi-t" role="tablist">${tabs.map(([k, label, l]) => html`<button key=${k} role="tab" aria-selected=${sel === k} className=${'wi-tab' + (sel === k ? ' on' : '')} onClick=${() => setSel(k)}><span className=${'wi-d wi-' + k}></span><b>${l.length}</b><span>${label}</span></button>`)}</div>

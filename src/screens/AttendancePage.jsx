@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { html, Icon, Av, Tile, HI, Sel, downloadCSV } from '../ui.jsx';
 import { TODISO, TOD, MONL, HOL, DEPTS, fmtDay, fmtDM, pd, plural, awayList, activeEmps, searchPeople } from '../data.js';
-import { dayInfo, useNow, hm, clock, addDays, weekStart, monthDays, GRACE } from '../attendance.js';
+import { dayInfo, useNow, hm, clock, addDays, weekStart, monthDays, GRACE, awayMs, whyLabel, EARLY_WHY } from '../attendance.js';
 
 const hh = ms => hm(ms);
 const hhc = ms => hm(ms).replace(' ', '');   // compact, for the narrow day cells in the month grid
@@ -23,7 +23,7 @@ function Matrix({ rows, days, wide, open }) {
       ${rows.map(r => html`<div key=${r.e.n} className="ov-r">
         <button className="ov-p" onClick=${() => open(r.e.n, 'hours')}><${Av} e=${r.e} s=${28}/><span className="row-t"><b>${r.e.name}</b><span>${r.e.dept}</span></span></button>
         ${r.cells.map((c, k) => html`<button key=${k} className=${'ovc ' + cellClass(c)} onClick=${() => open(r.e.n, 'hours')}
-          title=${r.e.name + ' · ' + fmtDay(pd(days[k])) + (c && c.sessions.length ? ' · ' + hh(c.worked) + (c.lateFlag ? ' · late ' + c.late + ' min' : '') : c && c.state ? ' · ' + (STATUS[c.state] || '') : '')}
+          title=${r.e.name + ' · ' + fmtDay(pd(days[k])) + (c && c.sessions.length ? ' · ' + hh(c.worked) + (c.lateFlag ? ' · late ' + c.late + ' min' : '') + (c.breaks && c.breaks.length ? ' · away ' + hh(awayMs(c.sessions, c.breaks, Date.now())) : '') : c && c.state ? ' · ' + (STATUS[c.state] || '') : '')}
           aria-label=${r.e.name + ' ' + fmtDM(days[k])}>${wide && c && c.sessions.length ? hhc(c.worked) : wide && c && c.state === 'leave' ? 'Leave' : wide && c && c.state === 'absent' ? 'Absent' : ''}</button>`)}
         <span className="ov-s ov-pres">${r.present}</span>
         <span className=${'ov-s ov-abs' + (r.absent ? ' has' : '')}>${r.absent}</span>
@@ -61,11 +61,11 @@ export function AttendancePage({ att, leaves, open }) {
   const inToday = todays.filter(i => i.sessions.length).length, absentToday = todays.filter(i => i.state === 'absent').length;
 
   const exportCSV = () => {
-    const head = ['Employee', 'Employee ID', 'Department', 'Date', 'Status', 'First check-in', 'Last check-out', 'Worked (hours)', 'Minutes late', 'Sessions', 'Edited by admin'];
+    const head = ['Employee', 'Employee ID', 'Department', 'Date', 'Status', 'First check-in', 'Last check-out', 'Worked (hours)', 'Minutes late', 'Sessions', 'Edited by admin', 'Away (minutes)', 'Away reasons', 'Left early reason'];
     const out = [];
     rows.forEach(r => days.forEach((d, k) => {
       const i = r.cells[k]; if (!i) return;
-      out.push([r.e.name, r.e.empId, r.e.dept, d, i.sessions.length ? (i.lateFlag ? 'Present (late)' : 'Present') : STATUS[i.state] || '', i.first ? clock(i.first) : '', i.last ? clock(i.last) : '', i.sessions.length ? (i.worked / 36e5).toFixed(2) : '', i.sessions.length ? i.late : '', i.sessions.length, i.edited ? i.edited.by : '']);
+      out.push([r.e.name, r.e.empId, r.e.dept, d, i.sessions.length ? (i.lateFlag ? 'Present (late)' : 'Present') : STATUS[i.state] || '', i.first ? clock(i.first) : '', i.last ? clock(i.last) : '', i.sessions.length ? (i.worked / 36e5).toFixed(2) : '', i.sessions.length ? i.late : '', i.sessions.length, i.edited ? i.edited.by : '', i.breaks && i.breaks.length ? Math.round(awayMs(i.sessions, i.breaks, now) / 60000) : '', i.breaks ? i.breaks.map(a => whyLabel(a.why) + (a.later ? ' (added later)' : '')).join('; ') : '', i.early ? whyLabel(i.early.why, EARLY_WHY) + (i.early.note ? ': ' + i.early.note : '') : '']);
     }));
     downloadCSV('maayasthra-attendance-' + days[0] + '-to-' + days[days.length - 1] + '.csv', [head, ...out]);
   };

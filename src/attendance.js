@@ -74,7 +74,28 @@ export const sessionsOf = (att, n) => getDay(att, n, dayKey()).sessions;
 export const isIn = sessions => sessions.length > 0 && !sessions[sessions.length - 1].out;
 export const workedMs = (sessions, now) => sessions.reduce((t, s) => t + ((s.out || now) - s.in), 0);
 export function checkIn(att, n, loc = 'office') { const iso = dayKey(), cur = getDay(att, n, iso); return putDay(att, n, iso, { ...cur, sessions: [...cur.sessions, { in: Date.now(), out: null, loc }] }); }
-export function checkOut(att, n, at = Date.now()) { const iso = dayKey(), cur = getDay(att, n, iso); if (!isIn(cur.sessions)) return att; return putDay(att, n, iso, { ...cur, sessions: cur.sessions.map((x, i) => i === cur.sessions.length - 1 ? { ...x, out: at } : x) }); }
+export function checkOut(att, n, at = Date.now()) { const iso = dayKey(), cur = getDay(att, n, iso); if (!isIn(cur.sessions)) return att; return putDay(att, n, iso, { ...cur, sessions: cur.sessions.map((x, i) => i === cur.sessions.length - 1 ? { ...x, out: at } : x), away: closeAway(cur.away, at) }); }
+
+/* ---------- away time: stepping away from the desk while checked in. It is not counted as worked time. ---------- */
+export const AWAY_WHY = [['power', 'Power cut'], ['net', 'Internet down'], ['out', 'Stepped out'], ['break', 'Break'], ['meet', 'Meeting away from desk'], ['other', 'Other']];
+export const EARLY_WHY = [['personal', 'Personal'], ['unwell', 'Unwell'], ['power', 'Power cut or internet'], ['work', 'Working elsewhere'], ['other', 'Other']];
+export const whyLabel = (k, list = AWAY_WHY) => (list.find(x => x[0] === k) || [0, 'Away'])[1];
+export const awayOpen = away => away && away.length && away[away.length - 1].to == null ? away[away.length - 1] : null;
+const closeAway = (away, at) => (away || []).map(a => a.to == null ? { ...a, to: Math.max(at, a.from) } : a);
+// Milliseconds of away time that fall inside checked-in time
+export function awayMs(sessions, away, now) {
+  let t = 0;
+  (away || []).forEach(a => { const a1 = a.to == null ? now : a.to; sessions.forEach(s => { t += Math.max(0, Math.min(a1, s.out || now) - Math.max(a.from, s.in)); }); });
+  return t;
+}
+export const workedNet = (sessions, away, now) => workedMs(sessions, now) - awayMs(sessions, away, now);
+export function goAway(att, n, why, note) { const iso = dayKey(), cur = getDay(att, n, iso); if (!isIn(cur.sessions) || awayOpen(cur.away)) return att; return putDay(att, n, iso, { ...cur, away: [...(cur.away || []), { from: Date.now(), to: null, why, note: note || null, later: false }] }); }
+export function comeBack(att, n) { const iso = dayKey(), cur = getDay(att, n, iso); if (!awayOpen(cur.away)) return att; return putDay(att, n, iso, { ...cur, away: closeAway(cur.away, Date.now()) }); }
+export function addAway(att, n, iso, from, to, why, note) { const cur = getDay(att, n, iso); return putDay(att, n, iso, { ...cur, away: [...(cur.away || []), { from, to, why, note: note || null, later: true }] }); }
+export function removeAway(att, n, iso, from) { const cur = getDay(att, n, iso); return putDay(att, n, iso, { ...cur, away: (cur.away || []).filter(a => a.from !== from) }); }
+export function setEarly(att, n, why, note) { const iso = dayKey(), cur = getDay(att, n, iso); return putDay(att, n, iso, { ...cur, early: { why, note: note || null, at: Date.now() } }); }
+// Would this stretch overlap time already marked away? (an open period counts until now)
+export const overlapsAway = (away, from, to, now = Date.now()) => (away || []).some(a => from < (a.to == null ? now : a.to) && to > a.from);
 
 /* ---------- one person, one day ---------- */
 // The lunch hour counts as worked when someone is checked out only for lunch.
@@ -94,10 +115,10 @@ export function dayInfo(att, e, iso, now, away) {
     const state = off ? 'off' : leave ? 'leave' : iso < e.join ? 'na' : today ? (minsOf(now, iso) > sm + GRACE ? 'absent' : 'notyet') : iso > dayKey(now) ? 'future' : 'absent';
     return { state, sessions: ss, worked: 0, target, late: 0, first: null, last: null, loc: null, edited: rec.edited, behind: today && state === 'absent' ? Math.round(minsOf(now, iso) - sm) : 0 };
   }
-  const live = !ss[ss.length - 1].out, worked = workedMs(ss, now) + lunchCredit(ss, iso, now);
+  const live = !ss[ss.length - 1].out, aw = rec.away || [], worked = workedMs(ss, now) + lunchCredit(ss, iso, now) - awayMs(ss, aw, now);
   const late = Math.round(minsOf(ss[0].in, iso) - sm);
   return { state: live ? 'in' : 'out', sessions: ss, worked, target, late, lateFlag: late > GRACE, first: ss[0].in, last: ss[ss.length - 1].out || null,
-    loc: ss[ss.length - 1].loc || 'office', live, short: !live && worked < target - 20 * 60000, over: worked > target + 30 * 60000, edited: rec.edited, behind: 0 };
+    loc: ss[ss.length - 1].loc || 'office', live, breaks: aw, paused: live && !!awayOpen(aw), early: rec.early || null, short: !live && worked < target - 20 * 60000, over: worked > target + 30 * 60000, edited: rec.edited, behind: 0 };
 }
 
 /* ---------- formatting ---------- */

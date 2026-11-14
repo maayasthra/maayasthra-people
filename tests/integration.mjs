@@ -705,4 +705,33 @@ for (const action of ['edit', 'remove', 'correct-rejected']) {
  }finally{release?.();globalThis.__q=realQuery;as('vijay');}
 }
 
+// ================= 0043: AWAY TIME =================
+{
+  as('karthik'); m.att.setMe(ids.karthik); await m.loadStaff();
+  let ay = await m.loadAttendance(3);
+  const stepY = async fn => { const prev = ay; ay = fn(ay); const e = await tryit(() => m.persistAtt(prev, ay)); ay = m.mergeAtt(ay, await m.loadAttendance(3)); return e; };
+  const today = m.att.dayKey(), yd = m.att.addDays(today, -1), awayRows = async () => (await q("select away, early from attendance_days where employee_id = " + ids.karthik + " and day = public.today_ist()"))[0];
+  t('away: cannot step away when not checked in', /not checked in/i.test(await stepY(x => m.att.goAway(x, ids.karthik, 'power'))) || (await awayRows()).away.length === 0);
+  t('away: check in again', (await stepY(x => m.att.checkIn(x, ids.karthik))) === '');
+  t('away: step away', (await stepY(x => m.att.goAway(x, ids.karthik, 'power'))) === '' && (await awayRows()).away.length === 1 && (await awayRows()).away[0].to === null);
+  t('away: come back ends it', (await stepY(x => m.att.comeBack(x, ids.karthik))) === '' && (await awayRows()).away[0].to !== null);
+  t('away: reasons are checked', /Choose a reason/.test((await m.supabase.rpc('go_away', { p_why: 'sleeping' })).error?.message || ''));
+  const n0 = Date.now();
+  t('away: time can be added afterwards', (await stepY(x => m.att.addAway(x, ids.karthik, today, n0 - 50 * 60000, n0 - 40 * 60000, 'net', 'Router down'))) === '' && (await awayRows()).away.some(a => a.later === true && a.why === 'net'));
+  t('away: added time cannot overlap', /overlaps/.test(await stepY(x => m.att.addAway(x, ids.karthik, today, n0 - 45 * 60000, n0 - 35 * 60000, 'net'))));
+  t('away: added time cannot be in the future', /not happened|not valid/.test(await stepY(x => m.att.addAway(x, ids.karthik, today, n0 + 3600e3, n0 + 7200e3, 'net'))));
+  t('away: a day with no check-in cannot be added to', /no check-in/.test(await stepY(x => m.att.addAway(x, ids.karthik, yd, m.att.toTs(yd, '11:00'), m.att.toTs(yd, '11:30'), 'power'))));
+  t('away: two days back is refused', /today or yesterday/.test((await m.supabase.rpc('add_away', { p_day: m.att.addDays(today, -2), p_from: 1, p_to: 2, p_why: 'power' })).error?.message || ''));
+  t('away: stepping away and checking out closes it', (await stepY(x => m.att.goAway(x, ids.karthik, 'out'))) === '' && (await stepY(x => m.att.checkOut(x, ids.karthik))) === '' && (await awayRows()).away.every(a => a.to !== null));
+  t('away: worked time leaves out the away time', (() => { const d = ay[ids.karthik][today], full = m.att.workedMs(d.sessions, Date.now()); return m.att.workedNet(d.sessions, d.away, Date.now()) < full; })());
+  t('away: a leaving-early reason is saved', (await stepY(x => m.att.setEarly(x, ids.karthik, 'unwell', 'Fever'))) === '' && (await awayRows()).early.why === 'unwell');
+  t('away: a bad leaving-early reason is refused', /Choose a reason/.test((await m.supabase.rpc('set_early_reason', { p_why: 'bored' })).error?.message || ''));
+  t('away: only an admin can remove an entry', /Not allowed/.test((await m.supabase.rpc('admin_remove_away', { p_employee: ids.karthik, p_day: today, p_from: (await awayRows()).away[0].from })).error?.message || ''));
+  as('vijay'); await m.loadStaff();
+  const before = (await awayRows()).away.length, firstFrom = (await awayRows()).away[0].from;
+  t('away: an admin can remove an entry', !(await m.supabase.rpc('admin_remove_away', { p_employee: ids.karthik, p_day: today, p_from: firstFrom })).error && (await awayRows()).away.length === before - 1);
+  as('abines'); await m.loadStaff();
+  t('away: nobody can step away for someone else', (await m.supabase.rpc('come_back')).error?.message?.match(/not away|Not allowed/) !== null);
+}
+
 console.log(process.exitCode ? 'SOME CHECKS FAILED' : 'ALL CHECKS PASSED');
