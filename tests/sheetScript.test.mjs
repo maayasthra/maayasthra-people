@@ -75,6 +75,20 @@ function fakeGoogle(rpcData) {
         if (k === 'setFormulas') a[0].forEach(row => row.forEach(f => { assert.match(f, /^=/, 'setFormulas must receive only generated formulas'); log.formulas.push([sh.name, f]); }));
         if (k === 'setValue') { log.values.push([sh.name, [[a[0]]]]); if (typeof a[0] === 'string' && a[0][0] === '=') log.formulas.push([sh.name, a[0]]); }
         if (k === 'setValues') { log.values.push([sh.name, a[0]]); a[0].forEach(row => row.forEach(v => { if (typeof v === 'string' && v[0] === '=') log.formulas.push([sh.name, v]); })); }
+        if (k === 'merge') {
+          if (c <= sh.frozenCols && c + nc - 1 > sh.frozenCols) throw new Error('Cannot merge across frozen columns');
+          sh.merges.push({ r, c, nr, nc });
+        }
+        if (k === 'breakApart') {
+          const overlaps = m => !(m.r + m.nr <= r || r + nr <= m.r || m.c + m.nc <= c || c + nc <= m.c);
+          if (sh.merges.some(m => overlaps(m) && !(r <= m.r && c <= m.c && r + nr >= m.r + m.nr && c + nc >= m.c + m.nc))) throw new Error('Must select all cells in a merged range');
+          sh.merges = sh.merges.filter(m => !overlaps(m));
+        }
+        if (k === 'setValue' || k === 'setFormula') { sh.usedRows = Math.max(sh.usedRows, r); sh.usedCols = Math.max(sh.usedCols, c); }
+        if (k === 'setValues' || k === 'setFormulas') {
+          sh.usedRows = Math.max(sh.usedRows, r + a[0].length - 1);
+          sh.usedCols = Math.max(sh.usedCols, c + Math.max(...a[0].map(row => row.length)) - 1);
+        }
         if (k === 'setFontFamily') log.fonts.add(a[0]);
         if (k === 'getSheet') return sh.self;
         if (k === 'getRow') return r;
@@ -87,15 +101,18 @@ function fakeGoogle(rpcData) {
     return self;
   };
   const mkSheet = name => {
-    const sh = { name, id: nextId++, rows: 100, cols: 26, filter: null, frozen: 0 };
+    const sh = { name, id: nextId++, rows: 100, cols: 26, filter: null, frozen: 0, frozenCols: 0, merges: [], usedRows: 0, usedCols: 0 };
     sh.self = new Proxy(sh, { get(t, k) {
       if (typeof k === 'symbol' || k === 'then' || k in t) return t[k];
       if (!SHEET_METHODS.has(k)) throw new Error('Sheet has no method ' + String(k));
       return (...a) => ({
-        getDataRange: () => mkRange(sh, 1, 1, sh.rows, sh.cols), clear: () => sh, getMaxRows: () => sh.rows, getMaxColumns: () => sh.cols,
+        getDataRange: () => mkRange(sh, 1, 1, Math.max(1, sh.usedRows), Math.max(1, sh.usedCols)), clear: () => { sh.usedRows = 0; sh.usedCols = 0; return sh; }, getMaxRows: () => sh.rows, getMaxColumns: () => sh.cols,
         insertRowsAfter: (_, n) => { sh.rows += n; }, insertColumnsAfter: (_, n) => { sh.cols += n; },
         getRange: (...b) => typeof b[0] === 'string' ? mkRange(sh, 1, 1, 1, 1) : mkRange(sh, b[0], b[1], b[2] || 1, b[3] || 1),
-        setHiddenGridlines: () => {}, setColumnWidth: () => {}, setRowHeight: () => {}, setFrozenRows: n => { sh.frozen = n; }, setFrozenColumns: () => {},
+        setHiddenGridlines: () => {}, setColumnWidth: () => {}, setRowHeight: () => {}, setFrozenRows: n => { sh.frozen = n; }, setFrozenColumns: n => {
+          if (sh.merges.some(m => m.c <= n && m.c + m.nc - 1 > n)) throw new Error('Cannot freeze only part of a merged cell');
+          sh.frozenCols = n;
+        },
         hideColumns: () => {}, getFilter: () => sh.filter, getSheetId: () => sh.id, getLastRow: () => 0
       })[k](...a);
     } });
@@ -282,4 +299,31 @@ test('failed connection probe preserves the complete prior configuration', () =>
   fake.props.EXPORT_VERSIONS = '{"2026-11":"1"}'; const before = { ...fake.props };
   connectionPrompts(fake, ['https://new.supabase.co', 'new-anon', 'wrong-token']);
   loadWith(fake).connect(); assert.deepEqual(fake.props, before);
+});
+
+
+test('summary title stays unmerged across the frozen employee column, including on rebuild', () => {
+  const fake = connected(fakeGoogle(data)), api = loadWith(fake);
+  api.rebuildAll(); api.rebuildAll();
+  const summary = fake.sheets.get('Summary');
+  assert.equal(summary.frozenCols, 1);
+  assert.ok(!summary.merges.some(m => m.c <= 1 && m.c + m.nc - 1 > 1));
+});
+
+
+test('upgrade unmerges old titles extending beyond the used-data range on both owned tabs', () => {
+  const fake = connected(fakeGoogle(data)), api = loadWith(fake);
+  api.rebuildAll();
+  const summary = fake.sheets.get('Summary');
+  summary.setFrozenColumns(0);
+  summary.getRange(1, 1, 1, 7).merge().setValue('Old merged summary title');
+  assert.throws(() => summary.getDataRange().breakApart(), /all cells in a merged range/);
+  const month = fake.sheets.get('Nov 2026');
+  month.getRange(1, 1, month.getMaxRows(), month.getMaxColumns()).breakApart();
+  month.getRange(1, 1, 1, 20).merge().setValue('Old wider month title');
+  assert.throws(() => month.getDataRange().breakApart(), /all cells in a merged range/);
+  api.rebuildAll();
+  assert.equal(summary.frozenCols, 1);
+  assert.ok(summary.merges.length === 0);
+  assert.ok(month.merges.every(m => m.c + m.nc - 1 <= 10));
 });

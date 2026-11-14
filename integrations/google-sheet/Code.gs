@@ -246,7 +246,8 @@ function rebuildMonth(ym) {
 
 function writeMonth(sheet, ym, grid) {
   var n = grid.rows.length, last = grid.last, total = n ? last + 2 : FIRST + 1;
-  sheet.getDataRange().breakApart();
+  // A previous title can extend beyond the used-data range; unmerge the whole owned tab.
+  sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns()).breakApart();
   sheet.clear();
   var needRows = Math.max(total + 2, 30), needCols = NCOL;
   if (sheet.getMaxRows() < needRows) sheet.insertRowsAfter(sheet.getMaxRows(), needRows - sheet.getMaxRows());
@@ -329,7 +330,8 @@ function rebuildSummary() {
   var ss = SpreadsheetApp.getActiveSpreadsheet(), props = PropertiesService.getScriptProperties();
   var months = sortMonthsDesc(JSON.parse(props.getProperty('MONTHS') || '[]')).filter(function (ym) { return ss.getSheetByName(monthName(ym)); });
   var sheet = ss.getSheetByName(SUMMARY) || ss.insertSheet(SUMMARY);
-  sheet.getDataRange().breakApart(); sheet.clear();
+  // A previous title can extend beyond the used-data range; unmerge the whole owned tab.
+  sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns()).breakApart(); sheet.clear();
   var nameSet = Object.create(null);
   months.forEach(function (ym) { JSON.parse(props.getProperty('PEOPLE_' + ym) || '[]').forEach(function (person) { if (!nameSet[person.id]) nameSet[person.id] = person; }); });
   var names = Object.keys(nameSet).map(function (id) { return nameSet[id]; }).sort(function (a, b) { return a.name.localeCompare(b.name) || a.id.localeCompare(b.id); });
@@ -340,7 +342,9 @@ function rebuildSummary() {
   sheet.setHiddenGridlines(true);
   sheet.setColumnWidth(1, 190); for (var i = 2; i <= sheet.getMaxColumns(); i++) sheet.setColumnWidth(i, 118);
 
-  sheet.getRange(1, 1, 1, cols).merge().setValue('EOD summary  ·  all months').setBackground(C.ink).setFontColor(C.white).setFontSize(18).setFontWeight('bold').setHorizontalAlignment('left');
+  // Keep the title unmerged so freezing the employee column never bisects a merged cell.
+  sheet.getRange(1, 1).setValue('EOD summary  ·  all months');
+  sheet.getRange(1, 1, 1, cols).setBackground(C.ink).setFontColor(C.white).setFontSize(18).setFontWeight('bold').setHorizontalAlignment('left');
   sheet.setRowHeight(1, 48);
   sheet.getRange(2, 1).setValue('Filled in automatically from the end-of-day reports in Maayasthra People. Hours are what each person reported.').setFontColor(C.muted);
 
