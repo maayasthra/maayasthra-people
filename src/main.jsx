@@ -69,7 +69,7 @@ function AppSwitch({ app, setApp }) {
 }
 const Brand = () => html`<div className="brand"><${Logo}/></div>`;
 
-function TopRight({ user, role, open, openForm, signOut, goAbout, goSettings, isNew, onPassword, onTour }) {
+function TopRight({ user, role, open, signOut, goAbout, goSettings, isNew }) {
   const [menu, setMenu] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
@@ -85,12 +85,9 @@ function TopRight({ user, role, open, openForm, signOut, goAbout, goSettings, is
     ${menu && html`<div className="menu" role="menu">
       <div className="menu-h"><b>${user.name}</b><span>${user.email}</span></div>
       <div className="th-row"><span>Appearance</span><${ThemeSwitch}/></div>
-      <button role="menuitem" onClick=${() => { setMenu(false); open(user.n); }}><${Icon} n="user" s=${16}/> View profile</button>
-      <button role="menuitem" onClick=${() => { setMenu(false); openForm(user.n); }}><${Icon} n="edit" s=${16}/> Edit profile</button>
-      <button role="menuitem" onClick=${() => { setMenu(false); goSettings(); }}><${Icon} n="settings" s=${16}/> My settings</button>
-      <button role="menuitem" onClick=${() => { setMenu(false); onPassword(); }}><${Icon} n="lock" s=${16}/> Change password</button>
-      <button role="menuitem" onClick=${() => { setMenu(false); onTour(); }}><${Icon} n="info" s=${16}/> Take the tour</button>
-      <button role="menuitem" onClick=${() => { setMenu(false); goAbout(); }}><${Icon} n="info" s=${16}/> About · v${VERSION}${isNew && html`<em className="new-p">New</em>`}</button>
+      <button role="menuitem" className="dup" onClick=${() => { setMenu(false); open(user.n); }}><${Icon} n="user" s=${16}/> My profile</button>
+      <button role="menuitem" className="dup" onClick=${() => { setMenu(false); goSettings(); }}><${Icon} n="settings" s=${16}/> My settings</button>
+      <button role="menuitem" className="dup" onClick=${() => { setMenu(false); goAbout(); }}><${Icon} n="info" s=${16}/> About · v${VERSION}${isNew && html`<em className="new-p">New</em>`}</button>
       <button role="menuitem" className="menu-o" onClick=${() => { setMenu(false); signOut(); }}><${Icon} n="logout" s=${16}/> Sign out</button></div>`}
   </div>`;
 }
@@ -415,7 +412,11 @@ function App() {
       <${AppSwitch} app=${app} setApp=${setApp}/>
       <nav className="nav" aria-label="Main">${(app === 'task' ? TASKGROUPS : NAVGROUPS).map(g => [g[0], g[1].filter(k => keys.includes(k))]).filter(g => g[1].length).map((g, gi) => html`<div className=${'nav-sec' + (g[0] ? ' lb' : '')} key=${g[0] || 'top'} role="group" aria-label=${g[0] || undefined}>${g[0] && html`<span className="nav-g" aria-hidden="true">${g[0]}</span>`}${g[1].map(k => html`<button key=${k} className=${'nav-b' + (active === k ? ' on' : '') + (locked(k) ? ' dis' : '')} onClick=${() => go(k)} aria-current=${active === k ? 'page' : undefined} disabled=${locked(k)} title=${locked(k) ? 'Only admins can open this' : undefined}>
         <${Icon} n=${k}/>${ALL[k]}${locked(k) ? html`<span className="nav-lock" aria-hidden="true"><${Icon} n="lock" s=${14}/></span>` : k === 'requests' && pending > 0 && html`<span className="cnt">${pending}</span>`}</button>`)}</div>`)}</nav>
-      <button className=${'side-about' + (active === 'about' ? ' on' : '')} onClick=${() => go('about')} aria-current=${active === 'about' ? 'page' : undefined}><${Icon} n="info" s=${17}/><span>About</span><small>v${VERSION}</small>${!seenNow && html`<em className="new-p">New</em>`}</button>
+      <div className="side-acct">
+        <button className=${'side-about' + (nav.view === 'profile' && nav.id === user.n ? ' on' : '')} onClick=${() => open(user.n)} aria-current=${nav.view === 'profile' && nav.id === user.n ? 'page' : undefined}><${Icon} n="user" s=${17}/><span>My profile</span></button>
+        <button className=${'side-about' + (active === 'mysettings' ? ' on' : '')} onClick=${() => go('mysettings')} aria-current=${active === 'mysettings' ? 'page' : undefined}><${Icon} n="settings" s=${17}/><span>My settings</span></button>
+        <button className=${'side-about' + (active === 'about' ? ' on' : '')} onClick=${() => go('about')} aria-current=${active === 'about' ? 'page' : undefined}><${Icon} n="info" s=${17}/><span>About</span><small>v${VERSION}</small>${!seenNow && html`<em className="new-p">New</em>`}</button>
+      </div>
     </aside>
     <div className="col">
       <header className="hdr"><button className="ib nav-t" onClick=${() => setNavHidden(h => !h)} aria-label=${navHidden ? 'Show the navigation bar' : 'Hide the navigation bar'} title=${navHidden ? 'Show the navigation bar' : 'Hide the navigation bar'}><${Icon} n="sidebar" s=${18}/></button><div className="hdr-b"><${AppSwitch} app=${app} setApp=${setApp}/></div>
@@ -423,7 +424,7 @@ function App() {
         <button className="ib hs-b" onClick=${() => { setSOpen(o => !o); setTimeout(() => { const el = document.getElementById('quick-search'); if (el) el.focus(); }, 30); }} aria-label="Search"><${Icon} n="search" s=${17}/></button>
         <div className="ck-d"><${CheckWidget} user=${user} att=${att} setAtt=${setAtt} onOut=${requestOut} onAway=${() => stopMyTimers(Date.now())}/></div>
         <${NotificationBell} notif=${notif} onOpen=${onNotif}/>
-        <${TopRight} user=${user} role=${role} open=${open} openForm=${openForm} signOut=${signOut} goAbout=${() => go('about')} goSettings=${() => go('mysettings')} isNew=${!seenNow} onPassword=${() => setPwOpen(true)} onTour=${startTour}/></header>
+        <${TopRight} user=${user} role=${role} open=${open} signOut=${signOut} goAbout=${() => go('about')} goSettings=${() => go('mysettings')} isNew=${!seenNow}/></header>
       <div className="ck-m"><${CheckWidget} user=${user} att=${att} setAtt=${setAtt} onOut=${requestOut} onAway=${() => stopMyTimers(Date.now())}/></div>
       <main className="main" key=${app + nav.view + (nav.id || '')}>${screen}</main>
       ${updateReady && html`<div className="sync-err upd" role="status"><span>A new version of Maayasthra People is ready.</span><button onClick=${refreshApp}>Refresh</button></div>`}

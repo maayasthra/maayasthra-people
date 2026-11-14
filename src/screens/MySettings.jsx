@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { html, Icon, HI, Switch } from '../ui.jsx';
-import { ThemeSwitch } from '../ThemeSwitch.jsx';
 import { checkInSound, notifyState, askNotify } from '../alerts.js';
 import { useCover, saveCover } from '../coverDb.js';
 
@@ -20,10 +19,6 @@ export function MySettings({ user, role, st, change, reset, onPassword, onTour }
   return html`<div className="ms">
     <div className="pg-h"><div><h1><${HI} n="settings" tone="purple"/>My settings</h1><p>Saved to your account, so they follow you to any device.</p></div>
       <span className=${'saved ms-saved' + (saved ? ' on' : '')} role="status">${saved ? html`<${Icon} n="check" s=${16}/> Saved` : ''}</span></div>
-
-    <${Block} title="Appearance">
-      <${Row} title="Theme" desc="Light, dark, or match your device."><${ThemeSwitch}/><//>
-    <//>
 
     <${Block} title="Sounds">
       <${Row} title="Sounds" desc="Check in and out, tasks, away time and board moves."><${Switch} on=${st.sound} set=${v => set({ sound: v })} label="Sounds"/><//>
