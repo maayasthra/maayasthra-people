@@ -716,9 +716,9 @@ for (const action of ['edit', 'remove', 'correct-rejected']) {
   t('away: step away', (await stepY(x => m.att.goAway(x, ids.karthik, 'power'))) === '' && (await awayRows()).away.length === 1 && (await awayRows()).away[0].to === null);
   t('away: come back ends it', (await stepY(x => m.att.comeBack(x, ids.karthik))) === '' && (await awayRows()).away[0].to !== null);
   t('away: reasons are checked', /Choose a reason/.test((await m.supabase.rpc('go_away', { p_why: 'sleeping' })).error?.message || ''));
-  const n0 = Date.now();
-  t('away: time can be added afterwards', (await stepY(x => m.att.addAway(x, ids.karthik, today, n0 - 50 * 60000, n0 - 40 * 60000, 'net', 'Router down'))) === '' && (await awayRows()).away.some(a => a.later === true && a.why === 'net'));
-  t('away: added time cannot overlap', /overlaps/.test(await stepY(x => m.att.addAway(x, ids.karthik, today, n0 - 45 * 60000, n0 - 35 * 60000, 'net'))));
+  const n0 = Date.now(), day0 = m.att.dayStart(today), earlier = fraction => Math.floor(day0 + (n0 - day0) * fraction);
+  t('away: time can be added afterwards', (await stepY(x => m.att.addAway(x, ids.karthik, today, earlier(0.1), earlier(0.2), 'net', 'Router down'))) === '' && (await awayRows()).away.some(a => a.later === true && a.why === 'net'));
+  t('away: added time cannot overlap', /overlaps/.test(await stepY(x => m.att.addAway(x, ids.karthik, today, earlier(0.15), earlier(0.25), 'net'))));
   t('away: added time cannot be in the future', /not happened|not valid/.test(await stepY(x => m.att.addAway(x, ids.karthik, today, n0 + 3600e3, n0 + 7200e3, 'net'))));
   t('away: a day with no check-in cannot be added to', /no check-in/.test(await stepY(x => m.att.addAway(x, ids.karthik, yd, m.att.toTs(yd, '11:00'), m.att.toTs(yd, '11:30'), 'power'))));
   t('away: two days back is refused', /today or yesterday/.test((await m.supabase.rpc('add_away', { p_day: m.att.addDays(today, -2), p_from: 1, p_to: 2, p_why: 'power' })).error?.message || ''));
@@ -738,16 +738,16 @@ for (const action of ['edit', 'remove', 'correct-rejected']) {
 {
   const tiny = 'data:image/jpeg;base64,/9j/4AAQSkZJRg==', tiny2 = 'data:image/png;base64,iVBORw0KGgo=';
   as('abines'); await m.loadStaff();
-  t('cover: an employee can set their own', !(await m.supabase.rpc('set_my_cover', { p_image: tiny })).error);
+  t('cover: an employee can set their own', !(await m.supabase.rpc('set_my_cover', { p_employee: ids.abines, p_image: tiny })).error);
   t('cover: they can read it back', (await m.supabase.from('employee_covers').select('image').maybeSingle()).data?.image === tiny);
-  t('cover: only pictures are accepted', /not a picture/.test((await m.supabase.rpc('set_my_cover', { p_image: 'hello' })).error?.message || ''));
-  t('cover: too large is refused', /too large/.test((await m.supabase.rpc('set_my_cover', { p_image: 'data:image/jpeg;base64,' + 'A'.repeat(700001) })).error?.message || ''));
+  t('cover: only pictures are accepted', /not a picture/.test((await m.supabase.rpc('set_my_cover', { p_employee: ids.abines, p_image: 'hello' })).error?.message || ''));
+  t('cover: too large is refused', /too large/.test((await m.supabase.rpc('set_my_cover', { p_employee: ids.abines, p_image: 'data:image/jpeg;base64,' + 'A'.repeat(700001) })).error?.message || ''));
   as('vijay'); await m.loadStaff();
   t('cover: an admin does not see an employee\'s cover', ((await m.supabase.from('employee_covers').select('image').maybeSingle()).data?.image || '') !== tiny);
-  t('cover: an admin can set their own', !(await m.supabase.rpc('set_my_cover', { p_image: tiny2 })).error);
+  t('cover: an admin can set their own', !(await m.supabase.rpc('set_my_cover', { p_employee: ids.vijay, p_image: tiny2 })).error);
   as('abines'); await m.loadStaff();
   t('cover: setting another cover does not change mine', (await m.supabase.from('employee_covers').select('image').maybeSingle()).data?.image === tiny);
-  t('cover: going back to the default clears it', !(await m.supabase.rpc('set_my_cover', { p_image: '' })).error && (await q("select image from employee_covers where employee_id = " + ids.abines))[0].image === '');
+  t('cover: going back to the default clears it', !(await m.supabase.rpc('set_my_cover', { p_employee: ids.abines, p_image: '' })).error && (await q("select image from employee_covers where employee_id = " + ids.abines))[0].image === '');
 }
 
 // ================= 0045: SHEET EXPORT =================

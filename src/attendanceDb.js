@@ -54,7 +54,7 @@ export async function persistAtt(prev, next) {
       if (!checkingOut && JSON.stringify(oa) !== JSON.stringify(na)) {
         let r = null;
         if (na.length === oa.length + 1) { const a = na[na.length - 1]; r = a.to == null ? await supabase.rpc('go_away', { p_why: a.why, p_note: a.note || null }) : await supabase.rpc('add_away', { p_day: iso, p_from: a.from, p_to: a.to, p_why: a.why, p_note: a.note || null }); }
-        else if (na.length === oa.length && oa.length && oa[oa.length - 1].to == null && na[na.length - 1].to != null) r = await supabase.rpc('come_back');
+        else if (na.length === oa.length && oa.some(a => a.to == null && na.some(b => b.from === a.from && b.to != null))) r = await supabase.rpc('come_back');
         else if (na.length === oa.length - 1) { const gone = oa.find(a => !na.some(b => b.from === a.from)); if (gone) r = await supabase.rpc('admin_remove_away', { p_employee: Number(n), p_day: iso, p_from: gone.from }); }
         if (r && r.error) fail(r.error, 'Could not save that. Try again.');
       }

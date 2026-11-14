@@ -5,7 +5,11 @@ import { useCover, saveCover, prepareCover } from './coverDb.js';
 /* The picture across the top of Home, with the date and greeting on it. Everyone can set their own (up to 2 MB); only they see it. */
 export function Cover({ user, children }) {
   const img = useCover(user.n), [menu, setMenu] = useState(false), [busy, setBusy] = useState(false), [err, setErr] = useState('');
-  const file = useRef(null), box = useRef(null);
+  const file = useRef(null), box = useRef(null), generation = useRef(0);
+  useEffect(() => {
+    generation.current++; setBusy(false); setErr(''); setMenu(false);
+    return () => { generation.current++; };
+  }, [user.n]);
   useEffect(() => {
     if (!menu) return;
     const f = ev => { if (box.current && !box.current.contains(ev.target)) setMenu(false); }, k = ev => { if (ev.key === 'Escape') setMenu(false); };
@@ -13,11 +17,20 @@ export function Cover({ user, children }) {
   }, [menu]);
   const pick = async ev => {
     const f = ev.target.files && ev.target.files[0]; ev.target.value = ''; if (!f) return;
+    const started = generation.current;
     setBusy(true); setErr(''); setMenu(false);
-    try { await saveCover(user.n, await prepareCover(f)); } catch (e) { setErr(e.message); }
-    setBusy(false);
+    try {
+      const image = await prepareCover(f);
+      if (started !== generation.current) return;
+      await saveCover(user.n, image);
+    } catch (e) { if (started === generation.current) setErr(e.message); }
+    finally { if (started === generation.current) setBusy(false); }
   };
-  const reset = async () => { setBusy(true); setErr(''); setMenu(false); try { await saveCover(user.n, ''); } catch (e) { setErr(e.message); } setBusy(false); };
+  const reset = async () => {
+    const started = generation.current; setBusy(true); setErr(''); setMenu(false);
+    try { await saveCover(user.n, ''); } catch (e) { if (started === generation.current) setErr(e.message); }
+    finally { if (started === generation.current) setBusy(false); }
+  };
   return html`<section className=${'cv' + (img ? ' has' : '')} style=${img ? { '--cv': 'url("' + img + '")' } : undefined} aria-busy=${busy}>
     <div className="cv-in">${children}</div>
     ${html`<div className=${'cv-e' + (menu || busy ? ' open' : '')} ref=${box}>
