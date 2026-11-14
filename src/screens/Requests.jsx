@@ -47,7 +47,7 @@ export function Requests({ user, leaves: all, setLeaves, open, pay }) {
   return html`<div>
     <div className="pg-h"><div><h1><${HI} n="requests" tone="orange"/>Requests</h1><p>${waiting.length + payWaiting ? [waiting.length ? waiting.length + ' leave' : '', payWaiting ? payWaiting + (payWaiting === 1 ? ' payslip' : ' payslips') : ''].filter(Boolean).join(' and ') + ' waiting for you' : 'All clear'}</p></div>
       ${kind === 'leave' && html`<button className="btn sec2" onClick=${() => downloadLeaveReport(all)}><${Icon} n="download" s=${16}/> Export</button>`}</div>
-    <div className="rq-tabs" role="tablist" aria-label="Kind of request">
+    <div className="tabs" role="tablist" aria-label="Kind of request">
       <button role="tab" aria-selected=${kind === 'leave'} className=${kind === 'leave' ? 'on' : ''} onClick=${() => setKind('leave')}><${Icon} n="leaves" s=${17}/>Leave${waiting.length > 0 ? html`<em>${waiting.length}</em>` : null}</button>
       <button role="tab" aria-selected=${kind === 'payslips'} className=${kind === 'payslips' ? 'on' : ''} onClick=${() => setKind('payslips')}><${Icon} n="payslips" s=${17}/>Payslips${payWaiting > 0 ? html`<em>${payWaiting}</em>` : null}</button></div>
     ${kind === 'payslips' ? html`<${PayslipRequests} user=${user} pay=${pay || { list: [], err: '' }} open=${open}/>` : html`<div className="rq-body">

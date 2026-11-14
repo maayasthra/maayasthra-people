@@ -1343,18 +1343,22 @@ button.tile:active,.tile.click:active{background:var(--fill)}
 
 .pay-role{font-style:normal;font-size:12px;font-weight:500;padding:2px 8px;border-radius:999px;background:var(--fill);color:var(--text-2)}
 
-/* Requests: one switch (Leave / Payslips) as plain tabs on a single straight line. The underline is drawn separately so the app-wide button rounding cannot curve it. */
-.rq-tabs{display:flex;gap:28px;margin-top:18px;border-bottom:1px solid var(--line)}
-.rq-tabs button{position:relative;white-space:nowrap;display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 2px;margin-bottom:-1px;border:0;background:none;box-shadow:none;color:var(--muted);font-size:15px;font-weight:500;transition:color .15s ease}
-.rq-tabs button::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;border-radius:0;background:transparent;transition:background-color .15s ease}
-.rq-tabs button:hover{color:var(--text);background:none}
-.rq-tabs button.on{color:var(--text);font-weight:600}
-.rq-tabs button.on::after{background:var(--accent)}
-.rq-tabs button.on svg{color:var(--brand-text)}
-.rq-tabs em{font-style:normal;min-width:22px;height:20px;padding:0 7px;border-radius:999px;display:inline-grid;place-items:center;font-size:12px;font-weight:600;background:var(--fill);color:var(--text-2)}
-.rq-tabs button.on em{background:var(--accent);color:#fff}
-@media (max-width:560px){.rq-tabs{gap:18px}.rq-tabs button{font-size:14px}}
-.rq-body>.rq3-e,.rq-body>.none,.rq-body>.eod-e{margin-top:22px}
+/* Tabs, used for every page-level and panel-level switch between sections. Plain text, no full-width line: only the active tab has a
+   straight orange underline. The underline is drawn separately so the app-wide button rounding cannot curve it. */
+.tabs{display:flex;gap:28px;margin:16px 0 20px;flex-wrap:wrap}
+.tabs button{position:relative;white-space:nowrap;display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 2px;border:0;background:none;box-shadow:none;color:var(--muted);font-size:15px;font-weight:500;transition:color .15s ease}
+.tabs button::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;border-radius:0;background:transparent;transition:background-color .15s ease}
+.tabs button:hover{color:var(--text);background:none}
+.tabs button.on{color:var(--text);font-weight:600}
+.tabs button.on::after{background:var(--accent)}
+.tabs button.on svg{color:var(--brand-text)}
+.tabs em{font-style:normal;min-width:22px;height:20px;padding:0 7px;border-radius:999px;display:inline-grid;place-items:center;font-size:12px;font-weight:600;background:var(--fill);color:var(--text-2)}
+.tabs button.on em{background:var(--accent);color:#fff}
+.tabs .wi-d{flex:none}
+.tabs.sm{gap:20px;margin:0 0 14px}
+.tabs.sm button{height:36px;font-size:14px}
+@media (max-width:560px){.tabs{gap:18px}.tabs button{font-size:14px}.tabs.sm{gap:14px}.tabs.sm .wi-d{display:none}}
+.rq-body>.rq3-l:first-child{margin-top:0}
 .rq-more{display:flex;align-items:center;gap:6px;margin:22px 0 0;padding:8px 0;border:0;background:none;box-shadow:none;color:var(--muted);font-size:14px;font-weight:500}
 .rq-more:hover{color:var(--text);background:none}
 .rq-past{margin-top:12px}

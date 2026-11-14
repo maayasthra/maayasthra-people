@@ -133,7 +133,7 @@ function WhoIsIn({ att, leaves, open }) {
   const tabs = [['in', 'In now', inn, x => x.i.paused ? 'Away · ' + whyLabel(awayOpen(x.i.breaks).why) : 'Since ' + clock(x.i.first)], ['out', 'Checked out', out, x => 'Out ' + clock(x.i.last)], ['wait', 'Not in yet', wait, x => x.i.state === 'absent' ? 'Late' : 'Starts ' + fmtTime(x.e.shiftStart)]];
   const cur = tabs.find(t => t[0] === sel) || tabs[0];
   return html`<${Panel} title="Who is in">
-    <div className="wi-t" role="tablist">${tabs.map(([k, label, l]) => html`<button key=${k} role="tab" aria-selected=${sel === k} className=${'wi-tab' + (sel === k ? ' on' : '')} onClick=${() => setSel(k)}><span className=${'wi-d wi-' + k}></span><b>${l.length}</b><span>${label}</span></button>`)}</div>
+    <div className="tabs sm" role="tablist" aria-label="Who is in">${tabs.map(([k, label, l]) => html`<button key=${k} role="tab" aria-selected=${sel === k} className=${sel === k ? 'on' : ''} onClick=${() => setSel(k)}><span className=${'wi-d wi-' + k}></span>${label}<em>${l.length}</em></button>`)}</div>
     ${cur[2].length === 0 ? html`<p className="wi-n">Nobody here right now.</p>` : html`<div className="wi-l" role="tabpanel">${cur[2].map(x => html`<button key=${x.e.n} className="wi-p" onClick=${() => open(x.e.n, 'hours')}><${Av} e=${x.e} s=${36}/><span className="row-t"><b>${x.e.name.split(' ')[0]}</b><span>${cur[3](x)}</span></span></button>`)}</div>`}
   <//>`;
 }

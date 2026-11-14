@@ -49,8 +49,8 @@ export function MyTasks({ tasks, setTasks, user, tq, openTask, canDelete, tick, 
 
   return html`<div>
     <div className="pg-h"><div><h1><${HI} n="mytasks" tone="blue"/>My Tasks</h1><p>${tab === 'log' ? 'Your day reports, by date' : doing.length ? doing.length + ' in progress' : 'Nothing in progress'}</p></div>
-      <div className="seg" role="group" aria-label="View">${[['tasks', 'Tasks'], ['log', 'Submitted work']].map(([k, l]) => html`<button key=${k} className=${tab === k ? 'on' : ''} onClick=${() => setTab(k)}>${l}</button>`)}</div>
     </div>
+    <div className="tabs" role="tablist" aria-label="View">${[['tasks', 'Tasks', 'mytasks'], ['log', 'Submitted work', 'eod']].map(([k, l, ic]) => html`<button key=${k} role="tab" aria-selected=${tab === k} className=${tab === k ? 'on' : ''} onClick=${() => setTab(k)}><${Icon} n=${ic} s=${17}/>${l}</button>`)}</div>
     ${tab === 'log' ? html`<${WorkLog} user=${user} tick=${tick} onEdit=${onEdit}/>` : html`<div className="mt3">
       ${Col({ id: 'todo', label: 'Pending', list: todo, empty: 'Nothing waiting.' })}
       ${Col({ id: 'doing', label: 'In progress', list: doing, empty: 'Drag a card here, or press Start, to mark what you are on.' })}

@@ -38,7 +38,7 @@ export function Profile({ id, tab: tab0, from, back, open, openForm, user, role,
 
     ${self && (!e.phone || !e.emergency) && html`<div className="note-row" style=${{ marginTop: 20 }}><${Icon} n="bell" s=${16}/> <span>Add your phone number and an emergency contact so the team can reach you.</span> <button className="link" onClick=${() => openForm(e.n)}>Add now</button></div>`}
 
-    ${canSee && html`<div className="seg seg-t" role="group" aria-label="Profile section"><button className=${tab === 'overview' ? 'on' : ''} onClick=${() => setTab('overview')}><${Icon} n="user" s=${15}/>Overview</button><button className=${tab === 'hours' ? 'on' : ''} onClick=${() => setTab('hours')}><${Icon} n="clock" s=${15}/>Hours</button></div>`}
+    ${canSee && html`<div className="tabs" role="tablist" aria-label="Profile section"><button role="tab" aria-selected=${tab === 'overview'} className=${tab === 'overview' ? 'on' : ''} onClick=${() => setTab('overview')}><${Icon} n="user" s=${17}/>Overview</button><button role="tab" aria-selected=${tab === 'hours'} className=${tab === 'hours' ? 'on' : ''} onClick=${() => setTab('hours')}><${Icon} n="clock" s=${17}/>Hours</button></div>`}
 
     ${tab === 'hours' && canSee ? html`<div style=${{ marginTop: 24 }}><${HoursPanel} emp=${e} att=${att} setAtt=${setAtt} leaves=${leaves} canEdit=${role === 'admin' && e.n !== user.n} editor=${user}/></div>` : html`<div className="pf2-grid">
       <section className="pf2-card"><h2>Work</h2>

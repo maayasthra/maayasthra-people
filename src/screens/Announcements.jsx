@@ -27,7 +27,7 @@ export function AckBar({ a, acks }) {
       <span className="ack-bar"><i style=${{ width: pct + '%' }}></i></span>
       <span className="ack-t"><b>${done.length}</b> of ${everyone.length} acknowledged${pending.length > 0 ? ' · ' + pending.length + ' waiting' : ' · everyone'}</span><${Icon} n=${open ? 'chevL' : 'next'} s=${14}/></button>
     ${open && html`<div className="ack-d">
-      <div className="ack-seg" role="group" aria-label="Show"><button className=${tab === 'pending' ? 'on' : ''} onClick=${() => setTab('pending')}>Not yet (${pending.length})</button><button className=${tab === 'done' ? 'on' : ''} onClick=${() => setTab('done')}>Acknowledged (${done.length})</button></div>
+      <div className="tabs sm" role="tablist" aria-label="Show"><button role="tab" aria-selected=${tab === 'pending'} className=${tab === 'pending' ? 'on' : ''} onClick=${() => setTab('pending')}>Not yet<em>${pending.length}</em></button><button role="tab" aria-selected=${tab === 'done'} className=${tab === 'done' ? 'on' : ''} onClick=${() => setTab('done')}>Acknowledged<em>${done.length}</em></button></div>
       <div className="ack-l">${tab === 'pending'
         ? (pending.length ? pending.map(e => html`<div className="ack-r" key=${e.n}><${Av} e=${e} s=${28}/><span className="ack-tx"><b>${e.name}</b><small>${e.role}</small></span></div>`) : html`<div className="ack-n">Everyone has acknowledged this.</div>`)
         : (done.length ? done.map(x => html`<div className="ack-r" key=${x.e.n}><${Av} e=${x.e} s=${28}/><span className="ack-tx"><b>${x.e.name}</b><small>${x.e.role}</small></span><em>${when(x.at)}</em></div>`) : html`<div className="ack-n">No one has acknowledged this yet.</div>`)}</div>
