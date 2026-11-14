@@ -1374,13 +1374,28 @@ button.tile:active,.tile.click:active{background:var(--fill)}
 .pay-note{display:block;margin-top:4px;font-size:13px;color:var(--muted)}
 .pay-file.gone{opacity:.8}
 
-/* Payslip history rows: compact, one line of small icon-led facts */
-.rq3-c.pay-compact{padding:12px 18px 12px 14px;gap:14px}
-.rq3-c.pay-compact .rq3-n b{font-size:15px}
-.rq3-c.pay-compact .pay-s{margin-left:2px}
-.pay-meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 16px;margin-top:5px;font-size:13px;color:var(--muted)}
-.pay-i{display:inline-flex;align-items:center;gap:6px;min-width:0;white-space:nowrap}
-.pay-i svg{flex:none;color:var(--faint)}
-.pay-i.strong{color:var(--text);font-weight:600}.pay-i.strong svg{color:var(--muted)}
-.pay-i.ok{color:var(--ok-text)}.pay-i.ok svg{color:var(--ok-text)}
-.pay-i.note{max-width:260px}.pay-i.note>span{overflow:hidden;text-overflow:ellipsis}
+
+/* Payslip history: cards that share one column grid, with a header row above, so every value lines up from card to card */
+.pay-tbl{--cols:minmax(150px,1.3fr) 84px 134px minmax(110px,1.1fr) 108px 92px minmax(80px,1fr) 76px;margin-top:14px}
+.pay-th,.pay-tr{display:grid;grid-template-columns:var(--cols);column-gap:14px;align-items:center}
+.pay-th{padding:0 18px 8px;font-size:12px;font-weight:500;color:var(--faint)}
+.pay-tr{margin-top:8px;padding:10px 18px;min-height:62px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card)}
+.pay-tr>div{min-width:0;overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:1px;font-size:14px;color:var(--text-2)}
+.pay-tr>div b{font-weight:600;color:var(--text)}
+.pay-tr small{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pay-fn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pay-who{flex-direction:row!important;justify-content:flex-start!important;align-items:center;gap:12px!important}
+.pay-who>span{display:flex;flex-direction:column;min-width:0}.pay-who b{font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pay-dash{color:var(--faint)}.pay-dl{color:var(--ok-text);font-weight:500}.pay-gone{color:var(--text-2)}
+.pay-act{flex-direction:row!important;justify-content:flex-end;align-items:center;gap:4px!important}
+.pay-trf{grid-column:1/-1;padding-top:6px}
+@media (max-width:1180px){
+  .pay-th{display:none}
+  .pay-tr{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:12px}
+  .pay-tr>.pay-who{grid-column:1/-1}
+  .pay-tr>div[data-l]::before{content:attr(data-l);display:block;font-size:12px;color:var(--faint);margin-bottom:2px}
+  .pay-tr>div[data-l="Note"]{grid-column:1/-1}
+  .pay-tr>div[data-l]:has(>.pay-dash){display:none}
+  .pay-act{grid-column:1/-1;justify-content:flex-start}
+}
+@media (max-width:560px){.pay-tr{grid-template-columns:repeat(2,minmax(0,1fr))}}
