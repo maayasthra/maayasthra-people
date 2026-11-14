@@ -1273,3 +1273,8 @@ button.tile:active,.tile.click:active{background:var(--fill)}
 .cv-m p{margin:6px 8px 4px;font-size:12.5px;line-height:18px;color:var(--muted)}
 .cv-err{position:absolute;left:12px;top:12px;max-width:calc(100% - 190px);padding:8px 12px;border-radius:var(--r-ctl);background:var(--err-bg);color:var(--err-text);font-size:13px}
 @media (max-width:640px){.cv{min-height:176px}.cv-in{padding:20px 16px 16px}}
+
+/* Announcements: clear levels. Title brightest, description softer, details softest (all still pass contrast). */
+.an-h b{color:var(--text);font-weight:600}
+.an-b p,.an p{color:var(--muted)}
+.an-b>small,.an small{color:color-mix(in srgb,var(--muted) 80%,var(--bg))}
