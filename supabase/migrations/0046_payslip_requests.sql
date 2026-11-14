@@ -82,7 +82,7 @@ begin
   if not found then raise exception 'That request is not waiting'; end if;
   m := to_char(r.month, 'Mon YYYY');
   insert into public.notifications (employee_id, key, kind, title, body, ref, read)
-    values (r.employee_id, 'payslip-' || r.id, 'payslip', 'Payslip for ' || m || ' could not be given', case when r.decline_reason <> '' then r.decline_reason else 'Open Payslips for details.' end, r.id::text, false)
+    values (r.employee_id, 'payslip-' || r.id, 'payslip', 'Your payslip request for ' || m || ' was declined', case when r.decline_reason <> '' then r.decline_reason else 'Open Payslips for details.' end, r.id::text, false)
     on conflict (employee_id, key) do update set title = excluded.title, body = excluded.body, read = false, created_at = now();
 end;
 $$;

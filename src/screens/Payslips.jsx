@@ -16,7 +16,7 @@ function Mine({ r, again }) {
     <div className="pay-d">
       ${r.status === 'requested' && html`<span>Requested ${when(r.requestedAt)}${r.note ? ' · “' + r.note + '”' : ''}</span>`}
       ${r.status === 'delivered' && html`<span>Delivered ${when(r.decidedAt)} · ${r.fileName} · ${fmtSize(r.fileSize)}</span>`}
-      ${r.status === 'declined' && html`<span>${r.reason || 'This payslip is not available yet.'}</span>`}
+      ${r.status === 'declined' && html`<span>${r.reason ? 'Declined: ' + r.reason : 'Your request was declined.'}</span>`}
       ${r.status === 'cancelled' && html`<span>You cancelled this request on ${when(r.decidedAt)}.</span>`}</div>
     ${err && html`<div className="lg-err" role="alert">${err}</div>`}
     <div className="pay-a">

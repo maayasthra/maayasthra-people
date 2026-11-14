@@ -1353,3 +1353,11 @@ button.tile:active,.tile.click:active{background:var(--fill)}
 .rq-tabs button.on em{background:var(--accent);color:#fff}
 .rq-tabs+.seg-t,.rq-tabs+div>.seg-t{margin-top:16px}
 @media (max-width:560px){.rq-tabs{gap:18px}.rq-tabs button{font-size:14px}}
+
+/* Payslip requests: the send and decline forms sit inside the card, with their buttons underneath */
+.rq3-c.pay-solo{grid-template-columns:auto minmax(0,1fr)}
+.pay-form{margin-top:14px;display:flex;flex-direction:column;gap:0}
+.pay-form .pay-file{margin-top:0}
+.pay-l{display:block;font-size:14px;font-weight:500;color:var(--text-2);margin-bottom:6px}
+.pay-form .inp{height:40px;width:100%;max-width:560px}
+.pay-bar{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}

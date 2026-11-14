@@ -23,7 +23,7 @@ export function requestableMonths(todayIso, joinIso) {
 export const STATUS = {
   requested: { label: 'Requested', tone: 'warn' },
   delivered: { label: 'Delivered', tone: 'ok' },
-  declined: { label: 'Not available', tone: 'err' },
+  declined: { label: 'Declined', tone: 'err' },
   cancelled: { label: 'Cancelled', tone: 'mute' }
 };
 // A request is still live (cannot be asked for again) while it is requested or delivered

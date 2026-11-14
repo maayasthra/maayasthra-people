@@ -17,26 +17,30 @@ function Card({ r, admin, open }) {
   const pick = async ev => { const file0 = ev.target.files && ev.target.files[0]; ev.target.value = ''; if (!file0) return; setErr(''); try { setF(await readPayslipFile(file0)); } catch (x) { setErr(x.message); } };
   const send = () => run(async () => { await deliverPayslip(admin.n, r.id, f); setF(null); });
   const decline = () => run(async () => { await declinePayslip(admin.n, r.id, reason); setDeclining(false); setReason(''); });
-  const first = e.name.split(' ')[0];
-  return html`<article className=${'rq3-c' + (pend ? '' : ' done')}>
+  const first = e.name.split(' ')[0], editing = !!f || declining;      // while sending a file or declining, the form takes the whole card
+  const choose = () => file.current && file.current.click();
+  const fileRow = html`<div className="pay-file"><${Icon} n="eod" s=${16}/><span><b>${r.fileName}</b><small>${fmtSize(r.fileSize)} · delivered ${when(r.decidedAt)}${r.decidedBy && BY[r.decidedBy] ? ' by ' + (r.decidedBy === admin.n ? 'you' : BY[r.decidedBy].name) : ''}</small></span></div>`;
+  return html`<article className=${'rq3-c' + (pend ? '' : ' done') + (editing ? ' pay-solo' : '')}>
     <button className="rq3-av" onClick=${() => open(e.n)} aria-label=${'Open ' + e.name}><${Av} e=${e} s=${46}/></button>
     <div className="rq3-m">
       <div className="rq3-n"><b>${e.name}</b><span>${e.dept}</span>${ROLEMAP[e.n] === 'Project manager' && html`<em className="pay-role">Project manager</em>`}${e.n === admin.n && html`<em className="rq3-you">Your request</em>`}</div>
       <div className="rq3-d"><span className="pay-mo"><${Icon} n="payslips" s=${15}/>${monthLong(r.month)}</span><span className=${'pay-s ' + st.tone}><i></i>${st.label}</span><span className="pay-when">Requested ${when(r.requestedAt)}</span></div>
       ${r.note && html`<p className="rq3-r">${r.note}</p>`}
-      ${r.status === 'delivered' && html`<div className="pay-file"><${Icon} n="eod" s=${16}/><span><b>${r.fileName}</b><small>${fmtSize(r.fileSize)} · delivered ${when(r.decidedAt)}${r.decidedBy && BY[r.decidedBy] ? ' by ' + (r.decidedBy === admin.n ? 'you' : BY[r.decidedBy].name) : ''}</small></span></div>`}
-      ${r.status === 'declined' && html`<p className="rq3-r">Not available${r.reason ? ': ' + r.reason : ''} <small>${when(r.decidedAt)}</small></p>`}
-      ${f && html`<div className="pay-file chosen"><${Icon} n="eod" s=${16}/><span><b>${f.name}</b><small>${fmtSize(f.size)} · ready to send to ${first}</small></span></div>`}
-      ${declining && html`<div className="pay-dec"><input className="inp" autoFocus maxLength="300" value=${reason} placeholder=${'Why ' + first + ' cannot have it yet (optional)'} aria-label="Reason" onChange=${ev => setReason(ev.target.value)}/></div>`}
+      ${r.status === 'delivered' && !editing && fileRow}
+      ${r.status === 'declined' && html`<p className="rq3-r">Declined${r.reason ? ': ' + r.reason : ''} <small>${when(r.decidedAt)}</small></p>`}
+      ${f && html`<div className="pay-form">
+        <div className="pay-file chosen"><${Icon} n="eod" s=${16}/><span><b>${f.name}</b><small>${fmtSize(f.size)} · ready to send to ${first}</small></span></div>
+        <div className="pay-bar"><button className="btn pri sm" disabled=${busy} onClick=${send}><${Icon} n="check" s=${15}/> ${busy ? 'Sending…' : 'Send payslip'}</button><button className="btn ghost sm" disabled=${busy} onClick=${choose}>Choose another file</button><button className="btn ghost sm" disabled=${busy} onClick=${() => { setF(null); setErr(''); }}>Cancel</button></div></div>`}
+      ${declining && html`<div className="pay-form">
+        <label className="pay-l" htmlFor=${'pay-r-' + r.id}>Reason for ${first} <span className="aw-opt">optional</span></label>
+        <input id=${'pay-r-' + r.id} className="inp" autoFocus maxLength="300" value=${reason} placeholder="For example: payroll is not closed yet" onChange=${ev => setReason(ev.target.value)} onKeyDown=${ev => { if (ev.key === 'Enter') decline(); if (ev.key === 'Escape') { setDeclining(false); setErr(''); } }}/>
+        <div className="pay-bar"><button className="btn danger sm" disabled=${busy} onClick=${decline}>${busy ? 'Saving…' : 'Decline request'}</button><button className="btn ghost sm" disabled=${busy} onClick=${() => { setDeclining(false); setErr(''); }}>Back</button></div></div>`}
       ${err && html`<div className="lg-err" role="alert" style=${{ margin: '10px 0 0' }}>${err}</div>`}
     </div>
-    <div className="rq3-a">
-      <input ref=${file} type="file" accept=${ACCEPT} hidden onChange=${pick}/>
-      ${f ? html`<button className="btn pri sm" disabled=${busy} onClick=${send}><${Icon} n="check" s=${15}/> ${busy ? 'Sending…' : 'Send payslip'}</button><button className="btn ghost sm" disabled=${busy} onClick=${() => file.current && file.current.click()}>Change file</button><button className="btn ghost sm" disabled=${busy} onClick=${() => setF(null)}>Cancel</button>`
-        : declining ? html`<button className="btn danger sm" disabled=${busy} onClick=${decline}>${busy ? 'Saving…' : 'Decline request'}</button><button className="btn ghost sm" disabled=${busy} onClick=${() => { setDeclining(false); setErr(''); }}>Back</button>`
-        : pend ? html`<button className="btn pri sm" onClick=${() => file.current && file.current.click()}><${Icon} n="upload" s=${15}/> Upload payslip</button><button className="btn ghost sm" onClick=${() => { setDeclining(true); setErr(''); }}>Not available</button>`
-        : r.status === 'delivered' ? html`<button className="btn sec2 sm" disabled=${busy} onClick=${() => run(() => downloadPayslip(r.id))}><${Icon} n="download" s=${15}/> Download</button><button className="btn ghost sm" onClick=${() => file.current && file.current.click()}>Replace file</button>` : null}
-    </div>
+    <input ref=${file} type="file" accept=${ACCEPT} hidden onChange=${pick}/>
+    ${!editing && html`<div className="rq3-a">
+      ${pend ? html`<button className="btn pri sm" onClick=${choose}><${Icon} n="upload" s=${15}/> Upload payslip</button><button className="btn ghost sm" onClick=${() => { setDeclining(true); setErr(''); }}>Decline</button>`
+        : r.status === 'delivered' ? html`<button className="btn sec2 sm" disabled=${busy} onClick=${() => run(() => downloadPayslip(r.id))}><${Icon} n="download" s=${15}/> Download</button><button className="btn ghost sm" onClick=${choose}>Replace file</button>` : null}</div>`}
   </article>`;
 }
 
