@@ -1346,3 +1346,10 @@ button.tile:active,.tile.click:active{background:var(--fill)}
 
 .eh-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px;align-items:start}
 @media (max-width:1100px){.eh-g{grid-template-columns:minmax(0,1fr)}}
+
+/* Tiles on phones: icon on top, everything on one left edge (the icon used to be centred while the text was not) */
+@media (max-width:560px){
+  .tile{flex-direction:column;align-items:flex-start;gap:12px;padding:16px}
+  .tile-v{width:100%;align-items:flex-start;text-align:left}
+  .tiles.two .tile{flex-direction:row;align-items:center}
+}
