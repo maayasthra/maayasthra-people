@@ -76,6 +76,7 @@ For a new isolated database, apply the files in order. For an existing database,
 | `0041_reporting_cycles.sql` | Serialize reporting-line writes and reject self/indirect manager cycles |
 | `0042_eod_edit_recent.sql` | A report already sent can be edited for today and the last 7 days; older reports stay locked |
 | `0043_away_time.sql` | Step away and come back (not counted as worked), add away time afterwards for today or yesterday, a reason for leaving early, and admin removal of an away entry |
+| `0044_home_cover.sql` | One cover picture across the top of Home for everyone; only admins can change or remove it |
 
 ## Tests
 

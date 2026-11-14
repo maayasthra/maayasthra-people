@@ -734,4 +734,19 @@ for (const action of ['edit', 'remove', 'correct-rejected']) {
   t('away: nobody can step away for someone else', (await m.supabase.rpc('come_back')).error?.message?.match(/not away|Not allowed/) !== null);
 }
 
+// ================= 0044: HOME COVER =================
+{
+  const tiny = 'data:image/jpeg;base64,/9j/4AAQSkZJRg==';
+  as('abines'); await m.loadStaff();
+  t('cover: an employee cannot change it', /Not allowed/.test((await m.supabase.rpc('set_cover', { p_image: tiny })).error?.message || ''));
+  as('vijay'); await m.loadStaff();
+  t('cover: an admin can set it', !(await m.supabase.rpc('set_cover', { p_image: tiny })).error);
+  t('cover: only pictures are accepted', /not a picture/.test((await m.supabase.rpc('set_cover', { p_image: 'hello' })).error?.message || ''));
+  t('cover: too large is refused', /too large/.test((await m.supabase.rpc('set_cover', { p_image: 'data:image/jpeg;base64,' + 'A'.repeat(700001) })).error?.message || ''));
+  as('abines'); await m.loadStaff();
+  t('cover: an employee can read it', (await m.supabase.from('app_cover').select('image').eq('id', 1).maybeSingle()).data?.image === tiny);
+  as('vijay'); await m.loadStaff();
+  t('cover: an admin can go back to the default', !(await m.supabase.rpc('set_cover', { p_image: '' })).error && (await q("select image from app_cover where id = 1"))[0].image === '');
+}
+
 console.log(process.exitCode ? 'SOME CHECKS FAILED' : 'ALL CHECKS PASSED');

@@ -1252,3 +1252,24 @@ button.tile:active,.tile.click:active{background:var(--fill)}
 .hd-aw b{font-weight:500;color:var(--text-2)}
 .hd-aw small{font-size:13px;color:var(--muted)}
 .dlg.aw{max-height:calc(100dvh - 32px);overflow-y:auto;overscroll-behavior:contain;width:min(460px,calc(100vw - 32px))}
+
+/* Home cover: a picture (or the default gradient) across the top; text sits on a dark scrim so it reads on any picture */
+.cv{position:relative;border-radius:var(--r-card);overflow:hidden;margin:0 0 20px;min-height:200px;display:flex;align-items:flex-end;isolation:isolate;
+  --cv-a:#12b5a6;--cv-b:#FE6D00;--cv-c:#e5383b;--cv-d:#7b2ff7;
+  background:radial-gradient(70% 150% at 4% -8%,var(--cv-a) 0,transparent 66%),radial-gradient(60% 160% at 50% -22%,var(--cv-b) 0,transparent 68%),radial-gradient(60% 150% at 100% -6%,var(--cv-c) 0,transparent 66%),radial-gradient(42% 100% at 80% 118%,var(--cv-d) 0,transparent 72%),#0b0b0c}
+.cv.has{background:#0b0b0c var(--cv) center/cover no-repeat}
+.cv:before{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgb(0 0 0 / .6) 0,rgb(0 0 0 / .22) 42%,rgb(0 0 0 / 0) 78%);z-index:-1}
+.cv-in{position:relative;width:100%;padding:28px 24px 22px;color:#fff}
+.cv-in .date-l,.cv-in .lede,.cv-in .lede *{color:rgb(255 255 255 / .82)}
+.cv-in .h-greet{color:#fff;text-shadow:0 1px 14px rgb(0 0 0 / .35)}
+.cv-in .home-h{margin-top:2px}
+.cv-in .acts .btn:not(.pri){background:rgb(10 10 10 / .5);border-color:rgb(255 255 255 / .28);color:#fff;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.cv-in .acts .btn:not(.pri):hover{background:rgb(10 10 10 / .7)}
+.cv-e{position:absolute;top:12px;right:12px;z-index:2}
+.cv-b{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:var(--r-ctl);background:rgb(10 10 10 / .5);border:1px solid rgb(255 255 255 / .28);color:#fff;font-size:13px;font-weight:500;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.cv-b:hover:not(:disabled){background:rgb(10 10 10 / .72)}
+.cv-m{position:absolute;right:0;top:calc(100% + 6px);width:260px;padding:6px}
+.cv-m button{display:flex;align-items:center;gap:10px;width:100%;height:36px;padding:0 10px;border-radius:var(--r-ctl);font-size:14px;text-align:left}
+.cv-m p{margin:6px 8px 4px;font-size:12.5px;line-height:18px;color:var(--muted)}
+.cv-err{position:absolute;left:12px;top:12px;max-width:calc(100% - 190px);padding:8px 12px;border-radius:var(--r-ctl);background:var(--err-bg);color:var(--err-text);font-size:13px}
+@media (max-width:640px){.cv{min-height:176px}.cv-in{padding:20px 16px 16px}}

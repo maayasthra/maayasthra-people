@@ -5,6 +5,7 @@ import { DueChip } from '../task/parts.jsx';
 import { checkInSound } from '../alerts.js';
 import { AnnList, Composer } from './Announcements.jsx';
 import { ProfileSetup } from './ProfileSetup.jsx';
+import { Cover } from '../Cover.jsx';
 import { CopyLeave } from '../CopyLeave.jsx';
 import { isOpen } from '../tasks.js';
 import { SessionList, useDay, dayNote } from '../Attendance.jsx';
@@ -195,10 +196,10 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
     const inNow = infos.filter(i => i.state === 'in').length;
     const expected = infos.filter(i => !['leave', 'off'].includes(i.state)).length;
     return html`<div>
-      <div className="date-l">${dateL}</div>
+      <${Cover} canEdit=${true}><div className="date-l">${dateL}</div>
       <div className="home-h"><div>
       <h1 className="h-greet">${greet}, ${first(user)}.</h1></div>
-      <${Actions} leaves=${leaves} go=${go} openForm=${openForm} compose=${compose}/></div>
+      <${Actions} leaves=${leaves} go=${go} openForm=${openForm} compose=${compose}/></div><//>
       <${ProfileSetup} user=${user} openForm=${openForm}/>
       <div className="tiles">
         <${Tile} icon="people" tone="blue" label="Headcount" value=${people.length} sub=${depts + ' departments'} onClick=${() => go('org')}/>
@@ -229,9 +230,9 @@ export function Home({ role, user, leaves, setLeaves, ann, setAnn, att, setAtt, 
   const recent = [...mine].filter(l => !l.past).sort((a, b) => b.from.localeCompare(a.from)).slice(0, 4);
   return html`<div>
     <${MissedEod} days=${missed} onSend=${onLateEod}/>
-    <div className="date-l">${dateL}</div>
+    <${Cover} canEdit=${false}><div className="date-l">${dateL}</div>
     <h1 className="h-greet">${greet}, ${first(user)}.</h1>
-    <p className="lede"><span>${hols[0] ? html`Next holiday: <b>${HOL[hols[0]]}</b>, ${fmtDay(pd(hols[0]))}` : 'No holidays coming up'}</span></p>
+    <p className="lede"><span>${hols[0] ? html`Next holiday: <b>${HOL[hols[0]]}</b>, ${fmtDay(pd(hols[0]))}` : 'No holidays coming up'}</span></p><//>
     <${ProfileSetup} user=${user} openForm=${openForm}/>
     <div className="tiles">
       ${bal.map(b => html`<${Tile} key=${b.t} icon=${typeIcon(b.t)} tone=${typeTone(b.t)} label=${b.t} value=${b.left} sub=${b.pend ? 'days left · ' + b.pend + ' pending' : 'of ' + b.total + ' days left'} onClick=${role === 'admin' ? () => go('leaves') : undefined}/>`)}
