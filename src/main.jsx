@@ -339,7 +339,7 @@ function App() {
   const user = (!IS_DEMO && BY[auth.user.n]) || auth.user, role = auth.role;
   const TASKGROUPS = [['Tasks', ['board', 'mytasks']], ['Reports', ['eod', 'team']]];
   const NAVGROUPS = [[null, ['home']], ['Company', ['announcements', 'members', 'org', 'calendar']], ['Time, leave and pay', ['attendance', 'hours', 'leaves', 'requests', 'payslips']], ['Admin', ['settings']]];
-  const peopleKeys = role === 'admin' ? ['home', 'announcements', 'members', 'org', 'calendar', 'attendance', 'leaves', 'requests', 'payslips', 'settings'] : ['home', 'announcements', 'members', 'org', 'calendar', 'hours', 'leaves', 'requests', 'payslips'];
+  const peopleKeys = role === 'admin' ? ['home', 'announcements', 'members', 'org', 'calendar', 'attendance', 'leaves', 'requests', 'settings'] : ['home', 'announcements', 'members', 'org', 'calendar', 'hours', 'leaves', 'requests', 'payslips'];
   // These stay in the menu for everyone but only admins can open them. Everyone else sees them switched off.
   const locked = k => app === 'people' && role !== 'admin' && ['members', 'leaves', 'requests'].includes(k);
   // Admins and project managers get the whole task app. Everyone else gets only their own tasks.
