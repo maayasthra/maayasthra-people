@@ -121,6 +121,6 @@ export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel
       ${!noHours && html`<div className="eod-f"><span>Total <b>${fmtH(total)}</b></span>${worked > 0 && html`<span className=${over ? 'eod-warn' : ''}>Checked in today: ${hm(worked)}${over ? ' · more than you were here' : ''}</span>`}</div>`}
       ${err && html`<div className="eod-e" role="alert">${err}</div>`}
       <div className="dlg-a"><span className="eod-ds">${savedAt ? 'Draft saved' : ''}</span><button className="btn ghost" disabled=${busy} onClick=${onCancel}>${mode === 'out' ? 'Keep working' : late ? 'Close' : 'Cancel'}</button>
-        <button className="btn pri" disabled=${busy} onClick=${send}>${busy ? (edit ? 'Saving…' : 'Sending…') : mode === 'out' ? 'Send and check out' : edit ? 'Save changes' : late ? 'Send report' : 'Save report'}</button></div>
+        <button className="btn pri" disabled=${busy} onClick=${send}>${mode === 'out' && !busy && html`<${Icon} n="logout" s=${18}/>`}${busy ? (edit ? 'Saving…' : 'Sending…') : mode === 'out' ? 'Send and check out' : edit ? 'Save changes' : late ? 'Send report' : 'Save report'}</button></div>
     </div>`;
 }
