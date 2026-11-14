@@ -750,4 +750,31 @@ for (const action of ['edit', 'remove', 'correct-rejected']) {
   t('cover: going back to the default clears it', !(await m.supabase.rpc('set_my_cover', { p_image: '' })).error && (await q("select image from employee_covers where employee_id = " + ids.abines))[0].image === '');
 }
 
+// ================= 0045: SHEET EXPORT =================
+{
+  const tok = 'a-long-random-token-for-the-sheet-123456', rpc = async (fn, a) => { const r = await m.supabase.rpc(fn, a); const d = Array.isArray(r.data) && r.data.length === 1 && r.data[0] && fn in r.data[0] ? r.data[0][fn] : r.data; return { ...r, data: d }; };
+  await q("insert into eod_export_config (id, token_hash) values (1, encode(sha256(convert_to('" + tok + "', 'UTF8')), 'hex')) on conflict (id) do update set token_hash = excluded.token_hash");
+  t('sheet: only the hash is stored', (await q("select token_hash from eod_export_config where id = 1"))[0].token_hash.length === 64 && !JSON.stringify(await q("select * from eod_export_config")).includes(tok));
+  as('abines'); await m.loadStaff();
+  t('sheet: the app can never read the token table', (await m.supabase.from('eod_export_config').select('*')).error !== null || ((await m.supabase.from('eod_export_config').select('*')).data || []).length === 0);
+  as('abines'); await m.loadStaff();
+  t('sheet: the wrong token is refused', /Not allowed/.test((await rpc('eod_export_months', { p_token: 'wrong-wrong-wrong-wrong-wrong' })).error?.message || ''));
+  t('sheet: no token is refused', /Not allowed/.test((await rpc('eod_export_months', { p_token: null })).error?.message || ''));
+  await q("delete from eod_reports where employee_id = " + ids.abines + " and day in ('2026-10-08','2026-10-09','2026-09-30')");
+  await q("insert into eod_reports (employee_id, day, rows, total_hours) values (" + ids.abines + ", '2026-10-08', '[{\"project\":\"CMC\",\"desc\":\"Layouts\",\"hours\":2.5,\"subs\":[]},{\"project\":\"WL\",\"desc\":\"Carousel\",\"hours\":0,\"subs\":[{\"title\":\"Slide 1\",\"desc\":\"Copy\",\"hours\":1},{\"title\":\"Slide 2\",\"desc\":\"\",\"hours\":1.5}]}]', 5), (" + ids.abines + ", '2026-10-09', '[{\"project\":\"CMC\",\"desc\":\"Revisions\",\"hours\":3,\"subs\":[]}]', 3), (" + ids.abines + ", '2026-09-30', '[{\"project\":\"Old\",\"desc\":\"x\",\"hours\":1,\"subs\":[]}]', 1)");
+  const months = (await rpc('eod_export_months', { p_token: tok })).data, oct = (await rpc('eod_export_month', { p_token: tok, p_month: '2026-10' })).data;
+  t('sheet: months are listed, newest first', Array.isArray(months) && months.includes('2026-10') && months.includes('2026-09') && months.indexOf('2026-10') < months.indexOf('2026-09'));
+  const mine = (oct || []).filter(r => r.name === m.data.BY[ids.abines].name);
+  t('sheet: a month holds only its own days', mine.length === 5 && mine.every(r => String(r.day).startsWith('2026-10')));
+  t('sheet: hours add up with no double counting', Math.abs(mine.reduce((s, r) => s + (r.hours || 0), 0) - 8) < 1e-9);
+  t('sheet: a project with subtasks carries no hours of its own', mine.find(r => r.project === 'WL' && r.kind === 'main').hours === null);
+  t('sheet: the day total is on the first line of each report only', mine.filter(r => r.day_total !== null).length === 2 && mine[0].day_total === 5 && mine[1].day_total === null);
+  t('sheet: lines come in reading order', mine.map(r => r.sub || r.project).join(',') === 'CMC,WL,Slide 1,Slide 2,CMC');
+  t('sheet: a bad month is refused', /Not a month/.test((await rpc('eod_export_month', { p_token: tok, p_month: 'October' })).error?.message || ''));
+  const ch = (await rpc('eod_export_changes', { p_token: tok, p_since: null })).data, none = (await rpc('eod_export_changes', { p_token: tok, p_since: new Date(Date.now() + 3600e3).toISOString() })).data;
+  t('sheet: changes since nothing lists every month, with the database clock', ch.months.includes('2026-10') && !!ch.now);
+  t('sheet: changes since the future lists none', none.months.length === 0);
+  await q("delete from eod_reports where employee_id = " + ids.abines + " and day in ('2026-10-08','2026-10-09','2026-09-30')");
+}
+
 console.log(process.exitCode ? 'SOME CHECKS FAILED' : 'ALL CHECKS PASSED');

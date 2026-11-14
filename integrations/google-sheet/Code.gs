@@ -1,0 +1,352 @@
+/**
+ * Maayasthra People -> Google Sheet
+ *
+ * Keeps this spreadsheet up to date with every end-of-day report that employees submit in Maayasthra People.
+ *   - One tab per month ("Nov 2026"), newest first, plus a "Summary" tab.
+ *   - Every project line and subtask is its own row, with the hours, so the hours add up.
+ *   - Everything is written in Inter. The tabs are rewritten on every sync, so do not type in them.
+ *
+ * Setup is in SETUP-SHEET.md. In short: paste this file into Extensions > Apps Script, reload the sheet, then use the
+ * "EOD sync" menu: Connect, Rebuild all months, Start automatic sync.
+ *
+ * The sheet only READS from Maayasthra People, through three read-only database functions that need a secret token.
+ * The connection details are kept in Script Properties (not in any cell).
+ */
+
+var FONT = 'Inter';
+var TZ = 'Asia/Kolkata';
+var SUMMARY = 'Summary';
+var HEADERS = ['Date', 'Employee', 'Department', 'Project', 'Subtask', 'What was done', 'Hours', 'Day total', 'Submitted'];
+var WIDTHS = [104, 170, 150, 190, 190, 430, 78, 88, 128];
+var FIRST = 6;               // first data row of a month tab (rows 1-5 are the title, totals and header)
+var NCOL = 9;
+var MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+var MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+var C = { ink: '#171717', ink2: '#262626', text: '#171717', muted: '#737373', line: '#e5e5e5', band: '#f7f7f7', paper: '#fafafa', brand: '#FE6D00', brandTint: '#fff4eb', white: '#ffffff', dim: '#a3a3a3' };
+
+/* ------------------------------------------------------------------ pure helpers (no Google services, tested outside Google) */
+
+function monthName(ym) { return MONTHS_SHORT[Number(ym.slice(5, 7)) - 1] + ' ' + ym.slice(0, 4); }
+function monthTitle(ym) { return MONTHS_LONG[Number(ym.slice(5, 7)) - 1] + ' ' + ym.slice(0, 4); }
+function quoteSheet(name) { return "'" + String(name).replace(/'/g, "''") + "'"; }
+
+/**
+ * Turns the lines the database sends for one month into the grid written to the tab.
+ * env.parseDay(iso) returns a date value; env.fmtTime(isoTimestamp) returns text such as "14 Nov, 8:14 PM".
+ * Returns { rows, first, group, isSub, last } where rows has NCOL values per line.
+ */
+function buildMonthGrid(lines, env) {
+  var rows = [], first = [], group = [], isSub = [], g = -1;
+  (lines || []).forEach(function (l) {
+    var start = l.day_total !== null && l.day_total !== undefined;
+    if (start) g++;
+    var sub = l.kind === 'sub';
+    rows.push([
+      env.parseDay(String(l.day).slice(0, 10)),
+      l.name || '',
+      l.dept || '',
+      l.project || '',
+      sub ? (l.sub || '') : '',
+      l.note || '',
+      l.hours === null || l.hours === undefined ? '' : Number(l.hours),
+      start ? Number(l.day_total) : '',
+      start ? env.fmtTime(l.submitted) : ''
+    ]);
+    first.push(start);
+    group.push(Math.max(g, 0));
+    isSub.push(sub);
+  });
+  return { rows: rows, first: first, group: group, isSub: isSub, last: FIRST + rows.length - 1 };
+}
+
+/** The names that appear in a month grid, sorted, no repeats */
+function namesIn(grid) {
+  var seen = {};
+  grid.rows.forEach(function (r) { if (r[1]) seen[r[1]] = true; });
+  return Object.keys(seen).sort(function (a, b) { return a.localeCompare(b); });
+}
+
+/** Months to show on the Summary tab: newest first */
+function sortMonthsDesc(list) { return list.slice().sort().reverse(); }
+
+/* ------------------------------------------------------------------ menu and setup */
+
+function onOpen() {
+  SpreadsheetApp.getUi().createMenu('EOD sync')
+    .addItem('Connect to Maayasthra People', 'connect')
+    .addItem('Rebuild all months', 'rebuildAll')
+    .addItem('Sync now', 'syncChanges')
+    .addSeparator()
+    .addItem('Start automatic sync (every minute)', 'startAuto')
+    .addItem('Stop automatic sync', 'stopAuto')
+    .addToUi();
+}
+
+/** Asks for the three connection details and keeps them in Script Properties, never in a cell. */
+function connect() {
+  var ui = SpreadsheetApp.getUi(), props = PropertiesService.getScriptProperties();
+  var ask = function (title, text, key, secret) {
+    var r = ui.prompt(title, text, ui.ButtonSet.OK_CANCEL);
+    if (r.getSelectedButton() !== ui.Button.OK) return false;
+    var v = String(r.getResponseText() || '').trim();
+    if (!v) { ui.alert('Nothing was entered, so nothing was saved for this step.'); return false; }
+    props.setProperty(key, v);
+    return true;
+  };
+  if (!ask('Step 1 of 3', 'Your Supabase project URL, like https://abcd1234.supabase.co', 'SUPABASE_URL')) return;
+  if (!ask('Step 2 of 3', 'The "anon public" key from Supabase > Project Settings > API (the public one, not the secret one)', 'SUPABASE_ANON_KEY')) return;
+  if (!ask('Step 3 of 3', 'The export token you set in Supabase (see SETUP-SHEET.md)', 'EXPORT_TOKEN')) return;
+  props.deleteProperty('LAST_SYNC');
+  try { rpc('eod_export_months', {}); ui.alert('Connected', 'The connection works. Now choose EOD sync > Rebuild all months.', ui.ButtonSet.OK); }
+  catch (e) { ui.alert('Could not connect', String(e.message || e) + '\n\nCheck the three details and run Connect again.', ui.ButtonSet.OK); }
+}
+
+function startAuto() {
+  stopAuto();
+  ScriptApp.newTrigger('syncChanges').timeBased().everyMinutes(1).create();
+  SpreadsheetApp.getActiveSpreadsheet().toast('Automatic sync is on. New reports appear within about a minute.', 'EOD sync', 6);
+}
+
+function stopAuto() {
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'syncChanges') ScriptApp.deleteTrigger(t); });
+}
+
+/* ------------------------------------------------------------------ talking to Maayasthra People */
+
+function config() {
+  var p = PropertiesService.getScriptProperties();
+  var url = p.getProperty('SUPABASE_URL'), key = p.getProperty('SUPABASE_ANON_KEY'), token = p.getProperty('EXPORT_TOKEN');
+  if (!url || !key || !token) throw new Error('Not connected yet. Use EOD sync > Connect to Maayasthra People.');
+  return { url: url.replace(/\/+$/, ''), key: key, token: token };
+}
+
+/** Calls one of the read-only export functions and returns its JSON answer. */
+function rpc(fn, args) {
+  var c = config(), body = {};
+  Object.keys(args || {}).forEach(function (k) { body[k] = args[k]; });
+  body.p_token = c.token;
+  var res = UrlFetchApp.fetch(c.url + '/rest/v1/rpc/' + fn, {
+    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    headers: { apikey: c.key, Authorization: 'Bearer ' + c.key }, payload: JSON.stringify(body)
+  });
+  var code = res.getResponseCode(), text = res.getContentText();
+  if (code >= 300) {
+    var msg = text; try { msg = JSON.parse(text).message || text; } catch (x) { /* keep the raw text */ }
+    throw new Error('Maayasthra People said: ' + msg + ' (' + code + ')');
+  }
+  return JSON.parse(text);
+}
+
+/* ------------------------------------------------------------------ syncing */
+
+/** Runs every minute: finds months with a new or changed report and rewrites just those tabs. */
+function syncChanges() {
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(25000)) return;
+  try {
+    var props = PropertiesService.getScriptProperties(), since = props.getProperty('LAST_SYNC');
+    var res = rpc('eod_export_changes', { p_since: since ? new Date(Date.parse(since) - 120000).toISOString() : null });
+    if (res.months && res.months.length) { res.months.forEach(rebuildMonth); rebuildSummary(); }
+    props.setProperty('LAST_SYNC', res.now);
+  } finally { lock.releaseLock(); }
+}
+
+/** Rewrites every month from scratch. Safe to run any time. */
+function rebuildAll() {
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(25000)) { SpreadsheetApp.getActiveSpreadsheet().toast('A sync is already running. Try again in a minute.', 'EOD sync', 5); return; }
+  try {
+    var months = rpc('eod_export_months', {}), ss = SpreadsheetApp.getActiveSpreadsheet();
+    ss.setSpreadsheetTimeZone(TZ);
+    months.forEach(function (ym, i) { ss.toast('Writing ' + monthTitle(ym) + ' (' + (i + 1) + ' of ' + months.length + ')', 'EOD sync', 4); rebuildMonth(ym); });
+    rebuildSummary();
+    var now = rpc('eod_export_changes', { p_since: new Date().toISOString() });
+    PropertiesService.getScriptProperties().setProperty('LAST_SYNC', now.now);
+    ss.toast('Done. ' + months.length + (months.length === 1 ? ' month' : ' months') + ' written.', 'EOD sync', 6);
+  } finally { lock.releaseLock(); }
+}
+
+function rebuildMonth(ym) {
+  var lines = rpc('eod_export_month', { p_month: ym });
+  var grid = buildMonthGrid(lines, {
+    parseDay: function (iso) { return Utilities.parseDate(iso + ' 12:00', TZ, 'yyyy-MM-dd HH:mm'); },
+    fmtTime: function (ts) { return ts ? Utilities.formatDate(new Date(ts), TZ, 'd MMM, h:mm a') : ''; }
+  });
+  var ss = SpreadsheetApp.getActiveSpreadsheet(), name = monthName(ym), sheet = ss.getSheetByName(name) || ss.insertSheet(name);
+  writeMonth(sheet, ym, grid);
+  var props = PropertiesService.getScriptProperties(), list = JSON.parse(props.getProperty('MONTHS') || '[]');
+  if (list.indexOf(ym) < 0) list.push(ym);
+  props.setProperty('MONTHS', JSON.stringify(sortMonthsDesc(list)));
+  props.setProperty('NAMES_' + ym, JSON.stringify(namesIn(grid)));
+  tidyTabs();
+}
+
+/* ------------------------------------------------------------------ writing a month tab */
+
+function writeMonth(sheet, ym, grid) {
+  var n = grid.rows.length, last = grid.last, total = n ? last + 2 : FIRST + 1;
+  sheet.getDataRange().breakApart();
+  sheet.clear();
+  var needRows = Math.max(total + 2, 30), needCols = NCOL;
+  if (sheet.getMaxRows() < needRows) sheet.insertRowsAfter(sheet.getMaxRows(), needRows - sheet.getMaxRows());
+  if (sheet.getMaxColumns() < needCols) sheet.insertColumnsAfter(sheet.getMaxColumns(), needCols - sheet.getMaxColumns());
+  var all = sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns());
+  all.setFontFamily(FONT).setFontSize(10).setFontColor(C.text).setVerticalAlignment('top').setBackground(C.white);
+  sheet.setHiddenGridlines(true);
+  for (var i = 0; i < WIDTHS.length; i++) sheet.setColumnWidth(i + 1, WIDTHS[i]);
+  sheet.setFrozenRows(5);
+
+  // Row 1: title bar
+  var title = sheet.getRange(1, 1, 1, NCOL);
+  title.merge().setValue('Employee EOD updates  ·  ' + monthTitle(ym)).setBackground(C.ink).setFontColor(C.white).setFontSize(18).setFontWeight('bold').setVerticalAlignment('middle').setHorizontalAlignment('left');
+  sheet.setRowHeight(1, 48);
+
+  // Rows 2-3: totals for the month, all formulas over the table below
+  var rng = function (col) { return col + FIRST + ':' + col + last; };
+  var labels = ['TOTAL HOURS', 'REPORTS', 'PEOPLE', 'AVG HOURS PER REPORT', 'DAYS COVERED', 'LAST SYNC'];
+  var values = n ? [
+    '=SUM(' + rng('G') + ')', '=COUNT(' + rng('H') + ')', '=COUNTUNIQUE(' + rng('B') + ')',
+    '=IF(B3=0,0,A3/B3)', '=COUNTUNIQUE(' + rng('A') + ')', ''
+  ] : [0, 0, 0, 0, 0, ''];
+  sheet.getRange(2, 1, 1, 6).setValues([labels]).setFontSize(8.5).setFontWeight('bold').setFontColor(C.muted).setBackground(C.paper).setVerticalAlignment('bottom');
+  sheet.getRange(3, 1, 1, 6).setValues([values]).setFontSize(16).setFontWeight('bold').setBackground(C.paper).setVerticalAlignment('middle').setHorizontalAlignment('left');
+  sheet.getRange(3, 6).setValue('Updated ' + Utilities.formatDate(new Date(), TZ, 'd MMM, h:mm a') + ' IST').setFontSize(10).setFontWeight('normal').setFontColor(C.muted);
+  sheet.getRange('A3').setNumberFormat('0.00').setFontColor(C.brand);
+  sheet.getRange('B3:C3').setNumberFormat('0');
+  sheet.getRange('D3').setNumberFormat('0.0');
+  sheet.getRange('E3').setNumberFormat('0');
+  sheet.getRange(2, 7, 2, 3).setBackground(C.paper);
+  sheet.getRange(2, 1, 2, NCOL).setBorder(null, null, true, null, null, null, C.line, SpreadsheetApp.BorderStyle.SOLID);
+  sheet.setRowHeight(2, 22); sheet.setRowHeight(3, 34); sheet.setRowHeight(4, 8);
+
+  // Row 5: table header
+  var head = sheet.getRange(5, 1, 1, NCOL);
+  head.setValues([HEADERS]).setBackground(C.ink2).setFontColor(C.white).setFontWeight('bold').setFontSize(10).setVerticalAlignment('middle');
+  head.setBorder(null, null, true, null, null, null, C.brand, SpreadsheetApp.BorderStyle.SOLID_THICK);
+  sheet.getRange(5, 7, 1, 2).setHorizontalAlignment('right');
+  sheet.setRowHeight(5, 32);
+
+  if (!n) { sheet.getRange(FIRST, 1).setValue('No reports for this month yet.').setFontColor(C.muted); return; }
+
+  // The table
+  var body = sheet.getRange(FIRST, 1, n, NCOL);
+  body.setValues(grid.rows).setWrap(true).setBorder(null, null, null, null, null, true, C.line, SpreadsheetApp.BorderStyle.SOLID);
+  sheet.getRange(FIRST, 1, n, 1).setNumberFormat('ddd d mmm').setHorizontalAlignment('left');
+  sheet.getRange(FIRST, 7, n, 2).setNumberFormat('0.00').setHorizontalAlignment('right');
+  sheet.getRange(FIRST, 9, n, 1).setNumberFormat('@');
+  var bgs = [], fcs = [], fws = [];
+  for (var r = 0; r < n; r++) {
+    var band = grid.group[r] % 2 === 1 ? C.band : C.white, row = [], fc = [], fw = [];
+    for (var c = 0; c < NCOL; c++) {
+      row.push(band);
+      var dim = !grid.first[r] && c <= 2;                 // employee, date and department only stand out on the first line of a report
+      fc.push(dim ? C.dim : (c === 8 ? C.muted : (grid.isSub[r] && (c === 3) ? C.muted : C.text)));
+      fw.push((grid.first[r] && (c === 1 || c === 7)) || (!grid.isSub[r] && c === 3) ? 'bold' : 'normal');
+    }
+    bgs.push(row); fcs.push(fc); fws.push(fw);
+  }
+  body.setBackgrounds(bgs).setFontColors(fcs).setFontWeights(fws);
+  sheet.getRange(FIRST, 5, n, 1).setFontStyle('italic');
+
+  // Total row under the table, then a filter so people can pick an employee or project
+  var t = sheet.getRange(total, 1, 1, NCOL);
+  t.setBackground(C.brandTint).setFontWeight('bold').setVerticalAlignment('middle');
+  t.setBorder(true, null, null, null, null, null, C.brand, SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+  sheet.getRange(total, 1).setValue('Total for ' + monthTitle(ym));
+  sheet.getRange(total, 7).setFormula('=SUM(' + rng('G') + ')').setNumberFormat('0.00').setHorizontalAlignment('right');
+  sheet.getRange(total, 8).setFormula('=SUM(' + rng('H') + ')').setNumberFormat('0.00').setHorizontalAlignment('right');
+  sheet.setRowHeight(total, 30);
+  var oldFilter = sheet.getFilter(); if (oldFilter) oldFilter.remove();
+  sheet.getRange(5, 1, n + 1, NCOL).createFilter();
+}
+
+/* ------------------------------------------------------------------ the Summary tab */
+
+function rebuildSummary() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet(), props = PropertiesService.getScriptProperties();
+  var months = sortMonthsDesc(JSON.parse(props.getProperty('MONTHS') || '[]')).filter(function (ym) { return ss.getSheetByName(monthName(ym)); });
+  var sheet = ss.getSheetByName(SUMMARY) || ss.insertSheet(SUMMARY);
+  sheet.getDataRange().breakApart(); sheet.clear();
+  var nameSet = {};
+  months.forEach(function (ym) { JSON.parse(props.getProperty('NAMES_' + ym) || '[]').forEach(function (nm) { nameSet[nm] = true; }); });
+  var names = Object.keys(nameSet).sort(function (a, b) { return a.localeCompare(b); });
+  var cols = Math.max(7, months.length + 2), rowsNeeded = 8 + months.length + names.length + 6;
+  if (sheet.getMaxRows() < rowsNeeded) sheet.insertRowsAfter(sheet.getMaxRows(), rowsNeeded - sheet.getMaxRows());
+  if (sheet.getMaxColumns() < cols) sheet.insertColumnsAfter(sheet.getMaxColumns(), cols - sheet.getMaxColumns());
+  sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns()).setFontFamily(FONT).setFontSize(10).setFontColor(C.text).setVerticalAlignment('middle').setBackground(C.white);
+  sheet.setHiddenGridlines(true);
+  sheet.setColumnWidth(1, 190); for (var i = 2; i <= sheet.getMaxColumns(); i++) sheet.setColumnWidth(i, 118);
+
+  sheet.getRange(1, 1, 1, cols).merge().setValue('EOD summary  ·  all months').setBackground(C.ink).setFontColor(C.white).setFontSize(18).setFontWeight('bold').setHorizontalAlignment('left');
+  sheet.setRowHeight(1, 48);
+  sheet.getRange(2, 1).setValue('Filled in automatically from the end-of-day reports in Maayasthra People. Hours are what each person reported.').setFontColor(C.muted);
+
+  // Block 1: one row per month, every number a formula that reads that month's tab
+  var r0 = 4;
+  sheet.getRange(r0, 1, 1, 6).setValues([['Month', 'Total hours', 'Reports', 'People', 'Avg hours per report', 'Days covered']]);
+  styleHeader(sheet.getRange(r0, 1, 1, 6));
+  months.forEach(function (ym, k) {
+    var q = quoteSheet(monthName(ym)), r = r0 + 1 + k;
+    sheet.getRange(r, 1, 1, 6).setFormulas([[monthName(ym), '=' + q + '!A3', '=' + q + '!B3', '=' + q + '!C3', '=' + q + '!D3', '=' + q + '!E3']]);
+    sheet.getRange(r, 1).setFormula('=HYPERLINK("#gid=' + ss.getSheetByName(monthName(ym)).getSheetId() + '","' + monthName(ym) + '")').setFontColor(C.brand).setFontWeight('bold');
+  });
+  var rt = r0 + 1 + months.length;
+  if (months.length) {
+    sheet.getRange(rt, 1, 1, 3).setFormulas([['All months', '=SUM(B' + (r0 + 1) + ':B' + (rt - 1) + ')', '=SUM(C' + (r0 + 1) + ':C' + (rt - 1) + ')']]);
+    sheet.getRange(rt, 1, 1, 6).setBackground(C.brandTint).setFontWeight('bold').setBorder(true, null, null, null, null, null, C.brand, SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+    sheet.getRange(r0 + 1, 2, months.length + 1, 1).setNumberFormat('0.00');
+    sheet.getRange(r0 + 1, 3, months.length + 1, 2).setNumberFormat('0');
+    sheet.getRange(r0 + 1, 5, months.length, 1).setNumberFormat('0.0');
+    sheet.getRange(r0 + 1, 6, months.length, 1).setNumberFormat('0');
+    sheet.getRange(r0 + 1, 2, months.length + 1, 5).setHorizontalAlignment('right');
+    sheet.getRange(r0 + 1, 1, months.length, 6).setBorder(null, null, null, null, null, true, C.line, SpreadsheetApp.BorderStyle.SOLID);
+  }
+
+  // Block 2: hours by employee and month
+  var b0 = (months.length ? rt : r0) + 3;
+  sheet.getRange(b0 - 1, 1).setValue('Hours by employee').setFontWeight('bold').setFontSize(12);
+  var head2 = ['Employee'].concat(months.map(monthName), ['Total']);
+  sheet.getRange(b0, 1, 1, head2.length).setValues([head2]);
+  styleHeader(sheet.getRange(b0, 1, 1, head2.length));
+  names.forEach(function (nm, k) {
+    var r = b0 + 1 + k, f = [nm];
+    months.forEach(function (ym) { var q = quoteSheet(monthName(ym)); f.push('=SUMIFS(' + q + '!$G:$G,' + q + '!$B:$B,$A' + r + ')'); });
+    f.push('=SUM(B' + r + ':' + colLetter(months.length + 1) + r + ')');
+    sheet.getRange(r, 1, 1, f.length).setFormulas([f]);
+  });
+  if (names.length) {
+    var re = b0 + names.length, lastCol = months.length + 2, rb = re + 1;
+    var tf = ['Everyone'];
+    for (var m = 2; m <= lastCol; m++) tf.push('=SUM(' + colLetter(m) + (b0 + 1) + ':' + colLetter(m) + re + ')');
+    sheet.getRange(rb, 1, 1, lastCol).setFormulas([tf]).setBackground(C.brandTint).setFontWeight('bold').setBorder(true, null, null, null, null, null, C.brand, SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+    sheet.getRange(b0 + 1, 2, names.length + 1, lastCol - 1).setNumberFormat('0.00').setHorizontalAlignment('right');
+    sheet.getRange(b0 + 1, 1, names.length, lastCol).setBorder(null, null, null, null, null, true, C.line, SpreadsheetApp.BorderStyle.SOLID);
+    sheet.getRange(b0 + 1, lastCol, names.length, 1).setFontWeight('bold');
+    sheet.setFrozenColumns(1);
+  }
+  tidyTabs();
+}
+
+function styleHeader(range) {
+  range.setBackground(C.ink2).setFontColor(C.white).setFontWeight('bold').setVerticalAlignment('middle')
+    .setBorder(null, null, true, null, null, null, C.brand, SpreadsheetApp.BorderStyle.SOLID_THICK);
+  range.offset(0, 1, 1, Math.max(range.getNumColumns() - 1, 0)).setHorizontalAlignment('right');
+  range.getSheet().setRowHeight(range.getRow(), 30);
+}
+
+function colLetter(n) { var s = ''; while (n > 0) { var m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; }
+
+/** Summary first, then months newest to oldest. Removes the empty starter tab. */
+function tidyTabs() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet(), props = PropertiesService.getScriptProperties();
+  var months = sortMonthsDesc(JSON.parse(props.getProperty('MONTHS') || '[]')), pos = 1;
+  var sum = ss.getSheetByName(SUMMARY);
+  if (sum) { ss.setActiveSheet(sum); ss.moveActiveSheet(pos); pos++; }
+  months.forEach(function (ym) {
+    var s = ss.getSheetByName(monthName(ym));
+    if (s) { ss.setActiveSheet(s); ss.moveActiveSheet(pos); pos++; }
+  });
+  var starter = ss.getSheetByName('Sheet1');
+  if (starter && starter.getLastRow() === 0 && ss.getSheets().length > 1) ss.deleteSheet(starter);
+  if (sum) ss.setActiveSheet(sum);
+}
