@@ -45,7 +45,7 @@ export function CheckWidget({ user, att, setAtt, onOut, onAway }) {
     ${live && !open && html`<button className="ib ck-aw" onClick=${() => { setAw(a => !a); setPop(false); }} aria-label="Step away" aria-haspopup="menu" aria-expanded=${aw} title="Step away"><${Icon} n="cup" s=${18}/></button>`}
     <button className=${'btn sm ' + (live && !open ? 'ghost' : 'pri')} onClick=${act}>${open ? 'I’m back' : live ? 'Check out' : sessions.length ? 'Check in again' : 'Check in'}</button>
     ${aw && html`<div className="menu ck-pop ck-away" role="menu"><div className="menu-h"><b>Step away</b><span>Your timer pauses until you are back</span></div>
-      ${AWAY_WHY.map(([k, l]) => html`<button key=${k} role="menuitem" onClick=${() => step(k)}>${l}</button>`)}</div>`}
+      ${AWAY_WHY.map(([k, l, ic]) => html`<button key=${k} role="menuitem" onClick=${() => step(k)}><${Icon} n=${ic} s=${18}/>${l}</button>`)}</div>`}
     ${pop && html`<div className="menu ck-pop"><div className="menu-h"><b>Today</b><span>Shift ${fmtTime(user.shiftStart)} – ${fmtTime(user.shiftEnd)} · Lunch 1:00 – 2:00 PM</span></div>
       <${SessionList} sessions=${sessions} now=${now}/>
       ${away.length > 0 && html`<div className="ck-awl"><b>Away</b>${away.map((a, i) => html`<div key=${i}><span>${clock(a.from)} – ${a.to == null ? 'now' : clock(a.to)}</span><small>${whyLabel(a.why)}${a.later ? ' · added later' : ''}</small></div>`)}</div>`}

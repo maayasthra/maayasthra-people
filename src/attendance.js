@@ -77,8 +77,8 @@ export function checkIn(att, n, loc = 'office') { const iso = dayKey(), cur = ge
 export function checkOut(att, n, at = Date.now()) { const iso = dayKey(), cur = getDay(att, n, iso); if (!isIn(cur.sessions)) return att; return putDay(att, n, iso, { ...cur, sessions: cur.sessions.map((x, i) => i === cur.sessions.length - 1 ? { ...x, out: at } : x), away: closeAway(cur.away, at) }); }
 
 /* ---------- away time: stepping away from the desk while checked in. It is not counted as worked time. ---------- */
-export const AWAY_WHY = [['power', 'Power cut'], ['net', 'Internet down'], ['out', 'Stepped out'], ['break', 'Break'], ['meet', 'Meeting away from desk'], ['other', 'Other']];
-export const EARLY_WHY = [['personal', 'Personal'], ['unwell', 'Unwell'], ['power', 'Power cut or internet'], ['work', 'Working elsewhere'], ['other', 'Other']];
+export const AWAY_WHY = [['power', 'Power cut', 'zap'], ['net', 'Internet down', 'wifioff'], ['out', 'Stepped out', 'logout'], ['break', 'Break', 'cup'], ['meet', 'Meeting away from desk', 'people'], ['other', 'Other', 'dots']];
+export const EARLY_WHY = [['personal', 'Personal', 'user'], ['unwell', 'Unwell', 'heart'], ['power', 'Power cut or internet', 'zap'], ['work', 'Working elsewhere', 'building'], ['other', 'Other', 'dots']];
 export const whyLabel = (k, list = AWAY_WHY) => (list.find(x => x[0] === k) || [0, 'Away'])[1];
 export const awayOpen = away => away && away.length && away[away.length - 1].to == null ? away[away.length - 1] : null;
 const closeAway = (away, at) => (away || []).map(a => a.to == null ? { ...a, to: Math.max(at, a.from) } : a);

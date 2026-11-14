@@ -5,7 +5,7 @@ import { AWAY_WHY, EARLY_WHY, dayKey, addDays, toTs, getDay, overlapsAway, hm } 
 
 // One row of single-choice reason chips
 function Why({ list, value, onChange, label }) {
-  return html`<div className="aw-ch" role="radiogroup" aria-label=${label}>${list.map(([k, l]) => html`<button type="button" key=${k} role="radio" aria-checked=${value === k} className=${value === k ? 'on' : ''} onClick=${() => onChange(k)}>${value === k && html`<${Icon} n="check" s=${14}/>`}${l}</button>`)}</div>`;
+  return html`<div className="aw-ch" role="radiogroup" aria-label=${label}>${list.map(([k, l, ic]) => html`<button type="button" key=${k} role="radio" aria-checked=${value === k} className=${value === k ? 'on' : ''} onClick=${() => onChange(k)}><${Icon} n=${ic} s=${16}/>${l}</button>`)}</div>`;
 }
 const useEsc = fn => useEffect(() => { const k = ev => { if (ev.key === 'Escape') fn(); }; document.addEventListener('keydown', k); return () => document.removeEventListener('keydown', k); }, []);
 

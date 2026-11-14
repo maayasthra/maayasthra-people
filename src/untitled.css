@@ -1284,3 +1284,10 @@ button.tile:active,.tile.click:active{background:var(--fill)}
 .cv:hover .cv-e,.cv-e:focus-within,.cv-e.open{opacity:1;transform:none;pointer-events:auto}
 @media (hover:none){.cv-e{opacity:1;transform:none;pointer-events:auto}}
 @media (prefers-reduced-motion:reduce){.cv-e{transition:none}}
+
+/* Away reasons: an icon before each label */
+.ck-away button{display:flex;align-items:center;gap:10px}
+.ck-away button svg{flex:none;color:var(--muted)}
+.ck-away button:hover svg{color:var(--text)}
+.aw-ch button svg{flex:none;color:var(--muted)}
+.aw-ch button.on{font-weight:600}.aw-ch button.on svg{color:var(--brand-text)}
