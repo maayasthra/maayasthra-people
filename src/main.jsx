@@ -23,6 +23,8 @@ import { Settings } from './screens/Settings.jsx';
 import { QuickSearch } from './QuickSearch.jsx';
 import { CheckWidget } from './Attendance.jsx';
 import { EarlyDialog } from './AwayDialog.jsx';
+import { MySettings } from './screens/MySettings.jsx';
+import { applySettings, withChange, normalize } from './settings.js';
 import { loadAtt, saveAtt, setMe, checkOut, dayKey as dayKeyNow, sessionsOf, isIn, workedNet, getDay, toTs, setEarly, minuteOfDay } from './attendance.js';
 import { MyHours } from './screens/Hours.jsx';
 import { AttendancePage } from './screens/AttendancePage.jsx';
@@ -52,7 +54,7 @@ import './untitled.css';
 import { startExitMotion } from './exit.js';
 import { startTooltips } from './tooltips.js';
 
-const ALL = { about: 'About', announcements: 'Announcements', members: 'Members', board: 'Board', mytasks: 'My Tasks', eod: 'EOD reports', team: 'Team', home: 'Home', people: 'People', org: 'Org chart', calendar: 'Calendar', attendance: 'Attendance', hours: 'My Hours', leaves: 'My Leaves', requests: 'Requests', settings: 'Settings' };
+const ALL = { about: 'About', mysettings: 'My settings', announcements: 'Announcements', members: 'Members', board: 'Board', mytasks: 'My Tasks', eod: 'EOD reports', team: 'Team', home: 'Home', people: 'People', org: 'Org chart', calendar: 'Calendar', attendance: 'Attendance', hours: 'My Hours', leaves: 'My Leaves', requests: 'Requests', settings: 'Settings' };
 const SHORT = { mytasks: 'Mine', eod: 'EOD', org: 'Org', leaves: 'Leaves', attendance: 'Hours', hours: 'Hours' };
 
 const SEED_ANN = IS_DEMO ? [
@@ -67,7 +69,7 @@ function AppSwitch({ app, setApp }) {
 }
 const Brand = () => html`<div className="brand"><${Logo}/></div>`;
 
-function TopRight({ user, role, open, openForm, signOut, goAbout, isNew, onPassword, onTour }) {
+function TopRight({ user, role, open, openForm, signOut, goAbout, goSettings, isNew, onPassword, onTour }) {
   const [menu, setMenu] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
@@ -85,6 +87,7 @@ function TopRight({ user, role, open, openForm, signOut, goAbout, isNew, onPassw
       <div className="th-row"><span>Appearance</span><${ThemeSwitch}/></div>
       <button role="menuitem" onClick=${() => { setMenu(false); open(user.n); }}><${Icon} n="user" s=${16}/> View profile</button>
       <button role="menuitem" onClick=${() => { setMenu(false); openForm(user.n); }}><${Icon} n="edit" s=${16}/> Edit profile</button>
+      <button role="menuitem" onClick=${() => { setMenu(false); goSettings(); }}><${Icon} n="settings" s=${16}/> My settings</button>
       <button role="menuitem" onClick=${() => { setMenu(false); onPassword(); }}><${Icon} n="lock" s=${16}/> Change password</button>
       <button role="menuitem" onClick=${() => { setMenu(false); onTour(); }}><${Icon} n="info" s=${16}/> Take the tour</button>
       <button role="menuitem" onClick=${() => { setMenu(false); goAbout(); }}><${Icon} n="info" s=${16}/> About · v${VERSION}${isNew && html`<em className="new-p">New</em>`}</button>
@@ -279,9 +282,9 @@ function App() {
   }, [auth && auth.user.n]);
   const notif = useNotifications(auth ? auth.user.n : null);
   // Per-person settings (tour seen, tasks already announced) come from the database
-  const [ustate, setUstate] = useState(null), prefsReady = useRef(false);
+  const [ustate, setUstate] = useState(null), prefsReady = useRef(false), prefsRef = useRef({}), [mySet, setMySet] = useState(() => normalize(null));
   useEffect(() => {
-    if (!auth) { setUstate(null); prefsReady.current = false; return; }
+    if (!auth) { setUstate(null); prefsReady.current = false; prefsRef.current = {}; setMySet(applySettings(null)); return; }
     const n = auth.user.n; let live = true;
     loadUserState(n).then(st => {
       if (!live) return;
@@ -294,6 +297,7 @@ function App() {
       if (Object.keys(patch).length) saveUserState(n, patch).catch(() => {});
       // Which board columns were open or closed, and the board filters, come back exactly as they were left
       const pr = st.prefs || {};
+      prefsRef.current = pr; setMySet(applySettings(pr.app));
       if (pr.collapsed && typeof pr.collapsed === 'object') setCollapsed(pr.collapsed);
       if (pr.view && typeof pr.view === 'object') setTf(v => ({ ...v, ...pr.view }));
       prefsReady.current = true;
@@ -302,10 +306,13 @@ function App() {
     return () => { live = false; };
   }, [auth && auth.user.n]);
   const saveState = patch => { if (auth) saveUserState(auth.user.n, patch).catch(() => {}); };
+  // Personal settings (sounds, reminders). Merged into the saved preferences so the board layout saved there is never lost.
+  const changeSettings = patch => { const next = withChange(mySet, patch); applySettings(next); setMySet(next); prefsRef.current = { ...prefsRef.current, app: next }; saveState({ prefs: prefsRef.current }); };
+  const resetSettings = () => { const d = normalize(null); applySettings(d); setMySet(d); const { app: _drop, ...rest } = prefsRef.current; prefsRef.current = rest; saveState({ prefs: prefsRef.current }); };
   // Save the board layout choices a moment after the last change
   useEffect(() => {
     if (!auth || !prefsReady.current) return;
-    const t = setTimeout(() => saveState({ prefs: { collapsed, view: { dept: tf.dept, hideEmpty: tf.hideEmpty, labels: tf.labels, lfilter: tf.lfilter } } }), 700);
+    const t = setTimeout(() => { prefsRef.current = { ...prefsRef.current, collapsed, view: { dept: tf.dept, hideEmpty: tf.hideEmpty, labels: tf.labels, lfilter: tf.lfilter } }; saveState({ prefs: prefsRef.current }); }, 700);
     return () => clearTimeout(t);
   }, [collapsed, tf]);
   useTaskAlerts(tasks, auth ? auth.user.n : null, notif.add, ustate, ustate && ustate.offline ? null : seen => saveState({ seenTasks: seen }));
@@ -388,7 +395,7 @@ function App() {
     : nav.view === 'mytasks' || !isMgr ? html`<${MyTasks} tasks=${tasks} setTasks=${setTasks} user=${user} tq=${tq} openTask=${openTask} canDelete=${isMgr} tick=${eodTick} onEdit=${setEodEdit}/>`
     : nav.view === 'team' && isMgr ? html`<${TeamView} tasks=${tasks} onPick=${n => { setTf(f => ({ ...f, dept: 'All' })); setFocus(n); go('board'); }}/>`
     : html`<${TaskBoard} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} tf=${tf} setTf=${setTf} tq=${tq} openTask=${openTask} focus=${focus} collapsed=${collapsed} setCollapsed=${setCollapsed} custom=${custom} setCustom=${setCustom} groups=${groups} setGroups=${setGroups} layout=${layout} setLayout=${setLayout}/>`;
-  const screen = nav.view === 'about' ? html`<${About}/>` : app === 'task' ? taskScreen : nav.view === 'home' ? home
+  const screen = nav.view === 'about' ? html`<${About}/>` : nav.view === 'mysettings' ? html`<${MySettings} user=${user} role=${role} st=${mySet} change=${changeSettings} reset=${resetSettings} onPassword=${() => setPwOpen(true)} onTour=${startTour}/>` : app === 'task' ? taskScreen : nav.view === 'home' ? home
     : nav.view === 'org' ? html`<${OrgChart} open=${open} user=${user} key=${ver}/>`
     : nav.view === 'profile' ? html`<${Profile} key=${nav.id + '-' + ver + (nav.tab || '')} id=${nav.id} tab=${nav.tab} from=${nav.from} back=${back} open=${open} openForm=${openForm} user=${user} role=${role} leaves=${leaves} att=${att} setAtt=${setAtt} ver=${ver}/>`
     : nav.view === 'form' ? html`<${EmployeeForm} key=${'f' + nav.id} id=${nav.id} role=${role} user=${user} done=${formDone} bump=${bump}/>`
@@ -416,7 +423,7 @@ function App() {
         <button className="ib hs-b" onClick=${() => { setSOpen(o => !o); setTimeout(() => { const el = document.getElementById('quick-search'); if (el) el.focus(); }, 30); }} aria-label="Search"><${Icon} n="search" s=${17}/></button>
         <div className="ck-d"><${CheckWidget} user=${user} att=${att} setAtt=${setAtt} onOut=${requestOut} onAway=${() => stopMyTimers(Date.now())}/></div>
         <${NotificationBell} notif=${notif} onOpen=${onNotif}/>
-        <${TopRight} user=${user} role=${role} open=${open} openForm=${openForm} signOut=${signOut} goAbout=${() => go('about')} isNew=${!seenNow} onPassword=${() => setPwOpen(true)} onTour=${startTour}/></header>
+        <${TopRight} user=${user} role=${role} open=${open} openForm=${openForm} signOut=${signOut} goAbout=${() => go('about')} goSettings=${() => go('mysettings')} isNew=${!seenNow} onPassword=${() => setPwOpen(true)} onTour=${startTour}/></header>
       <div className="ck-m"><${CheckWidget} user=${user} att=${att} setAtt=${setAtt} onOut=${requestOut} onAway=${() => stopMyTimers(Date.now())}/></div>
       <main className="main" key=${app + nav.view + (nav.id || '')}>${screen}</main>
       ${updateReady && html`<div className="sync-err upd" role="status"><span>A new version of Maayasthra People is ready.</span><button onClick=${refreshApp}>Refresh</button></div>`}

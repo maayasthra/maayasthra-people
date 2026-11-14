@@ -5,6 +5,7 @@ import { subscribeTables } from './tasksDb.js';
 import { IS_DEMO } from './env.js';
 import { HOL, pd, BY } from './data.js';
 import { dayKey, addDays, minuteOfDay, sessionsOf, isIn } from './attendance.js';
+import { getSettings, volumeMult } from './settings.js';
 import { loadEods } from './eodDb.js';
 
 /* Announcement alerts. A new announcement pops up for everyone who is on shift, with a chime, until they close it.
@@ -30,14 +31,15 @@ export function unlockAudio() {
   ['pointerdown', 'keydown', 'touchstart'].forEach(e => window.addEventListener(e, go, { passive: true }));
   return () => ['pointerdown', 'keydown', 'touchstart'].forEach(e => window.removeEventListener(e, go));
 }
-export function chime() {
+export function chime(kind) {
+  const st = getSettings(); if (!st.sound || (kind !== 'eod' && !st.annChime)) return;   // the reminder follows the main sound switch only
   const c = audio(); if (!c) return;
   const play = () => {
     const t0 = c.currentTime + 0.02;
     [[880, 0], [1318.5, 0.22], [1760, 0.44]].forEach(([f, d]) => {
       const o = c.createOscillator(), g = c.createGain();
       o.type = 'sine'; o.frequency.value = f;
-      g.gain.setValueAtTime(0.0001, t0 + d); g.gain.exponentialRampToValueAtTime(0.35, t0 + d + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d + 0.7);
+      g.gain.setValueAtTime(0.0001, t0 + d); g.gain.exponentialRampToValueAtTime(Math.min(0.6, 0.35 * volumeMult()), t0 + d + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d + 0.7);
       o.connect(g); g.connect(c.destination); o.start(t0 + d); o.stop(t0 + d + 0.75);
     });
   };
@@ -136,12 +138,13 @@ export function useAcks(enabled) {
 /* ---------- short sounds for checking in and out ---------- */
 const tone = (c, f, t0, dur, vol = 0.28, type = 'sine') => { const o = c.createOscillator(), g = c.createGain(); o.type = type; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur); o.connect(g); g.connect(c.destination); o.start(t0); o.stop(t0 + dur + 0.05); };
 function sfx(notes) {
+  if (!getSettings().sound) return;
   const c = audio(); if (!c) return;
-  const go = () => { const t0 = c.currentTime + 0.01; notes.forEach(([f, d, dur]) => tone(c, f, t0 + d, dur)); };
+  const go = () => { const t0 = c.currentTime + 0.01; const v = Math.min(0.6, 0.28 * volumeMult()); notes.forEach(([f, d, dur]) => tone(c, f, t0 + d, dur, v)); };
   if (c.state === 'suspended') c.resume().then(go).catch(() => {}); else go();
 }
 export const checkInSound = () => sfx([[659.3, 0, 0.22], [987.8, 0.11, 0.38]]);                 // up: a bright two-note rise
-export const newTaskSound = () => sfx([[880, 0, 0.18], [1174.7, 0.12, 0.18], [1568, 0.24, 0.45]]);  // up: a three-note ping
+export const newTaskSound = () => { if (getSettings().taskPing) sfx([[880, 0, 0.18], [1174.7, 0.12, 0.18], [1568, 0.24, 0.45]]); };  // up: a three-note ping
 export const checkOutSound = () => sfx([[783.99, 0, 0.22], [587.33, 0.13, 0.22], [440, 0.26, 0.42]]); // down: a calm three-note fall
 
 // Board and task sounds: short and soft. Each move has its own shape so you can tell them apart without looking.
@@ -196,6 +199,7 @@ export function useEodReminder({ user, role, att, eodTick, onFire, has }) {
     if (!user || role !== 'employee') return;
     let live = true;
     const check = async () => {
+      if (!getSettings().eodReminder) return;
       const dk = dayKey(), now = minuteOfDay(Date.now()), end = toMin(user.shiftEnd);
       const due = [[end - 15, '2'], [end - 30, '1']].find(([at]) => now >= at);   // the latest one that is due
       if (!due || now > end + 120) return;
@@ -209,7 +213,7 @@ export function useEodReminder({ user, role, att, eodTick, onFire, has }) {
       const second = due[1] === '2', left = Math.max(0, Math.round(end - now));
       const title = second ? 'Reminder: send your end-of-day report' : 'Time for your end-of-day report';
       const body = (left > 0 ? 'Your shift ends in ' + left + ' minutes. ' : 'Your shift has ended. ') + 'Write what you worked on, then check out.';
-      chime(); notifyDesktop(title, body, 'eod-reminder');
+      chime('eod'); notifyDesktop(title, body, 'eod-reminder');
       onFire({ id: 'eod-' + dk + '-' + due[1], kind: 'eod', title, body });
     };
     check(); const t = setInterval(check, 30000);

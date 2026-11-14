@@ -1299,3 +1299,14 @@ button.tile:active,.tile.click:active{background:var(--fill)}
   .tile-v{width:100%;align-items:flex-start;text-align:left}
   .tiles.two .tile{flex-direction:row;align-items:center}
 }
+
+/* My settings */
+.ms{max-width:760px}
+.ms-b{margin-top:24px}
+.ms .st-h{margin-bottom:2px}
+.ms .sr{flex-wrap:wrap}
+.ms .sr.dim{opacity:.5}.ms .sr.dim .sr-c{pointer-events:none}
+.ms-saved{min-width:90px;min-height:24px;opacity:0;transition:opacity .2s ease;justify-content:flex-end}.ms-saved.on{opacity:1}
+.ms-st{font-size:13.5px;color:var(--muted)}.ms-st.granted{color:var(--ok-text)}.ms-st.denied{color:var(--err-text)}
+.ms-f{margin-top:28px;padding-top:20px;border-top:1px solid var(--line)}
+@media (max-width:560px){.ms .sr{align-items:flex-start}.ms .sr-c{flex-wrap:wrap}}
