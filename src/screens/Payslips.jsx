@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { html, Icon, HI } from '../ui.jsx';
+import { FilterBar, matches } from '../Filters.jsx';
 import { TODISO, fmtDM } from '../data.js';
 import { dayKey } from '../attendance.js';
 import { requestableMonths, monthLabel, monthLong, STATUS, isOpen, fmtSize } from '../payslipMonths.js';
@@ -7,23 +8,25 @@ import { requestPayslip, cancelPayslip, downloadPayslip } from '../payslipsDb.js
 
 const when = ts => ts ? fmtDM(dayKey(ts)) : '';
 
-// One of my requests. Defined outside the page so its buttons keep their own busy state while the page updates.
+const COLS = 'minmax(84px,1fr) 168px minmax(100px,1.2fr) 88px 88px 96px minmax(80px,1.1fr) 140px';
+// One of my requests, as a line of the table. Defined outside the page so its buttons keep their own busy state while the page updates.
 function Mine({ r, again }) {
   const [busy, setBusy] = useState(false), [err, setErr] = useState('');
   const st = STATUS[r.status], run = async fn => { setBusy(true); setErr(''); try { await fn(); } catch (e) { setErr(e.message); } setBusy(false); };
-  return html`<article className=${'pay-c ' + st.tone}>
-    <div className="pay-h"><b>${monthLong(r.month)}</b><span className=${'pay-s ' + st.tone}><i></i>${st.label}</span></div>
-    <div className="pay-d">
-      ${r.status === 'requested' && html`<span>Requested ${when(r.requestedAt)}${r.note ? ' · “' + r.note + '”' : ''}</span>`}
-      ${r.status === 'delivered' && html`<span>Delivered ${when(r.decidedAt)} · ${r.fileName} · ${fmtSize(r.fileSize)}</span><span className="pay-note">When you download it, the file is removed from our servers, so keep your copy safe.</span>`}
-      ${r.status === 'downloaded' && html`<span>Delivered ${when(r.decidedAt)} · Downloaded ${when(r.downloadedAt)}</span><span className="pay-note">The file is no longer stored here. Request it again if you need another copy.</span>`}
-      ${r.status === 'declined' && html`<span>${r.reason ? 'Declined: ' + r.reason : 'Your request was declined.'}</span>`}
-      ${r.status === 'cancelled' && html`<span>You cancelled this request on ${when(r.decidedAt)}.</span>`}</div>
-    ${err && html`<div className="lg-err" role="alert">${err}</div>`}
-    <div className="pay-a">
+  const has = r.status === 'delivered' || r.status === 'downloaded', note = r.status === 'declined' ? r.reason : r.note;
+  return html`<article className="tc-r">
+    <div className="tc-who" title=${monthLong(r.month)}><span><b>${monthLabel(r.month)}</b></span></div>
+    <div data-l="Status"><span className=${'pay-s ' + st.tone}><i></i>${st.label}</span></div>
+    <div data-l="File" title=${has ? r.fileName : ''}>${has ? html`<span className="tc-fn">${r.fileName}</span><small>${fmtSize(r.fileSize)}${r.status === 'downloaded' ? ' · removed' : ''}</small>` : html`<span className="tc-dash">–</span>`}</div>
+    <div data-l="Requested"><span>${when(r.requestedAt)}</span></div>
+    <div data-l="Answered">${has ? html`<span>${when(r.decidedAt)}</span>` : r.status === 'declined' || r.status === 'cancelled' ? html`<span>${when(r.decidedAt)}</span><small>${r.status}</small>` : html`<span className="tc-dash">–</span>`}</div>
+    <div data-l="Downloaded">${r.status === 'downloaded' ? html`<span className="pay-dl">${when(r.downloadedAt)}</span>` : r.status === 'delivered' ? html`<small>not yet</small>` : html`<span className="tc-dash">–</span>`}</div>
+    <div data-l="Note" data-w="all" title=${note || ''}>${note ? html`<span className="tc-fn">${note}</span>` : html`<span className="tc-dash">–</span>`}</div>
+    <div className="tc-act">
       ${r.status === 'delivered' && html`<button className="btn pri sm" disabled=${busy} onClick=${() => run(() => downloadPayslip(r.id, r.emp))}><${Icon} n="download" s=${15}/> ${busy ? 'Downloading…' : 'Download'}</button>`}
       ${r.status === 'requested' && html`<button className="btn ghost sm" disabled=${busy} onClick=${() => run(() => cancelPayslip(r.emp, r.id))}>Cancel request</button>`}
       ${(r.status === 'declined' || r.status === 'cancelled' || r.status === 'downloaded') && html`<button className="btn sec2 sm" onClick=${() => again(r.month)}>Request again</button>`}</div>
+    ${err && html`<div className="tc-f"><div className="lg-err" role="alert">${err}</div></div>`}
   </article>`;
 }
 
@@ -31,8 +34,10 @@ function Mine({ r, again }) {
 export function Payslips({ user, pay }) {
   const mine = (pay.list || []).filter(r => r.emp === user.n).sort((a, b) => b.month.localeCompare(a.month) || b.requestedAt - a.requestedAt);
   const months = requestableMonths(TODISO, user.join), taken = new Set(mine.filter(isOpen).map(r => r.month)), free = months.filter(m => !taken.has(m.iso));
-  const [month, setMonth] = useState(''), [note, setNote] = useState(''), [busy, setBusy] = useState(false), [err, setErr] = useState(''), [sent, setSent] = useState('');
+  const [q, setQ] = useState(''), [fs, setFs] = useState('all'), [fy, setFy] = useState('all'), [month, setMonth] = useState(''), [note, setNote] = useState(''), [busy, setBusy] = useState(false), [err, setErr] = useState(''), [sent, setSent] = useState('');
   const pick = free.some(m => m.iso === month) ? month : (free[0] ? free[0].iso : '');
+  const shownList = mine.filter(r => matches(q, monthLong(r.month), r.fileName, r.note, r.reason) && (fs === 'all' || r.status === fs) && (fy === 'all' || r.month.slice(0, 4) === fy));
+  const years = [...new Set(mine.map(r => r.month.slice(0, 4)))].sort().reverse(), anyReady = mine.some(r => r.status === 'delivered');
   const send = async ev => {
     ev.preventDefault(); if (!pick || busy) return; setBusy(true); setErr(''); setSent('');
     try { await requestPayslip(user.n, pick, note); setSent('Requested the payslip for ' + monthLabel(pick) + '. You will get a notification when it is ready.'); setNote(''); setMonth(''); await pay.reload(); }
@@ -58,7 +63,14 @@ export function Payslips({ user, pay }) {
       ${pay.err && html`<div className="eod-e" role="alert">${pay.err}</div>`}
       ${pay.list === null ? html`<div className="none">Loading…</div>`
         : mine.length === 0 ? html`<div className="none"><b>No requests yet</b>When you ask for a payslip it appears here.</div>`
-        : html`<div className="pay-l">${mine.map(r => html`<${Mine} key=${r.id} r=${r} again=${m => { setMonth(m); setSent(''); window.scrollTo({ top: 0, behavior: 'smooth' }); }}/>`)}</div>`}
+        : html`${mine.length > 3 && html`<${FilterBar} q=${q} setQ=${setQ} placeholder="Search month, file or note" shown=${shownList.length} total=${mine.length} noun="requests" groups=${[
+            { label: 'Status', value: fs, set: setFs, options: [['all', 'All statuses'], ...Object.entries(STATUS).map(([k, v]) => [k, v.label])] },
+            ...(years.length > 1 ? [{ label: 'Year', value: fy, set: setFy, options: [['all', 'All years'], ...years.map(y => [y, y])] }] : [])]}/>`}
+          ${anyReady && html`<p className="pay-note" style=${{ marginTop: 10 }}>When you download a payslip, the file is removed from our servers, so keep your copy safe.</p>`}
+          ${shownList.length === 0 ? html`<div className="tc-empty"><b>No requests match</b>Try a different search or clear the filters.</div>`
+            : html`<div className="tc" style=${{ '--cols': COLS }} role="table" aria-label="Your payslip requests">
+              <div className="tc-h" role="row"><span>Month</span><span>Status</span><span>File</span><span>Requested</span><span>Answered</span><span>Downloaded</span><span>Note</span><span></span></div>
+              ${shownList.map(r => html`<${Mine} key=${r.id} r=${r} again=${m => { setMonth(m); setSent(''); window.scrollTo({ top: 0, behavior: 'smooth' }); }}/>`)}</div>`}`}
     </section>
   </div>`;
 }

@@ -13,18 +13,22 @@ export function leaveText(l, all) {
   const peers = [...new Set(awayList(all).filter(a => a.emp !== e.n && BY[a.emp] && BY[a.emp].dept === e.dept && l.from <= a.to && l.to >= a.from).map(a => BY[a.emp].name))];
   const bal = balances(all.filter(x => x.emp === e.n)).find(b => b.t === l.type);
   const hol = workDays(l.from, l.to).hol;
-  const status = l.state === 'approved' ? 'Approved' + (l.by ? ' by ' + l.by : '') + (l.at ? ' on ' + dm(dayKey(l.at)) : '') : l.state === 'declined' ? 'Declined' + (l.by ? ' by ' + l.by : '') + (l.at ? ' on ' + dm(dayKey(l.at)) : '') : 'Pending approval';
+  const who = l.by ? ' by ' + l.by : '', on = l.at ? ' on ' + dm(dayKey(l.at)) : '';
+  const status = l.state === 'approved' ? '\u2705 *Approved*' + who + on : l.state === 'declined' ? '\u274C *Declined*' + who + on : '\u23F3 *Pending approval*';
+  // WhatsApp bold is *text*; each fact starts with a symbol so the lines stay lined up in its proportional font
   const lines = [
-    '*Leave request*',
-    'Name: ' + e.name + (e.dept ? ' (' + e.dept + ')' : ''),
-    'Type: ' + l.type,
-    'Dates: ' + when + ' · ' + days,
-    'Reason: ' + (l.reason && l.reason.trim() ? l.reason.trim() : 'Not given')
+    '\uD83D\uDCCB *LEAVE REQUEST*',
+    '',
+    '\uD83D\uDC64 *Name:* ' + e.name + (e.dept ? ' (' + e.dept + ')' : ''),
+    '\uD83C\uDFF7\uFE0F *Type:* ' + l.type,
+    '\uD83D\uDCC5 *Dates:* ' + when,
+    '\u23F1\uFE0F *Duration:* ' + days,
+    '\uD83D\uDCAC *Reason:* ' + (l.reason && l.reason.trim() ? l.reason.trim() : '_Not given_')
   ];
-  if (bal) lines.push('Balance: ' + Math.max(bal.left - (l.state === 'pending' ? l.days : 0), 0) + ' of ' + bal.total + ' ' + l.type.toLowerCase().replace(' leave', '') + ' days left' + (l.state === 'pending' ? ' after this' : ''));
-  lines.push('Team: ' + (peers.length ? peers.join(' and ') + (peers.length === 1 ? ' is' : ' are') + ' also out in that time' : 'No one else in ' + (e.dept || 'the team') + ' is out'));
-  if (hol.length) lines.push('Holidays: Skips ' + hol.join(', '));
-  lines.push('Status: ' + status);
+  if (bal) lines.push('\uD83D\uDCCA *Balance:* ' + Math.max(bal.left - (l.state === 'pending' ? l.days : 0), 0) + ' of ' + bal.total + ' ' + l.type.toLowerCase().replace(' leave', '') + ' days left' + (l.state === 'pending' ? ' after this' : ''));
+  lines.push('\uD83D\uDC65 *Team:* ' + (peers.length ? peers.join(' and ') + (peers.length === 1 ? ' is' : ' are') + ' also out in that time' : 'No one else in ' + (e.dept || 'the team') + ' is out'));
+  if (hol.length) lines.push('\uD83C\uDF89 *Holidays:* Skips ' + hol.join(', '));
+  lines.push('', status);
   return lines.join('\n');
 }
 

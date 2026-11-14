@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { FilterBar, matches } from '../Filters.jsx';
 import { html, Icon, Av } from '../ui.jsx';
 import { BY, ROLEMAP, fmtDM } from '../data.js';
 import { dayKey } from '../attendance.js';
@@ -8,7 +9,7 @@ import { readPayslipFile, deliverPayslip, declinePayslip, downloadPayslip } from
 
 const when = ts => ts ? fmtDM(dayKey(ts)) : '';
 const ACCEPT = '.pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg';
-const Dash = () => html`<span className="pay-dash">–</span>`;
+const Dash = () => html`<span className="tc-dash">–</span>`;
 
 // Shared by the waiting card and the history row: choosing a file, sending it, and the errors that can follow.
 function useDeliver(r, admin, ask, e) {
@@ -61,18 +62,18 @@ function Row({ r, admin, open, ask }) {
   const first = e.name.split(' ')[0], hasFile = r.status === 'delivered' || r.status === 'downloaded';
   const who = r.decidedBy && BY[r.decidedBy] ? (r.decidedBy === admin.n ? 'you' : BY[r.decidedBy].name.split(' ')[0]) : '';
   const note = r.status === 'declined' ? r.reason : r.note;
-  return html`<article className="pay-tr">
-    <div className="pay-who"><button className="rq3-av" onClick=${() => open(e.n)} aria-label=${'Open ' + e.name}><${Av} e=${e} s=${36}/></button>
+  return html`<article className="tc-r">
+    <div className="tc-who"><button className="rq3-av" onClick=${() => open(e.n)} aria-label=${'Open ' + e.name}><${Av} e=${e} s=${36}/></button>
       <span><b>${e.name}</b><small>${e.dept}${ROLEMAP[e.n] === 'Project manager' ? ' · Project manager' : ''}${e.n === admin.n ? ' · Your request' : ''}</small></span></div>
     <div data-l="Month" title=${monthLong(r.month)}><b>${monthLabel(r.month)}</b></div>
     <div data-l="Status"><span className=${'pay-s ' + st.tone}><i></i>${st.label}</span></div>
-    <div data-l="File" title=${hasFile ? r.fileName : ''}>${hasFile ? html`<span className="pay-fn">${r.fileName}</span><small>${fmtSize(r.fileSize)}</small>` : html`<${Dash}/>`}</div>
+    <div data-l="File" title=${hasFile ? r.fileName : ''}>${hasFile ? html`<span className="tc-fn">${r.fileName}</span><small>${fmtSize(r.fileSize)}</small>` : html`<${Dash}/>`}</div>
     <div data-l="Answered">${hasFile ? html`<span>${when(r.decidedAt)}</span><small>delivered${who ? ' by ' + who : ''}</small>` : r.status === 'declined' || r.status === 'cancelled' ? html`<span>${when(r.decidedAt)}</span><small>${r.status}</small>` : html`<${Dash}/>`}</div>
     <div data-l="Downloaded" title=${r.status === 'downloaded' ? 'The file has been removed from the server' : ''}>${r.status === 'downloaded' ? html`<span className="pay-dl">${when(r.downloadedAt)}</span><small>file removed</small>` : r.status === 'delivered' ? html`<small>not yet</small>` : html`<${Dash}/>`}</div>
-    <div data-l="Note" title=${note || ''}>${note ? html`<span className="pay-fn">${note}</span>` : html`<${Dash}/>`}</div>
-    <div className="pay-act">${r.status === 'delivered' && !d.f && html`<button className="ib" disabled=${d.busy} onClick=${() => d.run(() => downloadPayslip(r.id))} aria-label=${'Download ' + r.fileName} title="Download"><${Icon} n="download" s=${17}/></button><button className="ib" onClick=${d.choose} aria-label="Replace the file" title="Replace the file"><${Icon} n="upload" s=${17}/></button>`}</div>
+    <div data-l="Note" data-w="all" title=${note || ''}>${note ? html`<span className="tc-fn">${note}</span>` : html`<${Dash}/>`}</div>
+    <div className="tc-act">${r.status === 'delivered' && !d.f && html`<button className="ib dl" disabled=${d.busy} onClick=${() => d.run(() => downloadPayslip(r.id))} aria-label=${'Download ' + r.fileName} title="Download the file"><${Icon} n="download" s=${17}/></button><button className="ib rp" onClick=${d.choose} aria-label="Replace the file" title="Replace the file"><${Icon} n="upload" s=${17}/></button>`}</div>
     <input ref=${d.file} type="file" accept=${ACCEPT} hidden onChange=${d.pick}/>
-    ${(d.f || d.err) && html`<div className="pay-trf">${d.f && html`<${SendForm} d=${d} first=${first}/>`}${d.err && html`<div className="lg-err" role="alert" style=${{ margin: '10px 0 0' }}>${d.err}</div>`}</div>`}
+    ${(d.f || d.err) && html`<div className="tc-f">${d.f && html`<${SendForm} d=${d} first=${first}/>`}${d.err && html`<div className="lg-err" role="alert" style=${{ margin: '10px 0 0' }}>${d.err}</div>`}</div>`}
   </article>`;
 }
 
@@ -81,20 +82,29 @@ export const DecidedToggle = ({ n, open, set, label }) => n > 0 ? html`<button c
 
 /* Admin: payslip requests. Upload the file for a request to deliver it; the employee is notified and downloads it from their Payslips page.
    Waiting requests are cards; past ones are cards lined up in columns under one header. */
+const COLS = 'minmax(170px,1.4fr) 80px 168px minmax(90px,1.1fr) 100px 90px minmax(70px,1fr) 84px';
 export function PayslipRequests({ user, pay, open }) {
-  const [past, setPast] = useState(false), [cfEl, ask] = useConfirm();
-  const all = (pay.list || []).filter(r => BY[r.emp]);
+  const [past, setPast] = useState(false), [cfEl, ask] = useConfirm(), [q, setQ] = useState(''), [st, setSt] = useState('all'), [mo, setMo] = useState('all');
+  const every = (pay.list || []).filter(r => BY[r.emp]);
+  const fit = r => matches(q, BY[r.emp].name, BY[r.emp].dept, r.fileName, r.note) && (st === 'all' || r.status === st) && (mo === 'all' || r.month === mo);
+  const all = every.filter(fit);
   const waiting = all.filter(r => r.status === 'requested').sort((a, b) => a.requestedAt - b.requestedAt);
   const done = all.filter(r => r.status !== 'requested').sort((a, b) => (b.decidedAt || b.requestedAt) - (a.decidedAt || a.requestedAt));
+  const filtering = q.trim() !== '' || st !== 'all' || mo !== 'all', showDone = past || (filtering && done.length > 0);
+  const months = [...new Set(every.map(r => r.month))].sort().reverse();
   return html`<div className="rq-body">
     ${cfEl}
     ${pay.err && html`<div className="eod-e" role="alert">${pay.err}</div>`}
+    ${every.length > 3 && html`<${FilterBar} q=${q} setQ=${setQ} placeholder="Search by name or file" shown=${all.length} total=${every.length} noun="requests" groups=${[
+      { label: 'Status', value: st, set: setSt, options: [['all', 'All statuses'], ...Object.entries(STATUS).map(([k, v]) => [k, v.label])] },
+      { label: 'Month', value: mo, set: setMo, options: [['all', 'All months'], ...months.map(m => [m, monthLabel(m)])] }]}/>`}
     ${pay.list === null ? html`<div className="none">Loading…</div>`
-      : waiting.length === 0 ? html`<div className="rq3-e"><span><${Icon} n="check" s=${22}/></span><div><b>No payslip requests waiting</b><p>When an employee asks for a payslip it appears here. Upload the file to deliver it.</p></div></div>`
+      : filtering && all.length === 0 ? html`<div className="tc-empty"><b>No requests match</b>Try a different search or clear the filters.</div>`
+      : waiting.length === 0 ? !filtering && html`<div className="rq3-e"><span><${Icon} n="check" s=${22}/></span><div><b>No payslip requests waiting</b><p>When an employee asks for a payslip it appears here. Upload the file to deliver it.</p></div></div>`
       : html`<div className="rq3-l">${waiting.map(r => html`<${Card} key=${r.id} r=${r} admin=${user} open=${open} ask=${ask}/>`)}</div>`}
-    <${DecidedToggle} n=${done.length} open=${past} set=${setPast} label="past requests"/>
-    ${past && html`<div className="pay-tbl" role="table" aria-label="Past payslip requests">
-      <div className="pay-th" role="row"><span>Employee</span><span>Month</span><span>Status</span><span>File</span><span>Answered</span><span>Downloaded</span><span>Note</span><span></span></div>
+    ${!filtering && html`<${DecidedToggle} n=${done.length} open=${past} set=${setPast} label="past requests"/>`}
+    ${showDone && html`<div className="tc" style=${{ '--cols': COLS }} role="table" aria-label="Past payslip requests">
+      <div className="tc-h" role="row"><span>Employee</span><span>Month</span><span>Status</span><span>File</span><span>Answered</span><span>Downloaded</span><span>Note</span><span></span></div>
       ${done.map(r => html`<${Row} key=${r.id} r=${r} admin=${user} open=${open} ask=${ask}/>`)}</div>`}
   </div>`;
 }

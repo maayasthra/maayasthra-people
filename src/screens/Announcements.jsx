@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { html, Icon, Av, HI } from '../ui.jsx';
 import { TODISO, BY, activeEmps, fmtDM } from '../data.js';
 import { useAcks } from '../alerts.js';
+import { FilterBar, matches } from '../Filters.jsx';
 
 export const KINDS = {
   general: { label: 'General', icon: 'megaphone', c: '#0A84FF' },
@@ -36,13 +37,14 @@ export function AckBar({ a, acks }) {
   </div>`;
 }
 
-export function AnnList({ ann, setAnn, canPost, tracker = false, limit = 0 }) {
-  const acks = useAcks(tracker), [cfEl, ask] = useConfirm();
+export function AnnList({ ann, setAnn, canPost, tracker = false, limit = 0, filters = false }) {
+  const acks = useAcks(tracker), [cfEl, ask] = useConfirm(), [q, setQ] = useState(''), [kd0, setKd0] = useState('all');
   const remove = async a => { if (await ask({ title: 'Remove this announcement?', icon: 'trash', danger: true, confirm: 'Remove', body: 'It disappears for everyone, including people who have not read it yet.', quote: a.title })) setAnn(x => x.filter(y => y.id !== a.id)); };
-  const shown = limit ? ann.slice(0, limit) : ann;
+  const found = filters ? ann.filter(a => matches(q, a.title, a.body, a.by) && (kd0 === 'all' || a.kind === kd0)) : ann, shown = limit ? found.slice(0, limit) : found;
   return html`<div className="anl">
     ${cfEl}
-    ${ann.length === 0 ? html`<div className="empty" style=${{ textAlign: 'left' }}>No announcements right now.</div>` :
+    ${filters && ann.length > 3 && html`<${FilterBar} q=${q} setQ=${setQ} placeholder="Search announcements" shown=${found.length} total=${ann.length} noun="announcements" groups=${[{ label: 'Type', value: kd0, set: setKd0, options: [['all', 'All types'], ...Object.entries(KINDS).map(([k, v]) => [k, v.label])] }]}/>`}
+    ${filters && ann.length > 0 && found.length === 0 ? html`<div className="tc-empty"><b>No announcements match</b>Try a different search or clear the filters.</div>` : ann.length === 0 ? html`<div className="empty" style=${{ textAlign: 'left' }}>No announcements right now.</div>` :
       shown.map(a => { const kd = KINDS[a.kind] || KINDS.general; return html`<article className="an" key=${a.id}>
         <span className="an-i" style=${{ '--c': kd.c }}><${Icon} n=${kd.icon} s=${22}/></span>
         <div className="an-b">
@@ -74,6 +76,6 @@ export function Announcements({ ann, setAnn, user, role }) {
     <div className="pg-h"><div><h1><${HI} n="megaphone" tone="orange"/>Announcements</h1><p>${admin ? 'Post to everyone and see who has acknowledged' : 'Notices from People and Ops'}</p></div>
       ${admin && !composing && html`<button className="btn pri" onClick=${() => setComposing(true)}><${Icon} n="plus" s=${16}/> New announcement</button>`}</div>
     ${admin && composing && html`<section className="an-new"><h2>New announcement</h2><${Composer} user=${user} setAnn=${setAnn} close=${() => setComposing(false)}/></section>`}
-    <section className="an-pg"><${AnnList} ann=${ann} setAnn=${setAnn} canPost=${admin} tracker=${admin}/></section>
+    <section className="an-pg"><${AnnList} ann=${ann} setAnn=${setAnn} canPost=${admin} tracker=${admin} filters=${true}/></section>
   </div>`;
 }

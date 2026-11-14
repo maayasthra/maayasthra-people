@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { html, Icon, Av, Tile, HI } from '../ui.jsx';
 import { dayKey, addDays, weekStart, monthDays, getDay } from '../attendance.js';
-import { activeEmps, plural, HOL, fmtDM, pd, TODISO, ROLEMAP } from '../data.js';
+import { activeEmps, DEPTS, plural, HOL, fmtDM, pd, TODISO, ROLEMAP } from '../data.js';
 import { CopyEod } from './CopyEod.jsx';
+import { FilterBar, matches } from '../Filters.jsx';
 import { loadEods, fmtH } from '../eodDb.js';
 import { subscribeTables } from '../tasksDb.js';
 import { IS_DEMO } from '../env.js';
@@ -25,7 +26,7 @@ export function Report({ r }) {
 export function EodReports({ user, role, tick, onEditToday, checkedIn, att }) {
   const mgr = role === 'admin' || role === 'pm';
   const [view, setView] = useState('day'), [day, setDay] = useState(dayKey());
-  const [list, setList] = useState(null), [err, setErr] = useState(''), [openK, setOpenK] = useState(mgr ? null : user.n), [rev, setRev] = useState(0);
+  const [list, setList] = useState(null), [err, setErr] = useState(''), [openK, setOpenK] = useState(mgr ? null : user.n), [rev, setRev] = useState(0), [fq, setFq] = useState(''), [fd, setFd] = useState('All');
   const range = view === 'day' ? [day, day] : view === 'week' ? [weekStart(day), addDays(weekStart(day), 6)] : (() => { const d = pd(day), md = monthDays(new Date(d).getUTCFullYear(), new Date(d).getUTCMonth()); return [md[0], md[md.length - 1]]; })();
   const [from, to] = range;
 
@@ -38,7 +39,8 @@ export function EodReports({ user, role, tick, onEditToday, checkedIn, att }) {
 
   const people = activeEmps().filter(e => mgr || e.n === user.n);
   const by = {}; (list || []).forEach(r => { (by[r.emp] = by[r.emp] || []).push(r); });
-  const rows = people.filter(e => by[e.n]).map(e => ({ e, reps: by[e.n].sort((a, b) => b.day.localeCompare(a.day)), total: by[e.n].reduce((t, r) => t + r.total, 0) }))
+  const rowsAll = people.filter(e => by[e.n]);
+  const rows = rowsAll.filter(e => matches(fq, e.name, e.role) && (fd === 'All' || e.dept === fd)).map(e => ({ e, reps: by[e.n].sort((a, b) => b.day.localeCompare(a.day)), total: by[e.n].reduce((t, r) => t + r.total, 0) }))
     .sort((a, b) => b.total - a.total || a.e.name.localeCompare(b.e.name));
   // Only people who checked in that day are expected to send one
   const missing = view === 'day' && mgr && day <= TODISO ? people.filter(e => (ROLEMAP[e.n] || 'Employee') === 'Employee' && !by[e.n] && getDay(att, e.n, day).sessions.length > 0) : [];
@@ -63,6 +65,7 @@ export function EodReports({ user, role, tick, onEditToday, checkedIn, att }) {
     </div>
     ${!mgr && checkedIn && !mine && html`<div className="er-nav"><span style=${{ flex: 1 }}></span><button className="btn sec2 sm" onClick=${onEditToday}>Write today’s report</button></div>`}
     ${err && html`<div className="eod-e" role="alert">${err}</div>`}
+    ${mgr && rowsAll.length > 2 && html`<${FilterBar} q=${fq} setQ=${setFq} placeholder="Search people" shown=${rows.length} total=${rowsAll.length} noun="people" groups=${[{ label: 'Department', value: fd, set: setFd, options: [['All', 'All departments'], ...DEPTS.filter(d => d !== 'All').map(d => [d, d])] }]}/>`}
     <div className="ph3">
       ${list === null && html`<div className="none">Loading…</div>`}
       ${list !== null && rows.length === 0 && html`<div className="none"><b>No reports ${view === 'day' ? 'for this day' : 'in this period'}</b>${mgr ? 'Reports appear here when people check out.' : 'You send one each day when you check out.'}</div>`}

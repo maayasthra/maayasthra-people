@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useConfirm } from '../Confirm.jsx';
 import { html, Icon, Tile, HI, Switch } from '../ui.jsx';
 import { DateField } from '../DateField.jsx';
+import { FilterBar, matches } from '../Filters.jsx';
 import { typeIcon, typeTone } from './Home.jsx';
 import { TOD, DAY, TODISO, BY, POLICY, isoOf, pd, fmtDay, plural, range, workDays, balances, noticeDays, TEAM_LEAVES, HOL } from '../data.js';
 
@@ -16,7 +17,7 @@ export function MyLeaves({ leaves, setLeaves, user }) {
   // Open on a day that can actually be booked: far enough ahead, and not a weekend or holiday.
   const start = (() => { let t = TOD + (POLICY.notice + 5) * DAY; while ([0, 6].includes(new Date(t).getUTCDay()) || HOL[isoOf(t)]) t += DAY; return isoOf(t); })();
   const [f, setF] = useState({ type: 'Casual leave', from: start, to: start, reason: '', half: false });
-  const [sent, setSent] = useState(false);
+  const [sent, setSent] = useState(false), [fq, setFq] = useState(''), [fs, setFs] = useState('all'), [ft, setFt] = useState('all');
   const up = p => { setF(o => { const n = { ...o, ...p }; if (n.from && n.to && n.to < n.from && p.from) n.to = n.from; if (n.from !== n.to) n.half = false; return n; }); setSent(false); };
   const bal = balances(mine);
   const cur = bal.find(b => b.t === f.type) || bal[0], avail = cur.left - cur.pend;
@@ -38,7 +39,7 @@ export function MyLeaves({ leaves, setLeaves, user }) {
     setLeaves(ls => [{ id: Date.now(), emp: me.n, type: f.type, from: f.from, to: f.to, days, half: days === 0.5, reason: f.reason.trim(), state: 'pending', sent: 'Just now' }, ...ls]);
     setSent(true); setF(o => ({ ...o, reason: '', half: false }));
   };
-  const hist = [...mine].sort((a, b) => b.from.localeCompare(a.from));
+  const hist = [...mine].sort((a, b) => b.from.localeCompare(a.from)), histShown = hist.filter(l => matches(fq, l.type, l.reason) && (fs === 'all' || l.state === fs) && (ft === 'all' || l.type === ft));
   return html`<div>
     ${cfEl}
     <div className="pg-h"><div><h1><${HI} n="leaves" tone="green"/>My Leaves</h1><p>${new Date(TOD).getUTCFullYear()}</p></div></div>
@@ -63,10 +64,18 @@ export function MyLeaves({ leaves, setLeaves, user }) {
         <button className="btn pri lf-send" type="submit" disabled=${!valid}>Send request</button>
       </form>
       <section><div className="sec-h"><h2>History</h2><span>${plural(hist.length, 'request')}</span></div>
-        <div>${hist.length === 0 ? html`<div className="empty" style=${{ textAlign: 'left', padding: '12px 0' }}>No requests</div>` : hist.map(l => html`<div className="hx" key=${l.id}>
-          <span className="row-t"><b>${l.type}${l.half ? ' · half day' : ''}</b><span>${range(l.from, l.to)} · ${plural(l.days, 'day')}${l.reason ? ' · ' + l.reason : ''}</span></span>
-          <span className="hx-s"><span className="pill" style=${{ '--c': LS_C[l.state] }}><i></i>${l.state[0].toUpperCase() + l.state.slice(1)}</span>${l.by && l.state !== 'pending' && html`<small>by ${l.byId === me.n ? 'you' : l.by}</small>`}</span>
-          ${(l.state === 'pending' || (l.state === 'approved' && l.from > TODISO)) && html`<button className="link" onClick=${async () => { const was = l.state === 'pending'; if (await ask({ title: was ? 'Withdraw this request?' : 'Cancel your approved leave?', icon: 'leaves', danger: true, confirm: was ? 'Withdraw request' : 'Cancel leave', body: l.type + ' \u00b7 ' + range(l.from, l.to) + ' \u00b7 ' + plural(l.days, 'day'), items: [{ tone: 'warn', text: was ? 'It will not be sent for approval.' : 'Your approved leave is cancelled and the days go back to your balance.' }] })) setLeaves(ls => ls.filter(x => x.id !== l.id)); }}>${l.state === 'pending' ? 'Withdraw' : 'Cancel'}</button>`}</div>`)}</div></section>
+        ${hist.length > 3 && html`<${FilterBar} q=${fq} setQ=${setFq} placeholder="Search reason" shown=${histShown.length} total=${hist.length} noun="requests" groups=${[
+          { label: 'Status', value: fs, set: setFs, options: [['all', 'All statuses'], ['pending', 'Pending'], ['approved', 'Approved'], ['declined', 'Declined']] },
+          { label: 'Leave type', value: ft, set: setFt, options: [['all', 'All types'], ...[...new Set(hist.map(l => l.type))].map(t => [t, t])] }]}/>`}
+        ${hist.length === 0 ? html`<div className="empty" style=${{ textAlign: 'left', padding: '12px 0' }}>No requests</div>`
+          : histShown.length === 0 ? html`<div className="tc-empty"><b>No requests match</b>Try a different search or clear the filters.</div>`
+          : html`<div className="tc stk" role="table" aria-label="Your leave requests">${histShown.map(l => html`<article className="tc-r" key=${l.id}>
+            <div className="tc-who"><span><b>${l.type}${l.half ? ' · half day' : ''}</b><small>${range(l.from, l.to)} ${l.from.slice(0, 4)}</small></span></div>
+            <div data-l="Duration"><b>${l.half ? 'Half day' : plural(l.days, 'day')}</b></div>
+            <div data-l="Status"><span className=${'pay-s ' + (l.state === 'approved' ? 'ok' : l.state === 'declined' ? 'err' : 'warn')}><i></i>${l.state[0].toUpperCase() + l.state.slice(1)}</span>${l.by && l.state !== 'pending' && html`<small>by ${l.byId === me.n ? 'you' : l.by}</small>`}</div>
+            ${l.reason && html`<div data-l="Reason" data-w="all" title=${l.reason}><span className="tc-fn">${l.reason}</span></div>`}
+            ${(l.state === 'pending' || (l.state === 'approved' && l.from > TODISO)) && html`<div className="tc-act"><button className="btn ghost sm" onClick=${async () => { const was = l.state === 'pending'; if (await ask({ title: was ? 'Withdraw this request?' : 'Cancel your approved leave?', icon: 'leaves', danger: true, confirm: was ? 'Withdraw request' : 'Cancel leave', body: l.type + ' \u00b7 ' + range(l.from, l.to) + ' \u00b7 ' + plural(l.days, 'day'), items: [{ tone: 'warn', text: was ? 'It will not be sent for approval.' : 'Your approved leave is cancelled and the days go back to your balance.' }] })) setLeaves(ls => ls.filter(x => x.id !== l.id)); }}>${l.state === 'pending' ? 'Withdraw' : 'Cancel leave'}</button></div>`}
+          </article>`)}</div>`}</section>
     </div>
   </div>`;
 }

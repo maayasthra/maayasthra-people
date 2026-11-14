@@ -1317,9 +1317,9 @@ button.tile:active,.tile.click:active{background:var(--fill)}
 @media (min-width:861px){.app:not(.no-side) .tr .menu .dup{display:none}}
 
 /* Payslips */
-.pay{max-width:820px}
+.pay{max-width:none}
 .pay-req,.pay-list{margin-top:24px}
-.pay-req{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:20px}
+.pay-req{max-width:820px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:20px}
 .pay-f{display:grid;grid-template-columns:minmax(150px,200px) minmax(0,1fr) auto;gap:14px;align-items:end;margin-top:12px}
 .pay-f .fld{margin:0}.pay-f .fld>label{display:block;font-size:14px;font-weight:500;color:var(--text-2);margin-bottom:6px}
 .pay-none{margin:10px 0 0;color:var(--muted);font-size:14px}
@@ -1329,9 +1329,6 @@ button.tile:active,.tile.click:active{background:var(--fill)}
 .pay-h{display:flex;align-items:center;justify-content:space-between;gap:12px}.pay-h b{font-size:16px;font-weight:600}
 .pay-d{font-size:14px;color:var(--muted);line-height:20px;overflow-wrap:anywhere}
 .pay-a{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
-.pay-s{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:500;color:var(--text-2);white-space:nowrap}
-.pay-s i{width:8px;height:8px;border-radius:50%;background:var(--faint)}
-.pay-s.warn i{background:var(--warn-text,#DC6803)}.pay-s.ok i{background:var(--ok-text,#079455)}.pay-s.err i{background:var(--err-text,#D92D20)}
 .pay-mo{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--text)}.pay-mo svg{color:var(--muted)}
 .pay-when{font-size:13px;color:var(--muted)}
 .pay-file{display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px 12px;border-radius:var(--r-ctl);background:var(--fill);color:var(--text-2)}
@@ -1375,30 +1372,82 @@ button.tile:active,.tile.click:active{background:var(--fill)}
 .pay-file.gone{opacity:.8}
 
 
-/* Payslip history: cards that share one column grid, with a header row above, so every value lines up from card to card */
-.pay-tbl{--cols:minmax(150px,1.3fr) 84px 134px minmax(110px,1.1fr) 108px 92px minmax(80px,1fr) 76px;margin-top:14px}
-.pay-th,.pay-tr{display:grid;grid-template-columns:var(--cols);column-gap:14px;align-items:center}
-.pay-th{padding:0 18px 8px;font-size:12px;font-weight:500;color:var(--faint)}
-.pay-tr{margin-top:8px;padding:10px 18px;min-height:62px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card)}
-.pay-tr>div{min-width:0;overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:1px;font-size:14px;color:var(--text-2)}
-.pay-tr>div b{font-weight:600;color:var(--text)}
-.pay-tr small{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pay-fn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pay-who{flex-direction:row!important;justify-content:flex-start!important;align-items:center;gap:12px!important}
-.pay-who>span{display:flex;flex-direction:column;min-width:0}.pay-who b{font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pay-dash{color:var(--faint)}.pay-dl{color:var(--ok-text);font-weight:500}.pay-gone{color:var(--text-2)}
-.pay-act{flex-direction:row!important;justify-content:flex-end;align-items:center;gap:4px!important}
-.pay-trf{grid-column:1/-1;padding-top:6px}
-@media (max-width:1180px){
-  .pay-th{display:none}
-  .pay-tr{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:12px}
-  .pay-tr>.pay-who{grid-column:1/-1}
-  .pay-tr>div[data-l]::before{content:attr(data-l);display:block;font-size:12px;color:var(--faint);margin-bottom:2px}
-  .pay-tr>div[data-l="Note"]{grid-column:1/-1}
-  .pay-tr>div[data-l]:has(>.pay-dash){display:none}
-  .pay-act{grid-column:1/-1;justify-content:flex-start}
+/* Table cards: every row is its own card, but all rows share one column grid (set per table with --cols) under a header row, so values line up.
+   Narrow containers (or .stk) stack each card into labelled pairs. */
+.tc{--cols:1fr;margin-top:14px;container-type:inline-size}
+.tc-h,.tc-r{display:grid;grid-template-columns:var(--cols);column-gap:14px;align-items:center}
+.tc-h{padding:0 18px 8px;font-size:12px;font-weight:500;color:var(--faint)}
+.tc-r{margin-top:8px;padding:10px 18px;min-height:62px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-card)}
+.tc-r>div{min-width:0;overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:2px;font-size:14px;color:var(--text-2)}
+.tc-r>div b{font-weight:600;color:var(--text)}
+.tc-r small{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tc-fn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tc-who{flex-direction:row!important;justify-content:flex-start!important;align-items:center;gap:12px!important}
+.tc-who>span{display:flex;flex-direction:column;min-width:0}.tc-who b{font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tc-dash,.pay-dash{color:var(--faint)}.pay-dl{color:var(--ok-text);font-weight:500}
+.tc-act{flex-direction:row!important;justify-content:flex-end;align-items:center;gap:6px!important;overflow:visible!important}
+.tc-f{grid-column:1/-1;padding-top:6px}
+.tc-r>div[data-l]>.pay-s,.tc-r>div[data-l]>.tc-pill{align-self:flex-start}
+@container (max-width:990px){
+  .tc-h{display:none}
+  .tc-r{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:12px}
+  .tc-r>.tc-who{grid-column:1/-1}
+  .tc-r>div[data-l]::before{content:attr(data-l);display:block;font-size:12px;color:var(--faint);margin-bottom:2px}
+  .tc-r>div[data-w="2"]{grid-column:span 2}
+  .tc-r>div[data-w="all"]{grid-column:1/-1}
+  .tc-r>div[data-l]:has(>.tc-dash){display:none}
+  .tc-r>.tc-act{grid-column:1/-1;justify-content:flex-start}
 }
-@media (max-width:560px){.pay-tr{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* Phones: each card becomes a short list, label on the left and value on the right of it */
+@container (max-width:560px){
+  .tc-r{grid-template-columns:minmax(0,1fr);row-gap:0;padding:14px 16px}
+  .tc-r>.tc-who{padding-bottom:10px}
+  .tc-r>div[data-l]{display:grid!important;grid-template-columns:96px minmax(0,1fr);column-gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--line);grid-column:1/-1!important}
+  .tc-r>div[data-l]::before{grid-column:1;grid-row:1/span 3;margin:0}
+  .tc-r>div[data-l]>*{grid-column:2}
+  .tc-r>div[data-l]>.pay-s{justify-self:start}
+  .tc-r>div[data-l]:has(>.tc-dash){display:none!important}
+  .tc-r>.tc-act{padding-top:10px;border-top:1px solid var(--line);flex-wrap:wrap;justify-content:flex-start}
+}
+@container (min-width:561px){
+  .tc.stk .tc-r{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:12px}
+  .tc.stk .tc-r>div[data-w="2"],.tc.stk .tc-r>div[data-w="all"]{grid-column:1/-1}
+}
+.tc.stk .tc-h{display:none}
+.tc.stk .tc-r>.tc-who{grid-column:1/-1}
+.tc.stk .tc-r>div[data-l]::before{content:attr(data-l);display:block;font-size:12px;color:var(--faint);margin-bottom:2px}
+.tc.stk .tc-r>div[data-l]:has(>.tc-dash){display:none}
+.tc.stk .tc-r>.tc-act{grid-column:1/-1;justify-content:flex-start}
+.tc-empty{margin-top:10px;padding:26px 18px;text-align:center;color:var(--muted);font-size:14px;border:1px dashed var(--line-hi,var(--line));border-radius:var(--r-card)}
+.tc-empty b{display:block;color:var(--text);font-size:15px;margin-bottom:2px}
+
+/* Status pills: a soft tint so each state reads at a glance. "ready" is the one that asks the person to act. */
+.pay-s{display:inline-flex;align-items:center;gap:7px;padding:3px 11px 3px 9px;border-radius:999px!important;background:var(--fill);font-size:13px;font-weight:500;color:var(--text-2);white-space:nowrap;width:max-content;max-width:100%}
+.pay-s i{width:7px;height:7px;border-radius:50%;background:var(--faint);flex:none}
+.pay-s.warn{background:rgb(255 159 10 / .14);color:var(--warn-text,#B54708)}.pay-s.warn i{background:var(--warn-text,#DC6803)}
+.pay-s.ok{background:var(--ok-bg,rgb(48 209 88 / .14));color:var(--ok-text,#079455)}.pay-s.ok i{background:var(--ok-text,#079455)}
+.pay-s.err{background:var(--err-bg,rgb(255 69 58 / .14));color:var(--err-text,#D92D20)}.pay-s.err i{background:var(--err-text,#D92D20)}
+.pay-s.ready{background:rgb(10 132 255 / .15);color:#0A5FC2}.pay-s.ready i{background:#0A84FF}
+:root[data-theme="dark"] .pay-s.ready{color:#4DA3FF}
+.pay-s.mute i{background:var(--faint)}
+
+/* Row buttons, told apart by colour: green downloads, purple replaces, red declines */
+.ib.dl,.ib.rp,.ib.no{width:36px;height:36px;border-radius:var(--r-ctl)}
+.ib.dl{background:var(--ok-bg,rgb(48 209 88 / .14));color:var(--ok-text,#079455)}.ib.dl:hover:not(:disabled){background:var(--ok-text);color:#fff}
+.ib.rp{background:rgb(191 90 242 / .15);color:#BF5AF2}.ib.rp:hover:not(:disabled){background:#BF5AF2;color:#fff}
+.ib.no{background:var(--err-bg,rgb(255 69 58 / .14));color:var(--err-text,#D92D20)}.ib.no:hover:not(:disabled){background:var(--err-text);color:#fff}
+
+/* Filters: one row above a list. Search first, then a few dropdowns, and a Clear link once anything is set. */
+.flt{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:16px 0 4px}
+.flt-s{position:relative;flex:1 1 220px;max-width:340px;min-width:0}
+.flt-s svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--faint);pointer-events:none}
+.flt-s .inp{width:100%;height:40px;padding-left:36px}
+.flt-g{display:flex;flex-direction:column;gap:0;min-width:0}
+.flt-g select{height:40px;min-width:130px;max-width:100%}
+.flt-c{border:0;background:none;box-shadow:none;color:var(--brand-text);font-size:14px;font-weight:500;padding:0 6px;height:40px}
+.flt-c:hover{background:none;text-decoration:underline}
+.flt-n{margin-left:auto;font-size:13px;color:var(--muted);white-space:nowrap}
+@media (max-width:640px){.flt-s{flex-basis:100%;max-width:none}.flt-g{flex:1 1 calc(50% - 5px)}.flt-g select{width:100%;min-width:0}.flt-n{margin-left:0;flex-basis:100%}}
 
 /* Confirmation dialog: a second look before something important happens */
 .dlg.cf{width:min(460px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow-y:auto}
@@ -1416,3 +1465,5 @@ button.tile:active,.tile.click:active{background:var(--fill)}
 .cf-l li.warn{color:var(--text)}.cf-l li.warn svg{color:var(--warn-text,#DC6803)}
 .cf-l li.bad{color:var(--text);font-weight:500}.cf-l li.bad svg{color:var(--err-text)}
 .dlg.cf .dlg-a{margin-top:20px}
+.flt .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.tc-act:empty{display:none!important}
