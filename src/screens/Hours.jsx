@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useConfirm } from '../Confirm.jsx';
 import { html, Icon, Tile, HI } from '../ui.jsx';
 import { HOL, MONL, TODISO, TOD, fmtDay, pd, fmtTime, plural, awayList } from '../data.js';
 import { dayInfo, saveDay, toHM, toTs, monthDays, useNow, hm, clock, dayKey, whyLabel, EARLY_WHY, removeAway, awayMs } from '../attendance.js';
@@ -37,7 +38,7 @@ const Badge = ({ c, children }) => html`<span className="hb" style=${{ '--c': c 
 
 /* ---------- a person's days for a month, with totals ---------- */
 export function HoursPanel({ emp, att, setAtt, leaves, canEdit, editor }) {
-  const now = useNow(30000);
+  const now = useNow(30000), [cfEl, ask] = useConfirm();
   const T0 = new Date(TOD);
   const [mo, setMo] = useState({ y: T0.getUTCFullYear(), m: T0.getUTCMonth() });
   const [edit, setEdit] = useState(null);
@@ -50,6 +51,7 @@ export function HoursPanel({ emp, att, setAtt, leaves, canEdit, editor }) {
   const step = n => { const t = new Date(Date.UTC(mo.y, mo.m + n, 1)); setMo({ y: t.getUTCFullYear(), m: t.getUTCMonth() }); setEdit(null); };
   const atNow = mo.y === T0.getUTCFullYear() && mo.m === T0.getUTCMonth();
   return html`<div>
+    ${cfEl}
     <div className="tiles">
       <${Tile} icon="check" tone="blue" label="Days present" value=${present.length} sub=${'of ' + rows.filter(r => !['off', 'leave', 'na'].includes(r.i.state)).length}/>
       <${Tile} icon="clock" tone="green" label="Total hours" value=${hm(total)} sub=${fmtTime(emp.shiftStart) + ' – ' + fmtTime(emp.shiftEnd)}/>
@@ -71,7 +73,7 @@ export function HoursPanel({ emp, att, setAtt, leaves, canEdit, editor }) {
             ${canEdit && !['off', 'na', 'future'].includes(i.state) ? html`<button className="link" onClick=${() => setEdit(edit === d ? null : d)}>${edit === d ? 'Close' : 'Edit'}</button>` : html`<span></span>`}
           </div>
           ${has && (i.breaks.length > 0 || i.early) && html`<div className="hd-aw">
-            ${i.breaks.slice().sort((x, y) => x.from - y.from).map(x => html`<div key=${x.from}><span><${Icon} n="cup" s=${14}/>Away ${clock(x.from)} – ${x.to == null ? 'now' : clock(x.to)} · ${hm((x.to == null ? now : x.to) - x.from)}</span><b>${whyLabel(x.why)}</b>${x.later && html`<${Badge} c="#8E8E93">Added later<//>`}${x.note && html`<small>${x.note}</small>`}${canEdit && x.to != null && html`<button className="link" onClick=${() => setAtt(a => removeAway(a, emp.n, d, x.from))}>Remove</button>`}</div>`)}
+            ${i.breaks.slice().sort((x, y) => x.from - y.from).map(x => html`<div key=${x.from}><span><${Icon} n="cup" s=${14}/>Away ${clock(x.from)} – ${x.to == null ? 'now' : clock(x.to)} · ${hm((x.to == null ? now : x.to) - x.from)}</span><b>${whyLabel(x.why)}</b>${x.later && html`<${Badge} c="#8E8E93">Added later<//>`}${x.note && html`<small>${x.note}</small>`}${canEdit && x.to != null && html`<button className="link" onClick=${async () => { if (await ask({ title: 'Remove this away time?', icon: 'cup', danger: true, confirm: 'Remove', body: emp.name + ' \u00b7 ' + whyLabel(x.why) + ' \u00b7 ' + clock(x.from) + ' \u2013 ' + clock(x.to) + ' on ' + fmtDay(pd(d)), items: [{ tone: 'warn', text: 'Their worked time for that day goes up by ' + hm(x.to - x.from) + '.' }] })) setAtt(a => removeAway(a, emp.n, d, x.from)); }}>Remove</button>`}</div>`)}
             ${i.early && html`<div><span><${Icon} n="logout" s=${14}/>Left early</span><b>${whyLabel(i.early.why, EARLY_WHY)}</b>${i.early.note && html`<small>${i.early.note}</small>`}</div>`}</div>`}
           ${edit === d && html`<${DayEditor} iso=${d} rec=${{ sessions: i.sessions }} onCancel=${() => setEdit(null)} onSave=${ss => { setAtt(a => saveDay(a, emp.n, d, ss, editor.name)); setEdit(null); }}/>`}
         </div>`; })}

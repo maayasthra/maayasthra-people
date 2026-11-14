@@ -6,6 +6,8 @@ import { checkInSound } from '../alerts.js';
 import { AnnList, Composer } from './Announcements.jsx';
 import { ProfileSetup } from './ProfileSetup.jsx';
 import { Cover } from '../Cover.jsx';
+import { useConfirm } from '../Confirm.jsx';
+import { leaveDialog } from '../leaveFacts.js';
 import { CopyLeave } from '../CopyLeave.jsx';
 import { isOpen } from '../tasks.js';
 import { SessionList, useDay, dayNote } from '../Attendance.jsx';
@@ -31,7 +33,7 @@ function Panel({ title, sub, right, children }) {
 /* ---------- Leave approvals: one request at a time, slide with the arrows ---------- */
 function ApprovalsCarousel({ queue, all, setLeaves, open, user }) {
   const pending = queue.filter(l => l.state === 'pending');
-  const [i, setI] = useState(0); const [undo, setUndo] = useState(null);
+  const [i, setI] = useState(0); const [undo, setUndo] = useState(null); const [cfEl, ask] = useConfirm();
   const track = useRef(null);
   const n = pending.length;
   useEffect(() => { if (i > n - 1) { const k = Math.max(0, n - 1); setI(k); if (track.current) track.current.scrollTo({ left: k * track.current.clientWidth }); } }, [n]);
@@ -39,17 +41,19 @@ function ApprovalsCarousel({ queue, all, setLeaves, open, user }) {
   const go = d => { const t = track.current; if (t) t.scrollBy({ left: d * t.clientWidth, behavior: 'smooth' }); };
   const onScroll = () => { const t = track.current; if (t) setI(Math.round(t.scrollLeft / t.clientWidth)); };
   const decide = (l, state) => { setLeaves(ls => ls.map(x => x.id === l.id ? { ...x, state, by: user.name, byId: user.n, at: Date.now() } : x)); setUndo({ id: l.id, state, name: BY[l.emp].name.split(' ')[0] }); };
+  const confirmDecision = async (l, state) => { if (await ask(leaveDialog(l, all, state))) decide(l, state); };
   const arrows = html`<div className="car-n"><span>${n ? Math.min(i + 1, n) + ' of ' + n : ''}</span>
     <button className="ib" onClick=${() => go(-1)} disabled=${n < 2 || i === 0} aria-label="Previous request"><${Icon} n="chevL" s=${16}/></button>
     <button className="ib" onClick=${() => go(1)} disabled=${n < 2 || i >= n - 1} aria-label="Next request"><${Icon} n="chevR" s=${16}/></button></div>`;
   return html`<${Panel} title="Leave approvals" sub=${n ? n + ' waiting' : 'All clear'} right=${arrows}>
+    ${cfEl}
     ${n === 0 ? html`<div className="pn-e"><span className="pn-ei"><${Icon} n="check" s=${22}/></span><b>All clear</b></div>` :
       html`<div className="car" ref=${track} onScroll=${onScroll}>${pending.map(l => { const e = BY[l.emp]; return html`<div className="slide" key=${l.id}>
         <div className="ap-h"><button onClick=${() => open(e.n)} aria-label=${'Open ' + e.name}><${Av} e=${e} s=${44}/></button>
           <span><b>${e.name}${e.n === user.n ? html` <em className="rq3-you">You</em>` : ''}</b><span>${e.role}</span></span></div>
         <div className="rq3-d"><span className="rq3-w"><b>${l.from === l.to ? fmtDay(pd(l.from)) : range(l.from, l.to)}</b><i></i><b>${l.half ? 'Half day' : plural(l.days, 'day')}</b></span><span className="rq3-t"><${Icon} n=${typeIcon(l.type)} s=${15}/>${l.type}</span></div>
         ${l.reason && html`<p className="rq3-r">${l.reason}</p>`}
-        <div className="ap-a" style=${{ margin: 0 }}><button className="btn pri sm" onClick=${() => decide(l, 'approved')}><${Icon} n="check" s=${15}/> Approve</button><button className="btn ghost sm" onClick=${() => decide(l, 'declined')}>Decline</button><${CopyLeave} l=${l} all=${all}/></div>
+        <div className="ap-a" style=${{ margin: 0 }}><button className="btn pri sm" onClick=${() => confirmDecision(l, 'approved')}><${Icon} n="check" s=${15}/> Approve</button><button className="btn ghost sm" onClick=${() => confirmDecision(l, 'declined')}>Decline</button><${CopyLeave} l=${l} all=${all}/></div>
       </div>`; })}</div>`}
     ${undo && html`<div className="toast" role="status"><span>${undo.state === 'approved' ? 'Approved' : 'Declined'} ${undo.name}'s request.</span>
       <button className="link" onClick=${() => { setLeaves(ls => ls.map(x => x.id === undo.id ? { ...x, state: 'pending' } : x)); setUndo(null); }}>Undo</button></div>`}

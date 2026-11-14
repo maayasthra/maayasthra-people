@@ -2,7 +2,8 @@ import { useState, useRef } from 'react';
 import { html, Icon, Av } from '../ui.jsx';
 import { BY, ROLEMAP, fmtDM } from '../data.js';
 import { dayKey } from '../attendance.js';
-import { monthLong, monthLabel, STATUS, fmtSize } from '../payslipMonths.js';
+import { monthLong, monthLabel, STATUS, fmtSize, fileMonthMismatch } from '../payslipMonths.js';
+import { useConfirm } from '../Confirm.jsx';
 import { readPayslipFile, deliverPayslip, declinePayslip, downloadPayslip } from '../payslipsDb.js';
 
 const when = ts => ts ? fmtDM(dayKey(ts)) : '';
@@ -10,11 +11,18 @@ const ACCEPT = '.pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg';
 const Dash = () => html`<span className="pay-dash">–</span>`;
 
 // Shared by the waiting card and the history row: choosing a file, sending it, and the errors that can follow.
-function useDeliver(r, admin) {
+function useDeliver(r, admin, ask, e) {
   const file = useRef(null), [f, setF] = useState(null), [busy, setBusy] = useState(false), [err, setErr] = useState('');
   const run = async fn => { setBusy(true); setErr(''); try { await fn(); } catch (x) { setErr(x.message); } setBusy(false); };
   const pick = async ev => { const file0 = ev.target.files && ev.target.files[0]; ev.target.value = ''; if (!file0) return; setErr(''); try { setF(await readPayslipFile(file0)); } catch (x) { setErr(x.message); } };
-  const send = () => run(async () => { await deliverPayslip(admin.n, r.id, f); setF(null); });
+  // Sending a payslip asks first: it goes to one person and is private, so the person and month are shown for a last check
+  const send = async () => {
+    const again = r.status === 'delivered';
+    const ok = await ask({ title: again ? 'Replace the payslip file?' : 'Send this payslip?', icon: 'payslips', confirm: again ? 'Replace file' : 'Send payslip',
+      body: e.name + ' · ' + monthLong(r.month) + ' · ' + f.name + ' (' + fmtSize(f.size) + ')',
+      items: (fileMonthMismatch(f.name, r.month) ? [{ tone: 'bad', text: fileMonthMismatch(f.name, r.month) }] : []).concat([{ tone: 'warn', text: 'Payslips are private. Check this is the right person and the right month.' }]).concat(again ? [{ tone: 'warn', text: 'They have not downloaded the earlier file yet. It will be replaced.' }] : [{ tone: 'ok', text: e.name.split(' ')[0] + ' is told it is ready. The file is removed from the server once they download it.' }]) });
+    if (ok) run(async () => { await deliverPayslip(admin.n, r.id, f); setF(null); });
+  };
   return { file, f, setF, busy, err, setErr, run, pick, send, choose: () => file.current && file.current.click() };
 }
 const SendForm = ({ d, first }) => html`<div className="pay-form">
@@ -22,8 +30,8 @@ const SendForm = ({ d, first }) => html`<div className="pay-form">
   <div className="pay-bar"><button className="btn pri sm" disabled=${d.busy} onClick=${d.send}><${Icon} n="check" s=${15}/> ${d.busy ? 'Sending…' : 'Send payslip'}</button><button className="btn ghost sm" disabled=${d.busy} onClick=${d.choose}>Choose another file</button><button className="btn ghost sm" disabled=${d.busy} onClick=${() => { d.setF(null); d.setErr(''); }}>Cancel</button></div></div>`;
 
 // A request that is waiting for you: a card with room for the upload and decline forms. Each card keeps its own state, so it lives outside the list.
-function Card({ r, admin, open }) {
-  const e = BY[r.emp], st = STATUS[r.status], d = useDeliver(r, admin);
+function Card({ r, admin, open, ask }) {
+  const e = BY[r.emp], st = STATUS[r.status], d = useDeliver(r, admin, ask, BY[r.emp]);
   const [declining, setDeclining] = useState(false), [reason, setReason] = useState('');
   if (!e) return null;
   const decline = () => d.run(async () => { await declinePayslip(admin.n, r.id, reason); setDeclining(false); setReason(''); });
@@ -47,8 +55,8 @@ function Card({ r, admin, open }) {
 }
 
 // One line of the history. Every row uses the same columns (see .pay-tbl), so the dates, files and notes line up from card to card.
-function Row({ r, admin, open }) {
-  const e = BY[r.emp], st = STATUS[r.status], d = useDeliver(r, admin);
+function Row({ r, admin, open, ask }) {
+  const e = BY[r.emp], st = STATUS[r.status], d = useDeliver(r, admin, ask, BY[r.emp]);
   if (!e) return null;
   const first = e.name.split(' ')[0], hasFile = r.status === 'delivered' || r.status === 'downloaded';
   const who = r.decidedBy && BY[r.decidedBy] ? (r.decidedBy === admin.n ? 'you' : BY[r.decidedBy].name.split(' ')[0]) : '';
@@ -74,18 +82,19 @@ export const DecidedToggle = ({ n, open, set, label }) => n > 0 ? html`<button c
 /* Admin: payslip requests. Upload the file for a request to deliver it; the employee is notified and downloads it from their Payslips page.
    Waiting requests are cards; past ones are cards lined up in columns under one header. */
 export function PayslipRequests({ user, pay, open }) {
-  const [past, setPast] = useState(false);
+  const [past, setPast] = useState(false), [cfEl, ask] = useConfirm();
   const all = (pay.list || []).filter(r => BY[r.emp]);
   const waiting = all.filter(r => r.status === 'requested').sort((a, b) => a.requestedAt - b.requestedAt);
   const done = all.filter(r => r.status !== 'requested').sort((a, b) => (b.decidedAt || b.requestedAt) - (a.decidedAt || a.requestedAt));
   return html`<div className="rq-body">
+    ${cfEl}
     ${pay.err && html`<div className="eod-e" role="alert">${pay.err}</div>`}
     ${pay.list === null ? html`<div className="none">Loading…</div>`
       : waiting.length === 0 ? html`<div className="rq3-e"><span><${Icon} n="check" s=${22}/></span><div><b>No payslip requests waiting</b><p>When an employee asks for a payslip it appears here. Upload the file to deliver it.</p></div></div>`
-      : html`<div className="rq3-l">${waiting.map(r => html`<${Card} key=${r.id} r=${r} admin=${user} open=${open}/>`)}</div>`}
+      : html`<div className="rq3-l">${waiting.map(r => html`<${Card} key=${r.id} r=${r} admin=${user} open=${open} ask=${ask}/>`)}</div>`}
     <${DecidedToggle} n=${done.length} open=${past} set=${setPast} label="past requests"/>
     ${past && html`<div className="pay-tbl" role="table" aria-label="Past payslip requests">
       <div className="pay-th" role="row"><span>Employee</span><span>Month</span><span>Status</span><span>File</span><span>Answered</span><span>Downloaded</span><span>Note</span><span></span></div>
-      ${done.map(r => html`<${Row} key=${r.id} r=${r} admin=${user} open=${open}/>`)}</div>`}
+      ${done.map(r => html`<${Row} key=${r.id} r=${r} admin=${user} open=${open} ask=${ask}/>`)}</div>`}
   </div>`;
 }

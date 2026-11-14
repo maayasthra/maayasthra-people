@@ -30,3 +30,15 @@ export const STATUS = {
 // A request is still live (cannot be asked for again) while it is requested or delivered
 export const isOpen = r => r.status === 'requested' || r.status === 'delivered';
 export const fmtSize = b => b < 1024 ? b + ' B' : b < 1048576 ? Math.round(b / 1024) + ' KB' : (b / 1048576).toFixed(1) + ' MB';
+
+// If a file's name mentions a month (and maybe a year), does it match the month that was asked for? Returns a short message when it clearly does not.
+const NAMES = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+export function fileMonthMismatch(fileName, monthIso) {
+  const base = String(fileName || '').replace(/\.[a-z0-9]+$/i, '').toLowerCase();
+  const m = base.match(/(?:^|[^a-z])(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sept|sep|october|oct|november|nov|december|dec)(?![a-z])[^a-z0-9]*((?:19|20)\d\d)?/);
+  if (!m) return '';
+  const want = Number(monthIso.slice(5, 7)) - 1, got = NAMES.indexOf(m[1].slice(0, 3)), yr = m[2] ? Number(m[2]) : null;
+  if (got !== want) return 'The file name says ' + (m[1][0].toUpperCase() + m[1].slice(1)) + (yr ? ' ' + yr : '') + ', but this request is for ' + monthLabel(monthIso) + '.';
+  if (yr && yr !== Number(monthIso.slice(0, 4))) return 'The file name says ' + yr + ', but this request is for ' + monthLabel(monthIso) + '.';
+  return '';
+}

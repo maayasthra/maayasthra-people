@@ -1,3 +1,4 @@
+import { useConfirm } from '../Confirm.jsx';
 import { useState } from 'react';
 import { html, Icon, Photo } from '../ui.jsx';
 import { DateField } from '../DateField.jsx';
@@ -10,7 +11,7 @@ const Fld = ({ id, label, children, hint }) => html`<div className="fld"><label 
 
 /* ---------- Add / edit a person ---------- */
 export function EmployeeForm({ id, role, user, done, bump }) {
-  const e = id ? BY[id] : null;
+  const e = id ? BY[id] : null, [cfEl, ask] = useConfirm();
   const isAdmin = role === 'admin', self = !!e && e.n === user.n;
   const [f, setF] = useState(() => e ? { ...e } : { name: '', email: '', role: '', dept: '', city: '', mgr: 0, status: 'Full-time', join: TODISO, dob: '', g: 'f', phone: '', emergency: '', emergencyRelation: '', emergencyPhone: '', bio: '', photo: '', shiftStart: '10:00', shiftEnd: '18:00' });
   const [access, setAccess] = useState(e ? ROLEMAP[e.n] : 'Employee');
@@ -50,6 +51,8 @@ export function EmployeeForm({ id, role, user, done, bump }) {
     if (!IS_DEMO && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setErr('Enter a valid work email.'); return; }
     const dupe = EMP.find(x => x.email === email && x.n !== (e ? e.n : createdId));
     if (dupe) { setErr('Another person already has the email ' + dupe.email + '.'); return; }
+    if (e && f.status === 'Exited' && e.status !== 'Exited' && !(await ask({ title: 'Mark ' + f.name.trim().split(' ')[0] + ' as exited?', icon: 'logout', danger: true, confirm: 'Mark as exited', body: f.name.trim() + ' \u00b7 ' + f.dept,
+      items: [{ tone: 'bad', text: 'They can no longer sign in or check in.' }, { tone: 'warn', text: 'They disappear from the people lists. Their past records are kept.' }] }))) return;
     if (!f.shiftStart || !f.shiftEnd || f.shiftEnd <= f.shiftStart) { setErr('Working hours need a start time that is earlier than the end time.'); return; }
     const core = { shiftStart: f.shiftStart, shiftEnd: f.shiftEnd, name: f.name.trim(), role: f.role.trim(), dept: f.dept.trim(), city: f.city.trim() || 'Chennai', mgr: Number(f.mgr) || 0, status: f.status, join: f.join, dob: f.dob, g: f.g };
     if (IS_DEMO) { const saved = e ? updateEmployee(e.n, { ...core, ...contact }) : addEmployee({ ...core, ...contact }); ROLEMAP[saved.n] = access; bump(); done(saved.n); return; }
@@ -69,6 +72,7 @@ export function EmployeeForm({ id, role, user, done, bump }) {
     <button className="back" onClick=${() => done(e ? e.n : null)}><${Icon} n="back" s=${16}/> ${e ? 'Back to profile' : 'Back'}</button>
     <div className="pg-h"><div><h1>${title}</h1>${e ? html`<p>${e.role} · ${e.dept}</p>` : !IS_DEMO && html`<p>Add their work email. They can then create their own account at ${location.host} with that email.</p>`}</div></div>
     <form className="ef2-f" onSubmit=${submit} noValidate>
+      ${cfEl}
       <section className="ef2-card ef2-photo">
         <div className="ef2-ph"><${Photo} e=${preview}/></div>
         <div className="ef2-pb">

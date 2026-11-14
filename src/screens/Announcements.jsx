@@ -1,3 +1,4 @@
+import { useConfirm } from '../Confirm.jsx';
 import { useState } from 'react';
 import { html, Icon, Av, HI } from '../ui.jsx';
 import { TODISO, BY, activeEmps, fmtDM } from '../data.js';
@@ -36,25 +37,30 @@ export function AckBar({ a, acks }) {
 }
 
 export function AnnList({ ann, setAnn, canPost, tracker = false, limit = 0 }) {
-  const acks = useAcks(tracker);
+  const acks = useAcks(tracker), [cfEl, ask] = useConfirm();
+  const remove = async a => { if (await ask({ title: 'Remove this announcement?', icon: 'trash', danger: true, confirm: 'Remove', body: 'It disappears for everyone, including people who have not read it yet.', quote: a.title })) setAnn(x => x.filter(y => y.id !== a.id)); };
   const shown = limit ? ann.slice(0, limit) : ann;
   return html`<div className="anl">
+    ${cfEl}
     ${ann.length === 0 ? html`<div className="empty" style=${{ textAlign: 'left' }}>No announcements right now.</div>` :
       shown.map(a => { const kd = KINDS[a.kind] || KINDS.general; return html`<article className="an" key=${a.id}>
         <span className="an-i" style=${{ '--c': kd.c }}><${Icon} n=${kd.icon} s=${22}/></span>
         <div className="an-b">
-          <div className="an-h"><b>${a.title}</b>${canPost && html`<button className="an-rm" onClick=${() => setAnn(x => x.filter(y => y.id !== a.id))} aria-label=${'Remove ' + a.title} title="Remove this announcement"><${Icon} n="trash" s=${15}/>Remove</button>`}</div>
+          <div className="an-h"><b>${a.title}</b>${canPost && html`<button className="an-rm" onClick=${() => remove(a)} aria-label=${'Remove ' + a.title} title="Remove this announcement"><${Icon} n="trash" s=${15}/>Remove</button>`}</div>
           ${a.body && html`<p>${a.body}</p>`}<small>${kd.label} · ${a.by} · ${fmtDM(a.date)}</small>${tracker && html`<${AckBar} a=${a} acks=${acks}/>`}</div></article>`; })}
   </div>`;
 }
 
 export function Composer({ user, setAnn, close }) {
+  const [cfEl, ask] = useConfirm();
   const [t, setT] = useState(''); const [b, setB] = useState(''); const [k, setK] = useState('general');
-  const post = ev => {
+  const post = async ev => {
     ev.preventDefault(); if (!t.trim()) return;
+    if (!(await ask({ title: 'Post to everyone?', icon: 'megaphone', confirm: 'Post announcement', quote: t.trim(), items: [{ tone: 'warn', text: 'Everyone on shift sees a pop-up with a chime, repeated every minute until they press Got it.' }] }))) return;
     setAnn(a => [{ id: Date.now(), kind: k, title: t.trim(), body: b.trim(), date: TODISO, by: user.name }, ...a]); close();
   };
   return html`<form onSubmit=${post}>
+    ${cfEl}
     <div className="fld"><span className="lb">Type</span><div className="chips" style=${{ marginTop: 0, flexWrap: 'wrap' }}>${Object.entries(KINDS).map(([key, v]) => html`<button type="button" key=${key} className=${'chip' + (k === key ? ' on' : '')} onClick=${() => setK(key)}>${v.label}</button>`)}</div></div>
     <div className="fld"><label htmlFor="ann-t">Headline</label><input id="ann-t" className="inp" value=${t} onChange=${ev => setT(ev.target.value)} placeholder="What do people need to know?"/></div>
     <div className="fld"><label htmlFor="ann-b">Details (optional)</label><textarea id="ann-b" className="inp" value=${b} onChange=${ev => setB(ev.target.value)}></textarea></div>

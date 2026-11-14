@@ -6,17 +6,21 @@ import { dayKey } from '../attendance.js';
 import { typeIcon } from './Home.jsx';
 import { CopyLeave } from '../CopyLeave.jsx';
 import { PayslipRequests, DecidedToggle } from './PayslipRequests.jsx';
+import { useConfirm } from '../Confirm.jsx';
+import { leaveDialog } from '../leaveFacts.js';
 
 const STATE_C = { approved: '#30D158', declined: '#FF453A' };
 
 export function Requests({ user, leaves: all, setLeaves, open, pay }) {
-  const [past, setPast] = useState(false), [kind, setKind] = useState('leave');
+  const [past, setPast] = useState(false), [kind, setKind] = useState('leave'), [cfEl, ask] = useConfirm();
   const payWaiting = (pay && pay.list ? pay.list : []).filter(r => r.status === 'requested').length;
   const leaves = all.filter(l => !l.past && BY[l.emp]);
   const waiting = leaves.filter(l => l.state === 'pending').sort((a, b) => a.from.localeCompare(b.from));
   const decided = leaves.filter(l => l.state !== 'pending').sort((a, b) => b.from.localeCompare(a.from));
   const away = awayList(all);
   const decide = (l, state) => setLeaves(ls => ls.map(x => x.id === l.id ? { ...x, state, by: state === 'pending' ? '' : user.name, byId: state === 'pending' ? 0 : user.n, at: state === 'pending' ? 0 : Date.now() } : x));
+  // Approving or declining asks first, with the things worth knowing (balance, who else is out, holidays)
+  const confirmDecision = async (l, state) => { if (await ask(leaveDialog(l, all, state))) decide(l, state); };
   // Who decided, and when
   const decidedBy = l => l.by ? (l.byId === user.n ? 'you' : l.by) + (l.at ? ' · ' + fmtDM(dayKey(l.at)) : '') + (l.byId === l.emp ? ' · own request' : '') : '';
 
@@ -39,12 +43,13 @@ export function Requests({ user, leaves: all, setLeaves, open, pay }) {
           <span className=${peers.length ? 'warn' : ''}><${Icon} n="people" s=${13}/>${peers.length ? peers.join(' and ') + (peers.length === 1 ? ' is' : ' are') + ' also out' : 'No one else in ' + e.dept + ' is out'}</span>
           ${hol.length > 0 && html`<span><${Icon} n="calendar" s=${13}/>Skips ${hol.join(', ')}</span>`}</div>`}
       </div>
-      <div className="rq3-a">${pend ? html`<button className="btn pri sm" onClick=${() => decide(l, 'approved')}><${Icon} n="check" s=${15}/> Approve</button><button className="btn ghost sm" onClick=${() => decide(l, 'declined')}>Decline</button><${CopyLeave} l=${l} all=${all}/>`
+      <div className="rq3-a">${pend ? html`<button className="btn pri sm" onClick=${() => confirmDecision(l, 'approved')}><${Icon} n="check" s=${15}/> Approve</button><button className="btn ghost sm" onClick=${() => confirmDecision(l, 'declined')}>Decline</button><${CopyLeave} l=${l} all=${all}/>`
         : html`<span className="rq3-sw"><span className="rq3-st" style=${{ '--c': STATE_C[l.state] }}><i></i>${l.state === 'approved' ? 'Approved' : 'Declined'}</span>${decidedBy(l) && html`<small>by ${decidedBy(l)}</small>`}</span><${CopyLeave} l=${l} all=${all}/><button className="rq3-u" onClick=${() => decide(l, 'pending')}>Undo</button>`}</div>
     </article>`;
   };
 
   return html`<div>
+    ${cfEl}
     <div className="pg-h"><div><h1><${HI} n="requests" tone="orange"/>Requests</h1><p>${waiting.length + payWaiting ? [waiting.length ? waiting.length + ' leave' : '', payWaiting ? payWaiting + (payWaiting === 1 ? ' payslip' : ' payslips') : ''].filter(Boolean).join(' and ') + ' waiting for you' : 'All clear'}</p></div>
       ${kind === 'leave' && html`<button className="btn sec2" onClick=${() => downloadLeaveReport(all)}><${Icon} n="download" s=${16}/> Export</button>`}</div>
     <div className="tabs" role="tablist" aria-label="Kind of request">

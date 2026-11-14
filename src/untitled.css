@@ -1399,3 +1399,20 @@ button.tile:active,.tile.click:active{background:var(--fill)}
   .pay-act{grid-column:1/-1;justify-content:flex-start}
 }
 @media (max-width:560px){.pay-tr{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Confirmation dialog: a second look before something important happens */
+.dlg.cf{width:min(460px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow-y:auto}
+.cf-i{width:44px;height:44px}
+.cf-i.ok{background:var(--brand-tint);color:var(--brand-text)}
+.cf-i.warn{background:var(--warn-bg,rgb(220 104 3 / .14));color:var(--warn-text,#DC6803)}
+.cf-i.bad{background:var(--err-bg);color:var(--err-text)}
+.dlg.cf h2{margin-top:14px}
+.cf-b{margin:8px 0 0;font-size:14.5px;line-height:22px;color:var(--text-2);overflow-wrap:anywhere}
+.cf-q{margin:12px 0 0;padding:10px 14px;border-radius:var(--r-ctl);background:var(--fill);color:var(--text-2);font-size:14px;line-height:20px;overflow-wrap:anywhere}
+.cf-l{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.cf-l li{display:flex;align-items:flex-start;gap:10px;font-size:14px;line-height:20px;color:var(--text-2)}
+.cf-l li svg{flex:none;margin-top:2px}
+.cf-l li.ok svg{color:var(--ok-text)}
+.cf-l li.warn{color:var(--text)}.cf-l li.warn svg{color:var(--warn-text,#DC6803)}
+.cf-l li.bad{color:var(--text);font-weight:500}.cf-l li.bad svg{color:var(--err-text)}
+.dlg.cf .dlg-a{margin-top:20px}

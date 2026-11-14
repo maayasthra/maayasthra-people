@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useConfirm } from '../Confirm.jsx';
 import { html, Icon, Tile, HI, Switch } from '../ui.jsx';
 import { DateField } from '../DateField.jsx';
 import { typeIcon, typeTone } from './Home.jsx';
@@ -9,6 +10,7 @@ const NO_NOTICE = ['Sick leave', 'Emergency leave'];
 const LS_C = { pending:'#FF9F0A', approved:'#30D158', declined:'#FF453A' };
 
 export function MyLeaves({ leaves, setLeaves, user }) {
+  const [cfEl, ask] = useConfirm();
   const me = user, mgr = { name: 'People & Ops' };
   const mine = leaves.filter(l => l.emp === me.n);
   // Open on a day that can actually be booked: far enough ahead, and not a weekend or holiday.
@@ -38,6 +40,7 @@ export function MyLeaves({ leaves, setLeaves, user }) {
   };
   const hist = [...mine].sort((a, b) => b.from.localeCompare(a.from));
   return html`<div>
+    ${cfEl}
     <div className="pg-h"><div><h1><${HI} n="leaves" tone="green"/>My Leaves</h1><p>${new Date(TOD).getUTCFullYear()}</p></div></div>
     <div className="tiles t3">${bal.map(b => html`<${Tile} key=${b.t} icon=${typeIcon(b.t)} tone=${typeTone(b.t)} label=${b.t} value=${b.left} sub=${'of ' + b.total + ' days left' + (b.pend > 0 ? ' · ' + b.pend + ' pending' : '')}/>`)}</div>
     <div className="grid2b" style=${{ marginTop: 48 }}>
@@ -63,7 +66,7 @@ export function MyLeaves({ leaves, setLeaves, user }) {
         <div>${hist.length === 0 ? html`<div className="empty" style=${{ textAlign: 'left', padding: '12px 0' }}>No requests</div>` : hist.map(l => html`<div className="hx" key=${l.id}>
           <span className="row-t"><b>${l.type}${l.half ? ' · half day' : ''}</b><span>${range(l.from, l.to)} · ${plural(l.days, 'day')}${l.reason ? ' · ' + l.reason : ''}</span></span>
           <span className="hx-s"><span className="pill" style=${{ '--c': LS_C[l.state] }}><i></i>${l.state[0].toUpperCase() + l.state.slice(1)}</span>${l.by && l.state !== 'pending' && html`<small>by ${l.byId === me.n ? 'you' : l.by}</small>`}</span>
-          ${(l.state === 'pending' || (l.state === 'approved' && l.from > TODISO)) && html`<button className="link" onClick=${() => setLeaves(ls => ls.filter(x => x.id !== l.id))}>${l.state === 'pending' ? 'Withdraw' : 'Cancel'}</button>`}</div>`)}</div></section>
+          ${(l.state === 'pending' || (l.state === 'approved' && l.from > TODISO)) && html`<button className="link" onClick=${async () => { const was = l.state === 'pending'; if (await ask({ title: was ? 'Withdraw this request?' : 'Cancel your approved leave?', icon: 'leaves', danger: true, confirm: was ? 'Withdraw request' : 'Cancel leave', body: l.type + ' \u00b7 ' + range(l.from, l.to) + ' \u00b7 ' + plural(l.days, 'day'), items: [{ tone: 'warn', text: was ? 'It will not be sent for approval.' : 'Your approved leave is cancelled and the days go back to your balance.' }] })) setLeaves(ls => ls.filter(x => x.id !== l.id)); }}>${l.state === 'pending' ? 'Withdraw' : 'Cancel'}</button>`}</div>`)}</div></section>
     </div>
   </div>`;
 }

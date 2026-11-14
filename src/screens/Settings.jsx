@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useConfirm } from '../Confirm.jsx';
 import { html, Icon, Av, Switch, HI } from '../ui.jsx';
 import { DateField } from '../DateField.jsx';
 import { IS_DEMO } from '../env.js';
@@ -15,9 +16,15 @@ const PERMS = [
 ];
 
 function Access({ onChange }) {
-  const [q, setQ] = useState(''), [err, setErr] = useState('');
+  const [q, setQ] = useState(''), [err, setErr] = useState(''), [cfEl, ask] = useConfirm(), [, force] = useState(0);
+  const EFFECT = { Admin: 'Admins approve leave and payslips, see everyone\u2019s hours, reports and settings, and manage roles.', 'Project manager': 'Project managers see the whole board, Team and everyone\u2019s reports. They cannot approve leave or see payslips.', Employee: 'Employees see their own tasks, hours, leave and payslips.' };
   const change = async (e, r) => {
-    if (r !== 'Admin' && ROLEMAP[e.n] === 'Admin' && counts('Admin') <= 1) { setErr('There must be at least one admin.'); return; }
+    if (r === ROLEMAP[e.n]) return;
+    if (r !== 'Admin' && ROLEMAP[e.n] === 'Admin' && counts('Admin') <= 1) { setErr('There must be at least one admin.'); force(x => x + 1); return; }
+    const was = ROLEMAP[e.n], first = e.name.split(' ')[0], up = r === 'Admin' || (r === 'Project manager' && was === 'Employee');
+    const ok = await ask({ title: 'Change ' + first + '\u2019s role to ' + r + '?', icon: 'lock', confirm: 'Change role', body: e.name + ' \u00b7 ' + was + ' \u2192 ' + r,
+      items: [{ tone: up ? 'warn' : 'ok', text: EFFECT[r] }].concat(was === 'Admin' ? [{ tone: 'warn', text: first + ' loses admin access straight away.' }] : was === 'Project manager' && r === 'Employee' ? [{ tone: 'warn', text: first + ' loses the board, Team and everyone\u2019s reports.' }] : []) });
+    if (!ok) { force(x => x + 1); return; }      // put the picker back to the role they have
     setErr('');
     if (IS_DEMO) { setRole(e.n, r); onChange(); return; }
     try { await saveRole(e.n, r); } catch (x) { setErr(x.message); }
@@ -26,6 +33,7 @@ function Access({ onChange }) {
   const counts = r => EMP.filter(e => e.status !== 'Exited' && ROLEMAP[e.n] === r).length;
   const list = searchPeople(q).sort((a, b) => ROLE_NAMES.indexOf(ROLEMAP[b.n]) - ROLE_NAMES.indexOf(ROLEMAP[a.n]) || a.name.localeCompare(b.name)).slice(0, q.trim() ? 20 : 8);
   return html`<div className="st-w" style=${{ maxWidth: 900 }}>
+    ${cfEl}
     <h2 className="st-h">Roles</h2>
     <div className="mx"><table><thead><tr><th></th>${ROLE_NAMES.map(r => html`<th key=${r}>${r}<small>${plural(counts(r), 'person').replace('persons', 'people')}</small></th>`)}</tr></thead>
       <tbody>${PERMS.map(([l, v]) => html`<tr key=${l}><td>${l}</td>${v.map((x, i) => html`<td key=${i}>${x ? html`<${Icon} n="check" s=${17}/>` : '–'}</td>`)}</tr>`)}</tbody></table></div>
@@ -61,18 +69,20 @@ function Policy({ onChange }) {
 }
 
 function Holidays({ onChange }) {
-  const [d, setD] = useState(''); const [n, setN] = useState(''); const [herr, setHerr] = useState('');
+  const [d, setD] = useState(''); const [n, setN] = useState(''); const [herr, setHerr] = useState(''); const [cfEl, ask] = useConfirm();
   const keys = Object.keys(HOL).sort();
   const add = ev => {
     ev.preventDefault(); if (!d || !n.trim()) return;
     const day = d, name = n.trim(), old = HOL[day]; HOL[day] = name; setD(''); setN(''); setHerr(''); onChange();
     if (!IS_DEMO) saveHoliday(day, name).catch(x => { if (old) HOL[day] = old; else delete HOL[day]; setHerr(x.message); onChange(); });
   };
-  const del = k => {
+  const del = async k => {
+    if (!(await ask({ title: 'Remove this holiday?', icon: 'calendar', danger: true, confirm: 'Remove holiday', body: HOL[k] + ' \u00b7 ' + fmt(k), items: [{ tone: 'warn', text: 'That day becomes a working day for everyone: attendance and leave counts change.' }] }))) return;
     const old = HOL[k]; delete HOL[k]; setHerr(''); onChange();
     if (!IS_DEMO) deleteHoliday(k).catch(x => { HOL[k] = old; setHerr(x.message); onChange(); });
   };
   return html`<div className="st-w">
+    ${cfEl}
     <h2 className="st-h">Holidays · ${keys.length}</h2>
     <form className="hol-add" onSubmit=${add}>
       <div className="fld"><label htmlFor="hol-d">Date</label><${DateField} id="hol-d" value=${d} onChange=${v => setD(v)}/></div>
