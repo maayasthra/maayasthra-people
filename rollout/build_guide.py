@@ -29,8 +29,8 @@ URL = 'people.maayasthra.com'; PAGES = 3
 # ------------------------------------------------------------------ TEXT
 STEPS = [
     ('Check your inbox', 'You will get an invite email at your work address. Open it and choose a password.'),
-    ('Open ' + URL, 'On your phone or your computer. Bookmark it, or add it to your phone\'s home screen.'),
-    ('Take the one-minute tour', 'It starts the first time you sign in. Then finish your profile: a photo, a line about you, your phone number and an emergency contact.'),
+    ('Open the portal', 'Go to ' + URL + ' on your phone or your computer. Bookmark it, or add it to your phone\'s home screen.'),
+    ('Take the tour', 'It takes a minute and starts the first time you sign in. Then finish your profile: a photo, a line about you, your phone number and an emergency contact.'),
 ]
 LEAVE_NOTICE = ('Leave: use Outlook and the portal, for now',
                 'For the next few months, please request your leave in both Outlook and this portal. Later we will move to the portal alone, and we will tell you when.')
@@ -58,137 +58,130 @@ ADMIN = ('For admins and project managers',
          'Admins and project managers also get the full task board, the team view and everyone\'s end-of-day reports.')
 COMING = ('Coming next',
           'Planned, with no dates yet. We will announce each one when it is ready.',
-          ['Leave in one place. Once the portal is settled, leave moves from Outlook to the portal alone.',
-           'Install it like an app on your phone, with its own icon.',
-           'A monthly summary of your hours.',
-           'Two-step sign-in for admins, for extra safety.'])
+          [('Leave in one place', 'Once the portal is settled, leave moves from Outlook to the portal alone.'),
+           ('Install it like an app', 'Add it to your phone with its own icon.'),
+           ('Monthly hours summary', 'See your hours for the month at a glance.'),
+           ('Two-step sign-in for admins', 'An extra check at sign-in, for extra safety.')])
 
 # ------------------------------------------------------------------ drawing helpers
+# One grid for every page: 42 pt side margins, content from y = TOP down to y = BOT, a 12 pt gutter, and fixed line spacing.
+TOP, BOT, GUT = H - 104, 62, 12
 c = canvas.Canvas(OUT, pagesize=A4)
 c.setTitle('Maayasthra People: staff guide'); c.setAuthor('Maayasthra'); c.setSubject('Getting started with Maayasthra People')
 
-def lines_of(text, font, size, width): return simpleSplit(text, font, size, width)
-def height(text, font, size, width, lead=None): return len(lines_of(text, font, size, width)) * (lead or size * 1.42)
+def wrap(text, font, size, width): return simpleSplit(text, font, size, width)
+def th(text, font, size, width, lead): return len(wrap(text, font, size, width)) * lead      # height of a wrapped text block
 
-def para(x, y, text, font='Ar', size=10, color=MUTED, width=CW, lead=None):
-    """Wrapped text from the top edge y downward; returns the y below it."""
-    lead = lead or size * 1.42
-    c.setFont(font, size); c.setFillColor(color)
-    for line in lines_of(text, font, size, width):
-        y -= lead; c.drawString(x, y, line)
+def text(x, ytop, t, font, size, color, width, lead):
+    """Draws wrapped text whose first line sits in a box starting at ytop; returns the y under the last line."""
+    c.setFont(font, size); c.setFillColor(color); y = ytop
+    for line in wrap(t, font, size, width):
+        y -= lead; c.drawString(x, y - (lead - size) / 2 + 1.5, line)   # baseline centred in its line box
     return y
-
-def bullet(x, y, lead_in, text, width, size=10.5, lead=15):
-    """A bullet with a bold lead-in, wrapped as one paragraph; returns the y below it."""
-    c.setFillColor(ORANGE); c.circle(x + 4, y - 11, 3, fill=1, stroke=0)
-    words = (lead_in + ' ' + text).strip().split(' '); n_lead = len(lead_in.split(' ')) if lead_in else 0
-    rows, cur, curw = [], [], 0
-    for k, wd in enumerate(words):
-        f = 'ArB' if k < n_lead else 'Ar'; ww = pdfmetrics.stringWidth(wd + ' ', f, size)
-        if curw + ww > width - 20 and cur: rows.append(cur); cur, curw = [], 0
-        cur.append((wd, f)); curw += ww
-    rows.append(cur); yy = y - 14
-    for row in rows:
-        xx = x + 20
-        for wd, f in row:
-            c.setFont(f, size); c.setFillColor(INK if f == 'ArB' else MUTED); c.drawString(xx, yy, wd); xx += pdfmetrics.stringWidth(wd + ' ', f, size)
-        yy -= lead
-    return yy - 6
 
 def header(page):
     c.setFillColor(BG); c.rect(0, 0, W, H, fill=1, stroke=0)
     logo = svg2rlg(HERE + '/../public/' + ('maayasthra-logo-dark.svg' if LIGHT else 'maayasthra-logo.svg')); s = 118 / logo.width
     logo.width *= s; logo.height *= s; logo.scale(s, s)
-    renderPDF.draw(logo, c, M, H - 40 - logo.height)
-    c.setFont('Ar', 9); c.setFillColor(MUTED); c.drawRightString(W - M, H - 52, 'Staff guide  ·  page %d of %d' % (page, PAGES))
-    c.setStrokeColor(ORANGE); c.setLineWidth(2.2); c.line(M, H - 76, W - M, H - 76)
+    ly = H - 36 - logo.height; renderPDF.draw(logo, c, M, ly)
+    c.setFont('Ar', 9); c.setFillColor(MUTED); c.drawRightString(W - M, ly + logo.height / 2 - 3, 'Staff guide  ·  page %d of %d' % (page, PAGES))
+    c.setStrokeColor(ORANGE); c.setLineWidth(2); c.line(M, H - 76, W - M, H - 76)
 
 def footer():
-    c.setFont('Ar', 8.5); c.setFillColor(MUTED); c.drawString(M, 28, URL); c.drawRightString(W - M, 28, 'Maayasthra People')
+    c.setStrokeColor(LINE); c.setLineWidth(.6); c.line(M, 46, W - M, 46)
+    c.setFont('Ar', 8.5); c.setFillColor(MUTED); c.drawString(M, 30, URL); c.drawRightString(W - M, 30, 'Maayasthra People')
+
+def heading(y, t, size=15):
+    c.setFont('ArB', size); c.setFillColor(INK); c.drawString(M, y - size, t); return y - size * 1.5
 
 def box(x, ytop, w, h, tint=False):
     c.setFillColor(TINT if tint else CARD); c.setStrokeColor(TINT_LINE if tint else LINE); c.setLineWidth(.8)
     c.roundRect(x, ytop - h, w, h, 8, fill=1, stroke=1)
 
-def notice(ytop, title, body, size=9.8):
-    pad = 14; h = pad + 15 + 5 + height(body, 'Ar', size, CW - 2 * pad) + pad - 4
-    box(M, ytop, CW, h, tint=True)
-    c.setFillColor(ORANGE); c.roundRect(M, ytop - h, 5, h, 2.5, fill=1, stroke=0)
-    c.setFont('ArB', 12); c.setFillColor(INK); c.drawString(M + pad + 2, ytop - pad - 10, title)
-    para(M + pad + 2, ytop - pad - 14, body, 'Ar', size, MUTED, CW - 2 * pad - 2)
-    return h
+def badge(cx, cy, n):
+    c.setFillColor(ORANGE); c.circle(cx, cy, 12, fill=1, stroke=0)
+    c.setFillColor(WHITE); c.setFont('ArB', 12); c.drawCentredString(cx, cy - 4.2, str(n))
 
+PAD, BODY, LEAD = 14, 9.4, 13.4
 def shot(x, ytop, w, name):
     img = ImageReader(HERE + '/shots/' + THEME + '/' + name); iw, ih = img.getSize(); h = w * ih / iw
-    c.drawImage(img, x, ytop - h, w, h)
-    c.setStrokeColor(LINE); c.setLineWidth(.8); c.rect(x, ytop - h, w, h, fill=0, stroke=1)
+    c.drawImage(img, x, ytop - h, w, h); c.setStrokeColor(LINE); c.setLineWidth(.8); c.rect(x, ytop - h, w, h, fill=0, stroke=1)
     return h
+def shot_h(w, name):
+    iw, ih = ImageReader(HERE + '/shots/' + THEME + '/' + name).getSize(); return w * ih / iw
 
-def feature_card(x, ytop, w, title, body, img, h):
-    pad = 12; box(x, ytop, w, h)
-    ih = shot(x + pad, ytop - pad, w - 2 * pad, img)
-    ty = ytop - pad - ih - 8
-    c.setFont('ArB', 11.5); c.setFillColor(INK); c.drawString(x + pad, ty - 11, title)
-    para(x + pad, ty - 14, body, 'Ar', 9.2, MUTED, w - 2 * pad)
+def cols(n, gap=GUT): return (CW - gap * (n - 1)) / n
 
-def feature_h(w, body, img):
-    pad = 12; iw, ih = ImageReader(HERE + '/shots/' + THEME + '/' + img).getSize()
-    return pad + (w - 2 * pad) * ih / iw + 8 + 14 + 4 + height(body, 'Ar', 9.2, w - 2 * pad) + pad - 2
-
-def small_card(x, ytop, w, title, body, h):
-    pad = 12; box(x, ytop, w, h)
-    c.setFont('ArB', 11.5); c.setFillColor(INK); c.drawString(x + pad, ytop - pad - 10, title)
-    para(x + pad, ytop - pad - 14, body, 'Ar', 9.2, MUTED, w - 2 * pad)
-
-def small_h(w, body): return 12 + 14 + 4 + height(body, 'Ar', 9.2, w - 24) + 10
+def row_of_cards(y, items, n, body_h, draw):
+    """Equal-height cards in one row; items are drawn by draw(x, ytop, w, h, item); returns the y under the row."""
+    w = cols(n); h = max(body_h(w, it) for it in items)
+    for k, it in enumerate(items): box(M + k * (w + GUT), y, w, h); draw(M + k * (w + GUT), y, w, h, it)
+    return y - h
 
 # ------------------------------------------------------------------ pages
 def page1():
-    header(1)
-    y = H - 112
-    c.setFont('ArB', 27); c.setFillColor(INK); c.drawString(M, y - 22, 'Welcome to Maayasthra People')
-    y = para(M, y - 30, 'One place for your attendance, leave, tasks and payslips. This guide takes two minutes to read.', 'Ar', 12, MUTED, CW, 17) - 8
-    c.setFont('ArB', 13.5); c.setFillColor(INK); c.drawString(M, y - 18, 'Get started in three steps'); y -= 28
-    for i, (t, b) in enumerate(STEPS, 1):
-        bh = height(b, 'Ar', 9.8, CW - 46)
-        c.setFillColor(ORANGE); c.circle(M + 13, y - 14, 12.5, fill=1, stroke=0)
-        c.setFillColor(WHITE); c.setFont('ArB', 12); c.drawCentredString(M + 13, y - 18, str(i))
-        c.setFont('ArB', 11.5); c.setFillColor(INK); c.drawString(M + 38, y - 12, t)
-        para(M + 38, y - 14, b, 'Ar', 9.8, MUTED, CW - 46)
-        y -= 14 + 8 + bh + 8
-    y -= 4
-    y -= notice(y, *LEAVE_NOTICE) + 14
-    c.setFont('ArB', 13.5); c.setFillColor(INK); c.drawString(M, y - 16, 'Your home page'); y -= 24
+    header(1); y = TOP
+    c.setFont('ArB', 27); c.setFillColor(INK); c.drawString(M, y - 27, 'Welcome to Maayasthra People'); y -= 27 + 8
+    y = text(M, y, 'One place for your attendance, leave, tasks and payslips. This guide takes two minutes to read.', 'Ar', 12, MUTED, CW, 17) - 22
+    y = heading(y, 'Get started in three steps') - 4
+    sw = cols(3)
+    def step_h(w, it): return PAD + 24 + 10 + th(it[2], 'Ar', BODY, w - 2 * PAD, LEAD) + PAD - 2
+    def step(x, ytop, w, h, it):
+        n, t, b = it; badge(x + PAD + 12, ytop - PAD - 12, n)
+        c.setFont('ArB', 11); c.setFillColor(INK); c.drawString(x + PAD + 30, ytop - PAD - 12 - 4, t)
+        text(x + PAD, ytop - PAD - 24 - 6, b, 'Ar', BODY, MUTED, w - 2 * PAD, LEAD)
+    y = row_of_cards(y, [(i, t, b) for i, (t, b) in enumerate(STEPS, 1)], 3, step_h, step) - 16
+    t, b = LEAVE_NOTICE; h = PAD + 15 + 6 + th(b, 'Ar', 9.8, CW - 2 * PAD - 4, 14) + PAD - 2
+    box(M, y, CW, h, True); c.setFillColor(ORANGE); c.roundRect(M, y - h, 5, h, 2.5, fill=1, stroke=0)
+    c.setFont('ArB', 12); c.setFillColor(INK); c.drawString(M + PAD + 4, y - PAD - 11, t)
+    text(M + PAD + 4, y - PAD - 15, b, 'Ar', 9.8, MUTED, CW - 2 * PAD - 4, 14); y -= h + 22
+    y = heading(y, 'Your home page') - 2
     h = shot(M, y, CW, 'home.png')
-    para(M, y - h - 2, 'Your leave balances, your day, announcements and your team, all in one view. Sample data shown.', 'Ar', 8.8, MUTED, CW)
+    text(M, y - h - 4, 'Your leave balances, your day, announcements and your team, all in one view. Sample data shown.', 'Ar', 8.8, MUTED, CW, 12)
     footer()
 
 def page2():
-    header(2)
-    y = H - 112
-    c.setFont('ArB', 20); c.setFillColor(INK); c.drawString(M, y - 14, 'What you can do'); y -= 34
-    gap = 12; w = (CW - gap) / 2
-    for i in range(0, len(FEATURES), 2):
-        pair = FEATURES[i:i + 2]; hmax = max(feature_h(w, b, im) for _, b, im, _ in pair)
-        for k, (t, b, im, _) in enumerate(pair): feature_card(M + k * (w + gap), y, w, t, b, im, hmax)
-        y -= hmax + gap
-    hmax = max(small_h(w, b) for _, b in SMALL)
-    for k, (t, b) in enumerate(SMALL): small_card(M + k * (w + gap), y, w, t, b, hmax)
+    header(2); y = TOP
+    y = heading(y, 'What you can do', 20) - 6
+    w = cols(2)
+    def feat_h(w, it): return PAD + shot_h(w - 2 * PAD, it[2]) + 10 + 15 + 4 + th(it[1], 'Ar', BODY, w - 2 * PAD, LEAD) + PAD - 2
+    def feat(x, ytop, w, h, it):
+        t, b, im, _ = it; ih = shot(x + PAD, ytop - PAD, w - 2 * PAD, im); ty = ytop - PAD - ih - 10
+        c.setFont('ArB', 11.5); c.setFillColor(INK); c.drawString(x + PAD, ty - 11, t)
+        text(x + PAD, ty - 15, b, 'Ar', BODY, MUTED, w - 2 * PAD, LEAD)
+    def small_h(w, it): return PAD + 15 + 4 + th(it[1], 'Ar', BODY, w - 2 * PAD, LEAD) + PAD - 2
+    def small(x, ytop, w, h, it):
+        c.setFont('ArB', 11.5); c.setFillColor(INK); c.drawString(x + PAD, ytop - PAD - 11, it[0])
+        text(x + PAD, ytop - PAD - 15, it[1], 'Ar', BODY, MUTED, w - 2 * PAD, LEAD)
+    rows = [(FEATURES[0:2], feat_h, feat), (FEATURES[2:4], feat_h, feat), (SMALL, small_h, small)]
+    used = sum(max(f(w, it) for it in items) for items, f, _ in rows); gap = min(22, max(GUT, (y - BOT - used) / (len(rows) - 1)))   # spread any spare room evenly
+    for items, f, d in rows: y = row_of_cards(y, items, 2, f, d) - gap
     footer()
 
 def page3():
-    header(3)
-    y = H - 112
-    c.setFont('ArB', 20); c.setFillColor(INK); c.drawString(M, y - 14, 'Good to know'); y -= 34
-    for t, b in GOOD: y = bullet(M, y, t, b, CW) - 2
-    y -= 8
-    t, b = ADMIN; pad = 14; h = pad + 18 + height(b, 'Ar', 9.6, CW - 2 * pad) + pad - 4
-    box(M, y, CW, h, tint=True); c.setFont('ArB', 12.5); c.setFillColor(INK); c.drawString(M + pad, y - pad - 10, t)
-    para(M + pad, y - pad - 16, b, 'Ar', 9.6, MUTED, CW - 2 * pad); y -= h + 16
+    header(3); y = TOP
+    y = heading(y, 'Good to know', 20) - 12
+    # each tip: orange dot level with a bold title, then the sentence underneath, all on one left edge
+    tips = [(t, b) for t, b in GOOD]
+    tip_h = lambda b: 15 + th(b, 'Ar', 10, CW - 20, 14.5)
+    total = sum(tip_h(b) for _, b in tips)
+    for t, b in tips:
+        c.setFillColor(ORANGE); c.circle(M + 4, y - 7.5, 3, fill=1, stroke=0)
+        c.setFont('ArB', 10.8); c.setFillColor(INK); c.drawString(M + 20, y - 11.5, t)
+        y = text(M + 20, y - 15 + 1, b, 'Ar', 10, MUTED, CW - 20, 14.5) - 17
+    y -= 6
+    t, b = ADMIN; h = PAD + 16 + th(b, 'Ar', 9.6, CW - 2 * PAD, 14) + PAD - 2
+    box(M, y, CW, h, True); c.setFont('ArB', 12); c.setFillColor(INK); c.drawString(M + PAD, y - PAD - 11, t)
+    text(M + PAD, y - PAD - 15, b, 'Ar', 9.6, MUTED, CW - 2 * PAD, 14); y -= h + 32
     t, sub, items = COMING
-    c.setFont('ArB', 16); c.setFillColor(INK); c.drawString(M, y - 16, t); y -= 22
-    y = para(M, y - 2, sub, 'Ar', 9.6, MUTED, CW) - 6
-    for it in items: y = bullet(M, y, '', it, CW, 10.2, 14.5)
+    y = heading(y, t, 15) + 2
+    y = text(M, y, sub, 'Ar', 9.6, MUTED, CW, 14) - 14
+    def soon_h(w, it): return PAD + 15 + 4 + th(it[1], 'Ar', BODY, w - 2 * PAD, LEAD) + PAD - 2
+    def soon(x, ytop, w, h, it):
+        c.setFont('ArB', 11); c.setFillColor(INK); c.drawString(x + PAD, ytop - PAD - 11, it[0])
+        text(x + PAD, ytop - PAD - 15, it[1], 'Ar', BODY, MUTED, w - 2 * PAD, LEAD)
+    y = row_of_cards(y, items[0:2], 2, soon_h, soon) - GUT
+    y = row_of_cards(y, items[2:4], 2, soon_h, soon)
     footer()
 
 if KEEP in (0, 1): page1()
