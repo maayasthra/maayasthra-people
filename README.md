@@ -78,8 +78,8 @@ For a new isolated database, apply the files in order. For an existing database,
 | `0043_away_time.sql` | Step away and come back (not counted as worked), add away time afterwards for today or yesterday, a reason for leaving early, and admin removal of an away entry |
 | `0044_home_cover.sql` | Each person can set their own Home cover picture (up to 2 MB); only they see it |
 | `0045_eod_sheet_export.sql` | Read-only functions (behind a secret token) that the Google Sheet uses to pull every end-of-day report, one tab per month. Setup: `SETUP-SHEET.md` |
-| `0046_payslip_requests.sql` | Employees request a payslip for a past month; admins deliver a PDF or image (up to 2 MB) under Requests > Payslips; the employee downloads it and gets a bell notification. Files are private to the owner and admins |
-| `0047_payslip_download_cleanup.sql` | The payslip file is deleted from the database once the employee downloads it; the request stays as a text history (who, which month, delivered by, downloaded when, file name and size) |
+| `0049_payslip_requests.sql` | Employees request a payslip for a past month; admins deliver a PDF or image (up to 2 MB) under Requests > Payslips; the employee downloads it and gets a bell notification. Files are private to the owner and admins |
+| `0050_payslip_download_cleanup.sql` | The payslip file is deleted from the database once the employee downloads it; the request stays as a text history (who, which month, delivered by, downloaded when, file name and size) |
 
 ## Tests
 

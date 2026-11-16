@@ -1,4 +1,4 @@
--- 0046: payslip requests. An employee asks for the payslip of a past month; admins see the request under Requests > Payslips and
+-- 0049: payslip requests. An employee asks for the payslip of a past month; admins see the request under Requests > Payslips and
 -- deliver the file there (a PDF or an image, up to 2 MB). The employee downloads it from their Payslips page and gets a bell notification.
 -- Payslips are private: a person reads only their own requests and files, admins read everyone's. Files live in their own table that the
 -- app can never read directly; they are only handed out by get_payslip_file to the owner or an admin. Run after 0045.

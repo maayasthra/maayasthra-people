@@ -786,7 +786,7 @@ for (const action of ['edit', 'remove', 'correct-rejected']) {
   await q("delete from eod_reports where employee_id = " + ids.abines + " and day in ('2026-10-08','2026-10-09','2026-09-30')");
 }
 
-// ================= 0046: PAYSLIP REQUESTS =================
+// ================= 0049: PAYSLIP REQUESTS =================
 {
   const rpc = async (fn, a) => { const r = await m.supabase.rpc(fn, a); const d = Array.isArray(r.data) && r.data.length === 1 && r.data[0] && fn in r.data[0] ? r.data[0][fn] : r.data; return { ...r, data: d }; };
   const msg = r => r.error?.message || '';
@@ -856,7 +856,7 @@ for (const action of ['edit', 'remove', 'correct-rejected']) {
   await q("delete from notifications where kind = 'payslip'");
 }
 
-// ================= 0047: PAYSLIP FILES ARE REMOVED AFTER DOWNLOAD =================
+// ================= 0050: PAYSLIP FILES ARE REMOVED AFTER DOWNLOAD =================
 {
   const rpc = async (fn, a) => { const r = await m.supabase.rpc(fn, a); const d = Array.isArray(r.data) && r.data.length === 1 && r.data[0] && fn in r.data[0] ? r.data[0][fn] : r.data; return { ...r, data: d }; };
   const msg = r => r.error?.message || '';

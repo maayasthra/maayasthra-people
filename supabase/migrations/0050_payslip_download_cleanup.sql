@@ -1,6 +1,6 @@
--- 0047: payslip files are not kept. Once the employee has downloaded their payslip, the file is deleted from the database and only the
+-- 0050: payslip files are not kept. Once the employee has downloaded their payslip, the file is deleted from the database and only the
 -- history stays as text (who it was for, which month, who delivered it and when, the file name and size, and when it was downloaded).
--- If someone needs another copy they ask again and an admin uploads a fresh file. Run after 0046.
+-- If someone needs another copy they ask again and an admin uploads a fresh file. Run after 0049.
 alter table public.payslip_requests add column if not exists downloaded_at timestamptz;
 do $$ begin alter table public.payslip_requests drop constraint payslip_requests_status_check; exception when undefined_object then null; end $$;
 alter table public.payslip_requests add constraint payslip_requests_status_check check (status in ('requested', 'delivered', 'downloaded', 'declined', 'cancelled'));
