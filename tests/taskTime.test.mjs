@@ -36,3 +36,18 @@ test('hours and durations are written the way the report keeps them', () => {
   assert.equal(hoursText(90 * M), '1.5'); assert.equal(hoursText(20 * M), '0.3333'); assert.equal(hoursText(8 * H), '8');
   assert.equal(shortDur(80 * M), '1h 20m'); assert.equal(shortDur(45 * M), '45m'); assert.equal(shortDur(2 * H), '2h 00m');
 });
+
+import { autoNote, subLines } from '../src/taskTime.js';
+test('a starting description from the card: client and where it stands', () => {
+  assert.equal(autoNote({ client: 'Orbit Fitness', done: false }), 'Orbit Fitness · in progress');
+  assert.equal(autoNote({ client: 'Nila Tea Co.', done: true }), 'Nila Tea Co. · completed');
+  assert.equal(autoNote({ client: '', done: true }), 'Completed');
+  assert.equal(autoNote({ client: '', done: false }), 'In progress');
+});
+test('subtask lines: ticked subtasks share the card time to the minute', () => {
+  const t = { subs: [{ t: 'Hero', done: true }, { t: 'Crops', done: false }, { t: 'Print', done: true }] };
+  assert.deepEqual(subLines(t, 61 * M), [{ title: 'Hero', hours: '0.5167' }, { title: 'Print', hours: '0.5' }]);   // 31m + 30m
+  assert.deepEqual(subLines({ subs: [{ t: 'A', done: false }, { t: 'B', done: false }] }, 60 * M).map(x => x.title), ['A', 'B']);   // none ticked: all of them
+  assert.deepEqual(subLines(t, 1 * M), []);          // too little time to share
+  assert.deepEqual(subLines({ subs: [] }, H), []);   // no subtasks
+});

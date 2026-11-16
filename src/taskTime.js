@@ -26,3 +26,14 @@ export const hoursText = ms => String(+(Math.round(ms / 60000) / 60).toFixed(4))
 
 // "1h 20m", "45m", "5m"
 export const shortDur = ms => { const m = Math.max(0, Math.round(ms / 60000)), h = Math.floor(m / 60); return h ? h + 'h ' + String(m % 60).padStart(2, '0') + 'm' : m + 'm'; };
+
+// A starting description for a report line, so nothing has to be typed: "Orbit Fitness · in progress", "Completed"
+export const autoNote = t => { const st = t.done ? 'completed' : 'in progress'; return t.client ? t.client + ' · ' + st : st[0].toUpperCase() + st.slice(1); };
+
+// Subtask lines for a card that has subtasks (the report asks for time against each one). The subtasks ticked off are used; if none are,
+// all of them. The time on the card is shared out evenly to the minute, and the first lines take the odd minutes. Too little time to share: none.
+export function subLines(t, ms) {
+  const subs = t.subs || [], picked = subs.some(s => s.done) ? subs.filter(s => s.done) : subs, mins = Math.round(ms / 60000), k = picked.length;
+  if (!k || mins < k) return [];
+  return picked.map((s, i) => ({ title: s.t, hours: String(+((Math.floor(mins / k) + (i < mins % k ? 1 : 0)) / 60).toFixed(4)) }));
+}
