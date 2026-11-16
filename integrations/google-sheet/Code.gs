@@ -45,14 +45,16 @@ function employeeId(value) {
 /**
  * Turns the lines the database sends for one month into the grid written to the tab.
  * env.parseDay(iso) returns a date value; env.fmtTime(isoTimestamp) returns text such as "14 Nov, 8:14 PM".
- * Returns { rows, first, group, isSub, last } where rows has NCOL values per line.
+ * Returns { rows, first, group, dayStart, dayGroup, isSub, last } where rows has NCOL values per line.
+ * first: the line starts a report. dayStart: the line starts a new date. group / dayGroup count reports and dates from 0.
  */
 function buildMonthGrid(lines, env) {
-  var rows = [], first = [], group = [], isSub = [], g = -1;
+  var rows = [], first = [], group = [], dayStart = [], dayGroup = [], isSub = [], g = -1, d = -1, prevDay = null;
   (lines || []).forEach(function (l) {
     var start = l.day_total !== null && l.day_total !== undefined;
     if (start) g++;
-    var sub = l.kind === 'sub';
+    var sub = l.kind === 'sub', dayKey = String(l.day).slice(0, 10), newDay = dayKey !== prevDay;
+    if (newDay) { d++; prevDay = dayKey; }
     rows.push([
       env.parseDay(String(l.day).slice(0, 10)),
       literalText(l.name),
@@ -67,9 +69,10 @@ function buildMonthGrid(lines, env) {
     ]);
     first.push(start);
     group.push(Math.max(g, 0));
+    dayStart.push(newDay); dayGroup.push(d);
     isSub.push(sub);
   });
-  return { rows: rows, first: first, group: group, isSub: isSub, last: FIRST + rows.length - 1 };
+  return { rows: rows, first: first, group: group, dayStart: dayStart, dayGroup: dayGroup, isSub: isSub, last: FIRST + rows.length - 1 };
 }
 
 /** Stable employee identities; duplicate display names remain separate people. */
@@ -303,18 +306,26 @@ function writeMonth(sheet, ym, grid) {
   sheet.getRange(FIRST, 1, n, 1).setNumberFormat('ddd d mmm').setHorizontalAlignment('left');
   sheet.getRange(FIRST, 7, n, 2).setNumberFormat('0.00').setHorizontalAlignment('right');
   sheet.getRange(FIRST, 9, n, 1).setNumberFormat('@');
-  var bgs = [], fcs = [], fws = [];
+  // One shade per day (white, then a soft orange), so a day reads as one block. The date is shown once, on the day's first line;
+  // on the other lines it takes the background colour (the value is still there for filters and totals).
+  var bgs = [], fcs = [], fws = [], fss = [], dayRows = [], reportRows = [];
   for (var r = 0; r < n; r++) {
-    var band = grid.group[r] % 2 === 1 ? C.band : C.white, row = [], fc = [], fw = [];
+    var band = grid.dayGroup[r] % 2 === 1 ? C.brandTint : C.white, row = [], fc = [], fw = [], fs = [];
     for (var c = 0; c < NCOL; c++) {
       row.push(band);
-      var dim = !grid.first[r] && c <= 2;                 // employee, date and department only stand out on the first line of a report
-      fc.push(dim ? C.dim : (c === 8 ? C.muted : (grid.isSub[r] && (c === 3) ? C.muted : C.text)));
-      fw.push((grid.first[r] && (c === 1 || c === 7)) || (!grid.isSub[r] && c === 3) ? 'bold' : 'normal');
+      var dim = !grid.first[r] && (c === 1 || c === 2);   // employee and department stand out on the first line of a report
+      var hideDate = c === 0 && !grid.dayStart[r];
+      fc.push(hideDate ? band : dim ? C.dim : (c === 8 ? C.muted : (grid.isSub[r] && (c === 3) ? C.muted : C.text)));
+      fw.push((grid.dayStart[r] && c === 0) || (grid.first[r] && (c === 1 || c === 7)) || (!grid.isSub[r] && c === 3) ? 'bold' : 'normal');
+      fs.push(grid.dayStart[r] && c === 0 ? 12 : 10);
     }
-    bgs.push(row); fcs.push(fc); fws.push(fw);
+    bgs.push(row); fcs.push(fc); fws.push(fw); fss.push(fs);
+    var a1 = 'A' + (FIRST + r) + ':' + colLetter(NCOL) + (FIRST + r);
+    if (grid.dayStart[r] && r > 0) dayRows.push(a1); else if (grid.first[r] && r > 0) reportRows.push(a1);
   }
-  body.setBackgrounds(bgs).setFontColors(fcs).setFontWeights(fws);
+  body.setBackgrounds(bgs).setFontColors(fcs).setFontWeights(fws).setFontSizes(fss);
+  if (reportRows.length) sheet.getRangeList(reportRows).setBorder(true, null, null, null, null, null, C.muted, SpreadsheetApp.BorderStyle.SOLID);
+  if (dayRows.length) sheet.getRangeList(dayRows).setBorder(true, null, null, null, null, null, C.ink, SpreadsheetApp.BorderStyle.SOLID_THICK);
   sheet.getRange(FIRST, 5, n, 1).setFontStyle('italic');
 
   // Total row under the table, then a filter so people can pick an employee or project

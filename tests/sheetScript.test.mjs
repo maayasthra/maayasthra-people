@@ -60,8 +60,8 @@ test('column letters', () => { assert.equal(A.colLetter(1), 'A'); assert.equal(A
 test('the sheet is set in Inter', () => { assert.equal(A.FONT, 'Inter'); assert.match(src, /setFontFamily\(FONT\)/); });
 
 /* ---- run the whole sync against a stand-in for Google's services ---- */
-const RANGE_METHODS = new Set(['setValues', 'setValue', 'setFormula', 'setFormulas', 'setBackground', 'setBackgrounds', 'setFontColor', 'setFontColors', 'setFontWeight', 'setFontWeights', 'setFontFamily', 'setFontSize', 'setFontStyle', 'setVerticalAlignment', 'setHorizontalAlignment', 'setNumberFormat', 'setWrap', 'setBorder', 'merge', 'breakApart', 'createFilter', 'offset', 'getSheet', 'getRow', 'getNumColumns', 'getValues']);
-const SHEET_METHODS = new Set(['getDataRange', 'clear', 'getMaxRows', 'getMaxColumns', 'insertRowsAfter', 'insertColumnsAfter', 'getRange', 'setHiddenGridlines', 'setColumnWidth', 'setRowHeight', 'setFrozenRows', 'setFrozenColumns', 'getFilter', 'getSheetId', 'getLastRow', 'hideColumns']);
+const RANGE_METHODS = new Set(['setValues', 'setValue', 'setFormula', 'setFormulas', 'setBackground', 'setBackgrounds', 'setFontColor', 'setFontColors', 'setFontWeight', 'setFontWeights', 'setFontFamily', 'setFontSize', 'setFontSizes', 'setFontStyle', 'setVerticalAlignment', 'setHorizontalAlignment', 'setNumberFormat', 'setWrap', 'setBorder', 'merge', 'breakApart', 'createFilter', 'offset', 'getSheet', 'getRow', 'getNumColumns', 'getValues']);
+const SHEET_METHODS = new Set(['getDataRange', 'clear', 'getMaxRows', 'getMaxColumns', 'insertRowsAfter', 'insertColumnsAfter', 'getRange', 'setHiddenGridlines', 'setColumnWidth', 'setRowHeight', 'setFrozenRows', 'setFrozenColumns', 'getFilter', 'getSheetId', 'getLastRow', 'hideColumns', 'getRangeList']);
 function fakeGoogle(rpcData) {
   const sheets = new Map(), props = {}, log = { fetches: [], toasts: [], triggers: [], formulas: [], values: [], fonts: new Set() };
   let nextId = 1;
@@ -106,6 +106,7 @@ function fakeGoogle(rpcData) {
       if (typeof k === 'symbol' || k === 'then' || k in t) return t[k];
       if (!SHEET_METHODS.has(k)) throw new Error('Sheet has no method ' + String(k));
       return (...a) => ({
+        getRangeList: names => { assert.ok(Array.isArray(names) && names.every(n => /^[A-Z]+\d+:[A-Z]+\d+$/.test(n))); return { setBorder() { return this; } }; },
         getDataRange: () => mkRange(sh, 1, 1, Math.max(1, sh.usedRows), Math.max(1, sh.usedCols)), clear: () => { sh.usedRows = 0; sh.usedCols = 0; return sh; }, getMaxRows: () => sh.rows, getMaxColumns: () => sh.cols,
         insertRowsAfter: (_, n) => { sh.rows += n; }, insertColumnsAfter: (_, n) => { sh.cols += n; },
         getRange: (...b) => typeof b[0] === 'string' ? mkRange(sh, 1, 1, 1, 1) : mkRange(sh, b[0], b[1], b[2] || 1, b[3] || 1),
@@ -332,4 +333,12 @@ test('the key is sent the right way for both key styles', () => {
   const jwt = 'eyJhbGciOi.payload.sig', pub = 'sb_publishable_abc123';
   assert.deepEqual(plain(A.authHeaders(jwt)), { apikey: jwt, Authorization: 'Bearer ' + jwt });   // older anon public key: a JWT
   assert.deepEqual(plain(A.authHeaders(pub)), { apikey: pub });                                    // newer publishable key: apikey header only
+});
+
+test('days are marked: one date group per day, the first line of each day flagged', () => {
+  const g = A.buildMonthGrid(lines, env);
+  assert.deepEqual(plain(g.dayStart), [true, false, false, false, true]);
+  assert.deepEqual(plain(g.dayGroup), [0, 0, 0, 0, 1]);
+  const two = A.buildMonthGrid([lines[0], { ...lines[4], day: '2026-11-10', employee_id: '202' }, lines[4]], env);   // two people on one day, then a new day
+  assert.deepEqual(plain(two.dayStart), [true, false, true]); assert.deepEqual(plain(two.first), [true, true, true]);
 });
