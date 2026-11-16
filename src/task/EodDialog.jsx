@@ -108,29 +108,35 @@ export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel
           <p>${edit ? 'Change what you sent for ' + new Date(D + 'T00:00:00Z').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }) + '.' : late ? 'Fill in what you worked on ' + new Date(D + 'T00:00:00Z').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }) + ', with the time.' : mode === 'out' ? 'Fill in what you worked on today' + (noHours ? '' : ', with the time') + '. You can check out once it is sent.' : 'Save it now, then check out when you are done. A later save replaces this one.'}</p></div></div>
       ${restored && html`<div className="eod-note" role="status"><span>We brought back your draft from ${hm2(restored)}.</span><button className="link" onClick=${() => { clearEodDraft(user.n, D); setRestored(null); const f = fromClock(); setFilled(f.some(x => Number(x.hours) > 0 || (x.subs || []).length)); setRows(f.length ? f : [blankRow()]); }}>Start over</button></div>`}
       ${filled && !restored && html`<div className="eod-note" role="status"><span>Project, description and time are filled in from your tasks and your Start and Pause presses. Change anything that is not right.${shared ? ' Time when you had several tasks running together is shared between them.' : ''}</span></div>`}
-      <div className="eod-t" role="table" aria-label="Today's work">
-        <div className="eod-hd" role="row"><span>Project</span><span>Description</span>${!noHours && html`<span>Time</span>`}<span></span></div>
+      <div className="ed-list">
         ${rows.map((r, i) => {
-          const c = cardOf(r), canPull = c && c.subs.length > 0 && c.subs.some(s => !r.subs.some(x => x.title === s.t));
-          return html`<div className="eod-g" key=${r.id}>
-            <div className="eod-r" role="row">
-              <input ref=${i === 0 ? first : null} className="inp" autoComplete="off" value=${r.project} placeholder="Project name" aria-label=${'Project, line ' + (i + 1)} maxLength="200" onChange=${ev => setProject(r, ev.target.value)}/>
-              <textarea className="inp" rows="1" autoComplete="off" value=${r.desc} placeholder=${r.subs.length ? 'Optional note' : 'What did you do?'} aria-label=${'Description, line ' + (i + 1)} maxLength="1000" onChange=${ev => patch(r.id, { desc: ev.target.value })}></textarea>
-              ${noHours ? null : r.subs.length ? html`<span className="eod-sum" title="Total of the subtasks">${hoursOf(r) ? fmtH(hoursOf(r)) : '0h'}</span>`
-                : html`<${HM} label=${'Time, line ' + (i + 1)} value=${r.hours} onChange=${v => patch(r.id, { hours: v })} onKeyDown=${ev => { if (ev.key === 'Enter' && i === rows.length - 1) { ev.preventDefault(); setRows(rs => [...rs, blankRow()]); } }}/>`}
-              <button className="ib" onClick=${() => removeRow(r.id)} aria-label=${'Remove line ' + (i + 1)} title="Remove this line"><${Icon} n="x" s=${14}/></button>
+          const c = cardOf(r), hasSubs = r.subs.length > 0, canPull = c && c.subs.length > 0 && c.subs.some(s => !r.subs.some(x => x.title === s.t));
+          return html`<section className="ed-card" key=${r.id} aria-label=${'Task ' + (i + 1)}>
+            <div className=${'ed-top' + (noHours ? ' nh' : '')}>
+              <span className="ed-num" aria-hidden="true">${i + 1}</span>
+              <label className="ed-f ed-name"><span className="ed-lb">Task or project</span>
+                <input ref=${i === 0 ? first : null} className="inp" autoComplete="off" value=${r.project} placeholder="Name of the task" aria-label=${'Task or project, number ' + (i + 1)} maxLength="200" onChange=${ev => setProject(r, ev.target.value)}/></label>
+              ${!noHours && html`<div className="ed-f ed-time"><span className="ed-lb">${hasSubs ? 'Total time' : 'Time'}</span>
+                ${hasSubs ? html`<b className="ed-sum" title="Total of the subtasks">${hoursOf(r) ? fmtH(hoursOf(r)) : '0h'}</b>`
+                  : html`<${HM} label=${'Time, task ' + (i + 1)} value=${r.hours} onChange=${v => patch(r.id, { hours: v })} onKeyDown=${ev => { if (ev.key === 'Enter' && i === rows.length - 1) { ev.preventDefault(); setRows(rs => [...rs, blankRow()]); } }}/>`}</div>`}
+              <button className="ib ed-x" onClick=${() => removeRow(r.id)} aria-label=${'Remove task ' + (i + 1)} title="Remove this task"><${Icon} n="x" s=${14}/></button>
             </div>
-            ${r.subs.map(s => html`<div className="eod-r eod-sub" key=${s.id} role="row">
-              <input className="inp" value=${s.title} placeholder="Subtask" aria-label="Subtask" maxLength="200" onChange=${ev => patchSub(r.id, s.id, { title: ev.target.value })}/>
-              <textarea className="inp" rows="1" value=${s.desc} placeholder="What did you do?" aria-label="Subtask description" maxLength="1000" onChange=${ev => patchSub(r.id, s.id, { desc: ev.target.value })}></textarea>
-              ${!noHours && html`<${HM} label="Subtask time" value=${s.hours} onChange=${v => patchSub(r.id, s.id, { hours: v })}/>`}
-              <button className="ib" onClick=${() => patch(r.id, { subs: r.subs.filter(x => x.id !== s.id) })} aria-label="Remove subtask" title="Remove this subtask"><${Icon} n="x" s=${14}/></button>
-            </div>`)}
-            <div className="eod-add"><button className="eod-l" onClick=${() => patch(r.id, { subs: [...r.subs, blankSub()] })}>+ Subtask</button>${canPull && html`<button className="eod-l" onClick=${() => addSubsFrom(r)}>Add this card’s subtasks</button>`}</div>
-          </div>`;
+            <label className="ed-f"><span className="ed-lb">${hasSubs ? 'Note (optional)' : 'What did you do?'}</span>
+              <textarea className="inp" rows="1" autoComplete="off" value=${r.desc} placeholder=${hasSubs ? 'Anything to add about this task' : 'Describe the work'} aria-label=${'Description, task ' + (i + 1)} maxLength="1000" onChange=${ev => patch(r.id, { desc: ev.target.value })}></textarea></label>
+            ${hasSubs && html`<div className=${'ed-subs' + (noHours ? ' nh' : '')} role="group" aria-label=${'Subtasks of task ' + (i + 1)}>
+              <div className="ed-subs-h">Subtasks</div>
+              ${r.subs.map(sb => html`<div className="ed-sub" key=${sb.id}>
+                <input className="inp ed-st" value=${sb.title} placeholder="Name of the subtask" aria-label="Subtask" maxLength="200" onChange=${ev => patchSub(r.id, sb.id, { title: ev.target.value })}/>
+                ${!noHours && html`<${HM} label="Subtask time" value=${sb.hours} onChange=${v => patchSub(r.id, sb.id, { hours: v })}/>`}
+                <button className="ib ed-x" onClick=${() => patch(r.id, { subs: r.subs.filter(x => x.id !== sb.id) })} aria-label="Remove subtask" title="Remove this subtask"><${Icon} n="x" s=${14}/></button>
+                <textarea className="inp ed-sd" rows="1" value=${sb.desc} placeholder="Note (optional)" aria-label="Subtask note" maxLength="1000" onChange=${ev => patchSub(r.id, sb.id, { desc: ev.target.value })}></textarea>
+              </div>`)}
+            </div>`}
+            <div className="ed-acts"><button className="eod-l" onClick=${() => patch(r.id, { subs: [...r.subs, blankSub()] })}>+ Add subtask</button>${canPull && html`<button className="eod-l" onClick=${() => addSubsFrom(r)}>Add this task’s subtasks</button>`}</div>
+          </section>`;
         })}
       </div>
-      <button className="btn ghost sm eod-new" onClick=${() => setRows(rs => [...rs, blankRow()])}><${Icon} n="plus" s=${14}/> Add a project</button>
+      <button className="btn ghost sm eod-new" onClick=${() => setRows(rs => [...rs, blankRow()])}><${Icon} n="plus" s=${14}/> Add a task</button>
       ${!noHours && html`<div className="eod-f"><span>Total <b>${fmtH(total)}</b></span>${worked > 0 && html`<span className=${over ? 'eod-warn' : ''}>Checked in today: ${hm(worked)}${over ? ' · more than you were here' : ''}</span>`}</div>`}
       ${err && html`<div className="eod-e" role="alert">${err}</div>`}
       <div className="dlg-a"><span className="eod-ds">${savedAt ? 'Draft saved' : ''}</span><button className="btn ghost" disabled=${busy} onClick=${onCancel}>${mode === 'out' ? 'Keep working' : late ? 'Close' : 'Cancel'}</button>

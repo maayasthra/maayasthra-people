@@ -1481,3 +1481,44 @@ button.tile:active,.tile.click:active{background:var(--fill)}
   .cv-in .date-l{padding-right:44px}
 }
 .mt3-st.mt3-ps{color:var(--warn-text)}
+
+/* ---------- End-of-day report: one card per task; a task's subtasks sit in an indented panel inside it ---------- */
+.dlg.eod{width:min(760px,calc(100vw - 32px))}
+.ed-list{display:flex;flex-direction:column;gap:14px}
+.ed-card{display:flex;flex-direction:column;gap:12px;padding:16px;border:1px solid var(--line-hi);border-radius:var(--r-card);background:var(--card)}
+.ed-top{display:grid;grid-template-columns:28px minmax(0,1fr) auto 36px;gap:12px;align-items:end}
+.ed-top.nh{grid-template-columns:28px minmax(0,1fr) 36px}
+.ed-num{align-self:end;margin-bottom:6px;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--brand-tint);color:var(--brand-text);font-size:13px;font-weight:650}
+.ed-f{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ed-lb{font-size:12px;font-weight:600;color:var(--muted)}
+.ed-name .inp{font-weight:600;font-size:15px}
+.ed-time .eod-hm{justify-self:start}
+.ed-sum{display:flex;align-items:center;height:40px;padding:0 2px;font-size:15px;font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ed-x{align-self:end;width:36px;height:40px}
+.ed-subs{position:relative;margin-left:40px;padding:12px 14px;border-radius:var(--r-ctl);background:var(--fill)}
+.ed-subs::before{content:"";position:absolute;left:-26px;top:-12px;width:20px;height:36px;border-left:2px solid var(--line-hi);border-bottom:2px solid var(--line-hi);border-bottom-left-radius:10px}
+.ed-subs-h{margin-bottom:6px;font-size:11.5px;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.ed-sub{display:grid;grid-template-columns:minmax(0,1fr) auto 36px;gap:8px 10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.ed-subs-h+.ed-sub{border-top:0;padding-top:4px}
+.ed-subs.nh .ed-sub{grid-template-columns:minmax(0,1fr) 36px}
+.eod .ed-sub .inp{height:36px;background:var(--card);border-color:var(--line)}
+.eod .ed-sub .inp:focus{border-color:var(--blue-soft)}
+.ed-st{font-weight:550}
+.eod .ed-sub textarea.ed-sd{grid-column:1 / -1;min-height:34px;height:34px;font-size:13px;color:var(--text-2)}
+.ed-x{height:36px}
+.ed-top .ed-x{height:40px}
+.ed-acts{display:flex;flex-wrap:wrap;gap:6px}
+.eod .eod-new{margin-top:14px}
+@media (max-width:640px){
+  .ed-card{padding:14px 12px}
+  .ed-top{grid-template-columns:28px minmax(0,1fr) 36px}
+  .ed-num{grid-row:1}.ed-name{grid-row:1;grid-column:2}.ed-top .ed-x{grid-row:1;grid-column:3}
+  .ed-time{grid-column:2 / 4}
+  .ed-subs{margin-left:12px;padding:10px}
+  .ed-subs::before{display:none}
+  .ed-sub{grid-template-columns:minmax(0,1fr) auto 36px}
+  .ed-st{grid-column:1 / -1}                              /* the subtask name gets a whole line; its time and remove button sit below */
+  .ed-sub .eod-hm{grid-column:1 / 3;justify-self:start}
+  .ed-subs.nh .ed-sub{grid-template-columns:minmax(0,1fr) 36px}
+  .ed-subs.nh .ed-st{grid-column:1}
+}
