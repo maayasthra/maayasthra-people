@@ -48,7 +48,7 @@ export function Login({ onLogin }) {
   const sendCode = ev => {
     if (ev) ev.preventDefault(); if (busy || cool > 0) return;
     if (!email.trim()) { setErr('Enter your work email.'); return; } setErr('');
-    const next = () => { setStep('code'); setCode(''); setPw(''); setPw2(''); setVerified(false); setCool(45); setBusy(false); };
+    const next = () => { setStep('code'); setCode(''); setPw(''); setPw2(''); setVerified(false); setCool(60); setBusy(false); };
     if (!authEnabled) { next(); return; }
     setBusy(true); sendReset(email).then(next).catch(e => { setErr(e.message); setBusy(false); });
   };
@@ -129,6 +129,7 @@ export function Login({ onLogin }) {
       <//>` : html`<${React.Fragment}>
         <button className="back" onClick=${() => { if (step === 'code' && !done) { setStep('email'); setErr(''); } else { setView('signin'); setStep('email'); setErr(''); setDone(false); setPw(''); setPw2(''); } }}><${Icon} n="back" s=${16}/> ${step === 'code' && !done ? 'Use a different email' : 'Back to sign in'}</button>
         ${done ? html`<h2>Password changed</h2><p>You can sign in with your new password.</p>
+          ${err && html`<div className="lg-err" role="alert">${err}</div>`}
           <button className="btn pri" type="button" onClick=${() => { setView('signin'); setStep('email'); setDone(false); setPw(''); setPw2(''); setErr(''); }}>Go to sign in</button>`
         : step === 'email' ? html`<h2>Forgot your password?</h2><p>Enter your work email. We will send you a 6-digit code to reset it.</p>
           <form onSubmit=${sendCode} noValidate>
