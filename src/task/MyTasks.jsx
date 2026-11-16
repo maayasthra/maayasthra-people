@@ -6,7 +6,7 @@ import { WorkLog } from './WorkLog.jsx';
 import { mkTask, completeCard, reopenCard, startTimer, pauseTimer, isDoing, myTasksOf } from '../tasks.js';
 import { workedMs, shortDur } from '../taskTime.js';
 
-// My Tasks: Pending, In progress, Completed. One card is In progress at a time. Pause sends it back to Pending and keeps the time worked on it;
+// My Tasks: Pending, In progress, Completed. Several cards can be In progress at once. Pause sends it back to Pending and keeps the time worked on it;
 // the time so far shows on the card and fills the end-of-day report.
 export function MyTasks({ tasks, setTasks, user, tq, openTask, canDelete, tick, onEdit }) {
   const [title, setTitle] = useState(''), [drag, setDrag] = useState(null), [over, setOver] = useState(null), [allDone, setAllDone] = useState(false), [adding, setAdding] = useState(false), [ask, setAsk] = useState(null), [tab, setTab] = useState('tasks');
@@ -20,7 +20,7 @@ export function MyTasks({ tasks, setTasks, user, tq, openTask, canDelete, tick, 
   const done = mine.filter(t => t.done).sort((a, b) => lastEnd(b) - lastEnd(a));
   const shownDone = allDone ? done : done.slice(0, 12);
 
-  // The three moves. Starting a card pauses the one you were on.
+  // The three moves. Any number of cards can be In progress at once.
   const toDoing = id => { startSound(); setTasks(ts => startTimer(ts, id, user.n)); };
   const toTodo = id => { pendingSound(); setTasks(ts => { const t = ts.find(x => x.id === id); return t && t.done ? reopenCard(ts, id, user.n) : pauseTimer(ts, id, user.n); }); };
   const toDone = id => { doneSound(); setTasks(ts => completeCard(ts, id)); };
@@ -57,7 +57,7 @@ export function MyTasks({ tasks, setTasks, user, tq, openTask, canDelete, tick, 
     <div className="tabs" role="tablist" aria-label="View">${[['tasks', 'Tasks', 'mytasks'], ['log', 'Submitted work', 'eod']].map(([k, l, ic]) => html`<button key=${k} role="tab" aria-selected=${tab === k} className=${tab === k ? 'on' : ''} onClick=${() => setTab(k)}><${Icon} n=${ic} s=${17}/>${l}</button>`)}</div>
     ${tab === 'log' ? html`<${WorkLog} user=${user} tick=${tick} onEdit=${onEdit}/>` : html`<div className="mt3">
       ${Col({ id: 'todo', label: 'Pending', list: todo, empty: 'Nothing waiting.' })}
-      ${Col({ id: 'doing', label: 'In progress', list: doing, empty: 'Press Start on a card to begin. Pause or Done stops the clock.' })}
+      ${Col({ id: 'doing', label: 'In progress', list: doing, empty: 'Press Start on a card to begin. You can run several at once. Pause or Done stops the clock.' })}
       ${Col({ id: 'done', label: 'Completed', list: shownDone, empty: 'Finished tasks appear here.' })}
     </div>`}
   </div>`;

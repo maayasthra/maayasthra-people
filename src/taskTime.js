@@ -5,20 +5,24 @@
 const closeMine = (time, n, now) => (time || []).map(s => s.emp === n && s.end == null ? { ...s, end: Math.max(now, s.start) } : s);
 const runningFor = (t, n) => (t.time || []).some(s => s.emp === n && s.end == null);
 
-// One active task at a time: starting a card pauses whatever else this person had running, so hours never overlap
-export const pauseOthers = (tasks, keepId, n, now = Date.now()) => tasks.map(t => t.id !== keepId && runningFor(t, n) ? { ...t, time: closeMine(t.time, n, now) } : t);
-
 // How long this person has worked on one card, running session included
 export const workedMs = (t, n, now = Date.now()) => (t.time || []).reduce((sum, s) => s.emp === n ? sum + Math.max(0, (s.end == null ? now : s.end) - s.start) : sum, 0);
 
 // Each card this person worked on between from and to (a day, in milliseconds), longest first. Under a minute is left out.
+// Several cards can run at once. Time when two or more were running together is shared equally between them, so the day's total is the
+// time actually worked and not double. rows.shared says whether any time was shared.
 export function trackedIn(tasks, n, from, to, now = Date.now()) {
-  const rows = [];
-  for (const t of tasks) {
-    const ms = (t.time || []).reduce((sum, s) => s.emp !== n ? sum : sum + Math.max(0, Math.min(s.end == null ? now : s.end, to) - Math.max(s.start, from)), 0);
-    if (ms >= 60000) rows.push({ id: t.id, title: t.title, ms });
+  const runs = [];
+  for (const t of tasks) for (const s of t.time || []) if (s.emp === n) { const a = Math.max(s.start, from), b = Math.min(s.end == null ? now : s.end, to); if (b > a) runs.push({ id: t.id, title: t.title, a, b }); }
+  const edges = [...new Set(runs.flatMap(r => [r.a, r.b]))].sort((x, y) => x - y), ms = new Map(); let shared = false;
+  for (let i = 0; i + 1 < edges.length; i++) {
+    const lo = edges[i], hi = edges[i + 1], on = runs.filter(r => r.a <= lo && r.b >= hi);
+    if (on.length > 1) shared = true;
+    on.forEach(r => ms.set(r.id, (ms.get(r.id) || 0) + (hi - lo) / on.length));
   }
-  return rows.sort((a, b) => b.ms - a.ms);
+  const rows = [...ms].map(([id, m]) => ({ id, title: runs.find(r => r.id === id).title, ms: m })).filter(r => r.ms >= 60000).sort((x, y) => y.ms - x.ms);
+  rows.shared = shared;
+  return rows;
 }
 
 // Milliseconds as decimal hours rounded to the minute, the way the report keeps time (1h 30m = 1.5)

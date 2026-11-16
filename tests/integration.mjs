@@ -225,12 +225,11 @@ t('starting a timer saves a running session', c.time.length === 1 && c.time[0].e
 t('the start time is stamped by the server (recent)', Math.abs(Date.now() - c.time[0].start) < 60000);
 t('the card counts as Doing for that person only', m.tasks.isDoing(c, ids.abines) && !m.tasks.isDoing(c, ids.arunkumar));
 await wait(60);
-// starting a second card pauses the first (one active task at a time); the first card keeps the time already recorded
+// starting a second card leaves the first one going: several cards can be Doing at once
 await m.persistBoard(tb, { ...tb, tasks: m.tasks.startTimer(tb.tasks, 'tm2', ids.abines) }, { mgr: false, me: ids.abines });
 tb = await m.loadBoard();
-t('starting another card pauses the first and saves its end time', !m.tasks.isDoing(tb.tasks.find(x => x.id === 'tm1'), ids.abines) && m.tasks.isDoing(tb.tasks.find(x => x.id === 'tm2'), ids.abines) && tb.tasks.find(x => x.id === 'tm1').time[0].end > 0);
-t('the paused card keeps its recorded time', m.tasks.spentMs(tb.tasks.find(x => x.id === 'tm1'), Date.now(), ids.abines) > 0);
-t('so a person is Doing one card at a time', tb.tasks.filter(x => m.tasks.isDoing(x, ids.abines)).length === 1);
+t('starting another card does not stop the first', m.tasks.isDoing(tb.tasks.find(x => x.id === 'tm1'), ids.abines) && m.tasks.isDoing(tb.tasks.find(x => x.id === 'tm2'), ids.abines));
+t('so a person can be Doing two cards at once', tb.tasks.filter(x => m.tasks.isDoing(x, ids.abines)).length === 2);
 await wait(40);
 await m.persistBoard(tb, { ...tb, tasks: m.tasks.pauseTimer(tb.tasks, 'tm2', ids.abines) }, { mgr: false, me: ids.abines });
 tb = await m.loadBoard(); c = tb.tasks.find(x => x.id === 'tm2');

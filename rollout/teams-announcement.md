@@ -14,7 +14,7 @@ If it says your email is not in the staff list, message an admin.
 **What you can do**
 - ✅ **Check in and out.** Your hours are kept for you. At check-out, send a short end-of-day report of what you worked on.
 - 🌴 **Leave.** Ask for leave, see your balance and follow the answer. **For the next few months, please request leave in both Outlook and the portal.** Later we will move to the portal alone, and we will tell you when.
-- 📋 **Tasks.** Your own tasks live in the Task app. Press Start and Pause as you work, and your time fills in your end-of-day report.
+- 📋 **Tasks.** Your own tasks live in the Task app. Press Start and Pause as you work (you can run several at once), and your time fills in your end-of-day report.
 - 🧾 **Payslips.** Coming soon. It shows greyed out in the menu for now, and we will tell you when you can request one.
 - 📣 **Announcements and calendar.** Company news, holidays, birthdays and who is on leave.
 
