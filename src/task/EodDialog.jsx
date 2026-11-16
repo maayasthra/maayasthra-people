@@ -32,12 +32,12 @@ export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel
   const D = day || dayKey(), late = mode === 'late', edit = mode === 'edit';
   const mine = tasks.filter(t => (t.cols || []).includes(user.n) && !t.done);
   const [rows, setRows] = useState(null);
-  const [err, setErr] = useState(''), [busy, setBusy] = useState(false), [restored, setRestored] = useState(null), [savedAt, setSavedAt] = useState(0), [filled, setFilled] = useState(false), [shared, setShared] = useState(false);
+  const [err, setErr] = useState(''), [busy, setBusy] = useState(false), [restored, setRestored] = useState(null), [savedAt, setSavedAt] = useState(0), [filled, setFilled] = useState(false);
   const first = useRef(null);
 
   // Every task worked on that day, with the time from your Start, Pause and Done presses; then anything in progress that has no time yet
   const fromClock = () => {
-    const from = dayStart(D), tracked = trackedIn(myTasksOf(tasks, user.n), user.n, from, from + 86400000); setShared(!!tracked.shared);
+    const from = dayStart(D), tracked = trackedIn(myTasksOf(tasks, user.n), user.n, from, from + 86400000);
     const rows = tracked.map(x => {
       const card = tasks.find(t => t.id === x.id), subs = card && !noHours ? subLines(card, x.ms) : [];
       return blankRow({ project: x.title, task: x.id, desc: card && !subs.length ? autoNote(card) : '', hours: noHours || subs.length ? '' : hoursText(x.ms), subs: subs.map(q => blankSub(q.title)).map((b, i) => ({ ...b, hours: subs[i].hours })) });
@@ -107,7 +107,7 @@ export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel
         <div><h2 id="eod-t">${edit ? 'Edit report' : late ? 'Missed report' : mode === 'out' ? 'End-of-day report' : 'Today’s report'}</h2>
           <p>${edit ? 'Change what you sent for ' + new Date(D + 'T00:00:00Z').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }) + '.' : late ? 'Fill in what you worked on ' + new Date(D + 'T00:00:00Z').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }) + ', with the time.' : mode === 'out' ? 'Fill in what you worked on today' + (noHours ? '' : ', with the time') + '. You can check out once it is sent.' : 'Save it now, then check out when you are done. A later save replaces this one.'}</p></div></div>
       ${restored && html`<div className="eod-note" role="status"><span>We brought back your draft from ${hm2(restored)}.</span><button className="link" onClick=${() => { clearEodDraft(user.n, D); setRestored(null); const f = fromClock(); setFilled(f.some(x => Number(x.hours) > 0 || (x.subs || []).length)); setRows(f.length ? f : [blankRow()]); }}>Start over</button></div>`}
-      ${filled && !restored && html`<div className="eod-note" role="status"><span>Project, description and time are filled in from your tasks and your Start and Pause presses. Change anything that is not right.${shared ? ' Time when you had several tasks running together is shared between them.' : ''}</span></div>`}
+      ${filled && !restored && html`<div className="eod-note" role="status"><span>Project, description and time are filled in from your tasks and your Start and Pause presses. Change anything that is not right.</span></div>`}
       <div className="ed-list">
         ${rows.map((r, i) => {
           const c = cardOf(r), hasSubs = r.subs.length > 0, canPull = c && c.subs.length > 0 && c.subs.some(s => !r.subs.some(x => x.title === s.t));

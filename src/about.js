@@ -5,7 +5,7 @@ export const BUILT = typeof __BUILD_DATE__ !== 'undefined' ? new Date(__BUILD_DA
 export const CHANGELOG = [
   { version: '1.7.0', date: '16 Nov 2026', title: 'Task time, smarter reports and payslips', items: [
     'Tasks keep your time. Back to pending is now Pause: a paused card shows the time worked and a Resume button, and several tasks can run at once',
-    'The end-of-day report fills itself in from your tasks: each task you worked on, its time, a starting description and its subtasks. Time when tasks ran together is shared between them. The report is now one clear card per task, with subtasks inside',
+    'The end-of-day report fills itself in from your tasks: each task you worked on, its time, a starting description and its subtasks. The report is now one clear card per task, with subtasks inside',
     'Admins and project managers can clear the Completed Tasks column in one go. It asks first',
     'Make payslips (admins): paste pay details and download A4 payslip PDFs, one by one or all in a ZIP. It runs in your browser and nothing is stored',
     'Payslip requests: a person asks for a past month and an admin delivers the file under Requests > Payslips. The file is removed from the server once it is downloaded. For now it is switched off for employees and project managers (shown with a lock)',

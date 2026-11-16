@@ -8,22 +8,13 @@ const runningFor = (t, n) => (t.time || []).some(s => s.emp === n && s.end == nu
 // How long this person has worked on one card, running session included
 export const workedMs = (t, n, now = Date.now()) => (t.time || []).reduce((sum, s) => s.emp === n ? sum + Math.max(0, (s.end == null ? now : s.end) - s.start) : sum, 0);
 
-// Each card this person worked on between from and to (a day, in milliseconds), longest first. Under a minute is left out.
-// Several cards can run at once. Time when two or more were running together is shared equally between them, so the day's total is the
-// time actually worked and not double. rows.shared says whether any time was shared.
-export function trackedIn(tasks, n, from, to, now = Date.now()) {
-  const runs = [];
-  for (const t of tasks) for (const s of t.time || []) if (s.emp === n) { const a = Math.max(s.start, from), b = Math.min(s.end == null ? now : s.end, to); if (b > a) runs.push({ id: t.id, title: t.title, a, b }); }
-  const edges = [...new Set(runs.flatMap(r => [r.a, r.b]))].sort((x, y) => x - y), ms = new Map(); let shared = false;
-  for (let i = 0; i + 1 < edges.length; i++) {
-    const lo = edges[i], hi = edges[i + 1], on = runs.filter(r => r.a <= lo && r.b >= hi);
-    if (on.length > 1) shared = true;
-    on.forEach(r => ms.set(r.id, (ms.get(r.id) || 0) + (hi - lo) / on.length));
-  }
-  const rows = [...ms].map(([id, m]) => ({ id, title: runs.find(r => r.id === id).title, ms: m })).filter(r => r.ms >= 60000).sort((x, y) => y.ms - x.ms);
-  rows.shared = shared;
-  return rows;
-}
+// Time this person worked on one card inside a window (a day, in milliseconds), running session included.
+// The cards on My Tasks and the end-of-day report both use this, so the two always show the same time.
+export const workedIn = (t, n, from, to, now = Date.now()) => (t.time || []).reduce((sum, s) => s.emp !== n ? sum : sum + Math.max(0, Math.min(s.end == null ? now : s.end, to) - Math.max(s.start, from)), 0);
+
+// Each card this person worked on in the window, longest first. Under a minute is left out.
+export const trackedIn = (tasks, n, from, to, now = Date.now()) =>
+  tasks.map(t => ({ id: t.id, title: t.title, ms: workedIn(t, n, from, to, now) })).filter(r => r.ms >= 60000).sort((a, b) => b.ms - a.ms);
 
 // Milliseconds as decimal hours rounded to the minute, the way the report keeps time (1h 30m = 1.5)
 export const hoursText = ms => String(+(Math.round(ms / 60000) / 60).toFixed(4));

@@ -4,7 +4,8 @@ import { startSound, pendingSound, doneSound, deleteSound } from '../alerts.js';
 import { html, Icon, HI } from '../ui.jsx';
 import { WorkLog } from './WorkLog.jsx';
 import { mkTask, completeCard, reopenCard, startTimer, pauseTimer, isDoing, myTasksOf } from '../tasks.js';
-import { workedMs, shortDur } from '../taskTime.js';
+import { workedMs, workedIn, shortDur } from '../taskTime.js';
+import { dayKey, dayStart } from '../attendance.js';
 
 // My Tasks: Pending, In progress, Completed. Several cards can be In progress at once. Pause sends it back to Pending and keeps the time worked on it;
 // the time so far shows on the card and fills the end-of-day report.
@@ -12,6 +13,9 @@ export function MyTasks({ tasks, setTasks, user, tq, openTask, canDelete, tick, 
   const [title, setTitle] = useState(''), [drag, setDrag] = useState(null), [over, setOver] = useState(null), [allDone, setAllDone] = useState(false), [adding, setAdding] = useState(false), [ask, setAsk] = useState(null), [tab, setTab] = useState('tasks');
   const [now, setNow] = useState(Date.now());
   useEffect(() => { const i = setInterval(() => setNow(Date.now()), 30000); return () => clearInterval(i); }, []);   // keeps the time on the cards fresh
+  // The time on a card is today's time on it: the same figure the end-of-day report fills in
+  const dFrom = dayStart(dayKey(now)), todayOf = t => workedIn(t, user.n, dFrom, dFrom + 86400000, now);
+  const spent = t => { const d = todayOf(t); return d >= 60000 ? shortDur(d) + ' today' : workedMs(t, user.n, now) >= 60000 ? shortDur(workedMs(t, user.n, now)) + ' so far' : shortDur(d) + ' today'; };
   const term = tq.trim().toLowerCase();
   const mine = myTasksOf(tasks, user.n).filter(t => !term || t.title.toLowerCase().includes(term));
   const doing = mine.filter(t => isDoing(t, user.n));
@@ -33,7 +37,7 @@ export function MyTasks({ tasks, setTasks, user, tq, openTask, canDelete, tick, 
       <button className="mt3-t" onClick=${() => openTask(t.id)}>${t.title}</button>
       ${canDelete && ask === t.id && html`<div className="mt3-del" role="alert"><span>Delete this task?</span><button className="btn ghost sm" onClick=${() => setAsk(null)}>Keep</button><button className="btn danger sm" onClick=${() => { deleteSound(); setTasks(ts => ts.filter(x => x.id !== t.id)); setAsk(null); }}>Delete</button></div>`}
       <div className="mt3-f">
-        ${col === 'doing' ? html`<span className="kt-st doing mt3-st"><i></i>In progress · ${shortDur(workedMs(t, user.n, now))}${t.client ? ' · ' + t.client : ''}</span>` : col === 'done' ? html`<span className="mt3-st mt3-dn"><${Icon} n="check" s=${13}/>Completed${t.client ? ' · ' + t.client : ''}</span>` : workedMs(t, user.n, now) >= 60000 ? html`<span className="mt3-st mt3-ps" title="Time already worked on this task is kept">Paused · ${shortDur(workedMs(t, user.n, now))}${t.client ? ' · ' + t.client : ''}</span>` : html`<span className="mt3-st">${t.client || 'Not started'}</span>`}
+        ${col === 'doing' ? html`<span className="kt-st doing mt3-st"><i></i>In progress · ${spent(t)}${t.client ? ' · ' + t.client : ''}</span>` : col === 'done' ? html`<span className="mt3-st mt3-dn"><${Icon} n="check" s=${13}/>Completed${t.client ? ' · ' + t.client : ''}</span>` : workedMs(t, user.n, now) >= 60000 ? html`<span className="mt3-st mt3-ps" title="Time already worked on this task is kept">Paused · ${spent(t)}${t.client ? ' · ' + t.client : ''}</span>` : html`<span className="mt3-st">${t.client || 'Not started'}</span>`}
         <span className="mt3-a">
           ${canDelete && ask !== t.id && html`<button className="mt3-rm" onClick=${() => setAsk(t.id)} title="Delete this task" aria-label=${'Delete ' + t.title}><${Icon} n="trash" s=${15}/></button>`}
           ${col === 'todo' && html`<button className="btn pri sm" onClick=${() => toDoing(t.id)}>${workedMs(t, user.n, now) >= 60000 ? 'Resume' : 'Start'}</button>`}

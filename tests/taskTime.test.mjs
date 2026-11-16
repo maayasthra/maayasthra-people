@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { workedMs, trackedIn, hoursText, shortDur } from '../src/taskTime.js';
+import { workedMs, workedIn, trackedIn, hoursText, shortDur } from '../src/taskTime.js';
 
 const H = 3600000, M = 60000;
 const card = (id, time, extra = {}) => ({ id, title: 'Card ' + id, time, ...extra });
@@ -44,11 +44,11 @@ test('subtask lines: ticked subtasks share the card time to the minute', () => {
   assert.deepEqual(subLines({ subs: [] }, H), []);   // no subtasks
 });
 
-test('tasks running together share the time, so the day is not counted twice', () => {
-  const ts = [card('A', [{ id: '1', emp: 7, start: 9 * H, end: 11 * H }]), card('B', [{ id: '2', emp: 7, start: 10 * H, end: 12 * H }]), card('C', [{ id: '3', emp: 7, start: 14 * H, end: 15 * H }])];
+test('tasks running together each keep their own full time, the same figure the card shows', () => {
+  const ts = [card('A', [{ id: '1', emp: 7, start: 9 * H, end: 11 * H }]), card('B', [{ id: '2', emp: 7, start: 10 * H, end: 12 * H }])];
   const r = trackedIn(ts, 7, 0, 24 * H, 20 * H);
-  assert.deepEqual(r.map(x => [x.id, x.ms]), [['A', 1.5 * H], ['B', 1.5 * H], ['C', H]]);   // 9-10 A alone, 10-11 shared, 11-12 B alone
-  assert.equal(r.shared, true);
-  assert.equal(r.reduce((s, x) => s + x.ms, 0), 4 * H);                                      // 9 to 12 and 14 to 15: four hours worked
-  assert.equal(trackedIn([ts[2]], 7, 0, 24 * H, 20 * H).shared, false);
+  assert.deepEqual(r.map(x => [x.id, x.ms]), [['A', 2 * H], ['B', 2 * H]]);          // overlapping hours count in full for each task
+  for (const t of ts) assert.equal(workedIn(t, 7, 0, 24 * H, 20 * H), r.find(x => x.id === t.id).ms);   // card and report agree
+  assert.equal(workedIn(ts[0], 7, 10 * H, 24 * H, 20 * H), H);                        // a window clips the time
 });
+
