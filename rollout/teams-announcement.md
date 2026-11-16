@@ -5,9 +5,11 @@ Hi team,
 From today we are moving to **Maayasthra People**, one place for everything you used to chase across chats and sheets.
 
 **Get started in 3 steps**
-1. **Check your inbox.** You will get an invite email at your work address. Open it and choose a password.
-2. **Open people.maayasthra.com** on your phone or computer. Bookmark it, or add it to your home screen.
-3. **Take the one-minute tour** when you first sign in, then finish your profile (photo, a line about you, phone number, emergency contact).
+1. **Open people.maayasthra.com** on your phone or computer. Bookmark it, or add it to your home screen.
+2. **Create your account.** Choose **Create account**, enter your work email and a password. We email you a link to confirm it.
+3. **Open the link, then sign in.** A one-minute tour starts. After it, finish your profile (photo, phone number, emergency contact).
+
+If it says your email is not in the staff list, message an admin.
 
 **What you can do**
 - ✅ **Check in and out.** Your hours are kept for you. At check-out, send a short end-of-day report of what you worked on.

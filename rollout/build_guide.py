@@ -28,9 +28,9 @@ URL = 'people.maayasthra.com'; PAGES = 3
 
 # ------------------------------------------------------------------ TEXT
 STEPS = [
-    ('Check your inbox', 'You will get an invite email at your work address. Open it and choose a password.'),
     ('Open the portal', 'Go to ' + URL + ' on your phone or your computer. Bookmark it, or add it to your phone\'s home screen.'),
-    ('Take the tour', 'It takes a minute and starts the first time you sign in. Then finish your profile: a photo, a line about you, your phone number and an emergency contact.'),
+    ('Create your account', 'Choose Create account. Enter your work email and a password. We email you a link to confirm it.'),
+    ('Sign in', 'Open the link, then sign in. A one-minute tour starts. After it, finish your profile: photo, phone number and emergency contact.'),
 ]
 LEAVE_NOTICE = ('Leave: use Outlook and the portal, for now',
                 'For the next few months, please request your leave in both Outlook and this portal. Later we will move to the portal alone, and we will tell you when.')
@@ -50,7 +50,7 @@ GOOD = [
     ('Forgot your password?', 'On the sign-in page choose Forgot password. We email you a 6-digit code. Type it with a new password. The code works once and expires after 10 minutes.'),
     ('Notifications.', 'The bell tells you when a task is given to you, and reminds you 30 and 15 minutes before your shift ends to send your end-of-day report.'),
     ('Phone or computer.', 'It works on both. Choose Light, Dark or match your device from the account menu at the top right.'),
-    ('Stuck?', 'Ask an admin, and tell them the version number shown under About.'),
+    ('Stuck?', 'If it says your email is not in the staff list, or anything else goes wrong, ask an admin. Tell them the version number shown under About.'),
 ]
 ADMIN = ('For admins and project managers',
          'Admins approve or decline leave (each request can be copied as a WhatsApp-ready message), see attendance, and answer payslip requests under Requests. '
