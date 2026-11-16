@@ -6,7 +6,7 @@ import vm from 'node:vm';
 // Load the Google Apps Script file as plain JavaScript. Only its pure helpers are called, so no Google services are needed.
 const src = fs.readFileSync(new URL('../integrations/google-sheet/Code.gs', import.meta.url), 'utf8');
 const ctx = vm.createContext({ console });
-vm.runInContext(src + '\nthis.__api = { monthName, monthTitle, quoteSheet, buildMonthGrid, peopleIn, sortMonthsDesc, colLetter, FIRST, NCOL, HEADERS, WIDTHS, FONT };', ctx);
+vm.runInContext(src + '\nthis.__api = { authHeaders, monthName, monthTitle, quoteSheet, buildMonthGrid, peopleIn, sortMonthsDesc, colLetter, FIRST, NCOL, HEADERS, WIDTHS, FONT };', ctx);
 const A = ctx.__api, plain = x => JSON.parse(JSON.stringify(x));
 const env = { parseDay: iso => 'D:' + iso, fmtTime: ts => 'T:' + ts };
 
@@ -326,4 +326,10 @@ test('upgrade unmerges old titles extending beyond the used-data range on both o
   assert.equal(summary.frozenCols, 1);
   assert.ok(summary.merges.length === 0);
   assert.ok(month.merges.every(m => m.c + m.nc - 1 <= 10));
+});
+
+test('the key is sent the right way for both key styles', () => {
+  const jwt = 'eyJhbGciOi.payload.sig', pub = 'sb_publishable_abc123';
+  assert.deepEqual(plain(A.authHeaders(jwt)), { apikey: jwt, Authorization: 'Bearer ' + jwt });   // older anon public key: a JWT
+  assert.deepEqual(plain(A.authHeaders(pub)), { apikey: pub });                                    // newer publishable key: apikey header only
 });

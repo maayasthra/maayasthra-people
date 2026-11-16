@@ -32,6 +32,9 @@ function quoteSheet(name) { return "'" + String(name).replace(/'/g, "''") + "'";
 
 // An apostrophe asks Sheets to keep text literal (including leading = and apostrophes).
 // Never apply this helper to numeric/date cells or formulas constructed by this script.
+// The older "anon public" key is a JWT and is sent both ways. The newer publishable key (sb_publishable_...) is not a JWT, so it goes in the apikey header only.
+function authHeaders(key) { return String(key).indexOf('eyJ') === 0 ? { apikey: key, Authorization: 'Bearer ' + key } : { apikey: key }; }
+
 function literalText(value) { var s = String(value == null ? '' : value); return /^[\s]*[=+@\-']/.test(s) ? "'" + s : s; }
 function employeeId(value) {
   var id = String(value == null ? '' : value);
@@ -104,8 +107,10 @@ function connect() {
   };
   var url = ask('Step 1 of 3', 'Your Supabase project URL, like https://abcd1234.supabase.co');
   if (url === null) return;
-  var key = ask('Step 2 of 3', 'The "anon public" key from Supabase > Project Settings > API (the public one, not the secret one)');
+  var key = ask('Step 2 of 3', 'The PUBLISHABLE key (starts with sb_publishable_) or the older "anon public" key, from Supabase > Project Settings > API. Never the secret key');
   if (key === null) return;
+  key = String(key).trim();
+  if (/^sb_secret_/.test(key)) { SpreadsheetApp.getUi().alert('That is the SECRET key. Do not use it here. Use the publishable key (sb_publishable_...) or the older anon public key.'); return; }
   var token = ask('Step 3 of 3', 'The export token you set in Supabase (see SETUP-SHEET.md)');
   if (token === null) return;
   url = url.replace(/\/+$/, '');
@@ -148,7 +153,7 @@ function rpc(fn, args, connection) {
   body.p_token = c.token;
   var res = UrlFetchApp.fetch(c.url + '/rest/v1/rpc/' + fn, {
     method: 'post', contentType: 'application/json', muteHttpExceptions: true,
-    headers: { apikey: c.key, Authorization: 'Bearer ' + c.key }, payload: JSON.stringify(body)
+    headers: authHeaders(c.key), payload: JSON.stringify(body)
   });
   var code = res.getResponseCode(), text = res.getContentText();
   if (code >= 300) {
