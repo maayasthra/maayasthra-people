@@ -9,7 +9,7 @@ export const CHANGELOG = [
     'Admins and project managers can clear the Completed Tasks column in one go. It asks first',
     'Make payslips (admins): paste pay details and download A4 payslip PDFs, one by one or all in a ZIP. It runs in your browser and nothing is stored',
     'Payslip requests: a person asks for a past month and an admin delivers the file under Requests > Payslips. The file is removed from the server once it is downloaded. For now it is switched off for employees and project managers (shown with a lock)',
-    'My Leaves is open to everyone. Leave requests are clear cards with status pills, and Copy gives a WhatsApp-ready message with bold headings',
+    'Leave requests are clearer, with status pills, and Copy gives a WhatsApp-ready message with bold headings. My Leaves stays switched off for employees and project managers for now (shown with a lock)',
     'My settings brings theme, sounds, reminders, desktop alerts, password and the tour into one personal page',
     'Filters on the long lists (requests, leaves, payslips, announcements, EOD reports), and a confirmation before important actions such as approving leave or removing an announcement'
   ] },

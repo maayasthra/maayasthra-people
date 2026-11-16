@@ -32,29 +32,28 @@ STEPS = [
     ('Create your account', 'Choose Create account. Enter your work email and a password. We email you a link to confirm it.'),
     ('Sign in', 'Open the link, then sign in. A one-minute tour starts. After it, finish your profile: photo, phone number and emergency contact.'),
 ]
-LEAVE_NOTICE = ('Leave: use Outlook and the portal, for now',
-                'For the next few months, please request your leave in both Outlook and this portal. Later we will move to the portal alone, and we will tell you when.')
+LEAVE_NOTICE = ('Leave: keep using Outlook, for now',
+                'Please keep requesting your leave in Outlook. My Leaves in the portal is switched off for now. We will open it later, and we will tell you when.')
 # (title, text, screenshot or None)
 FEATURES = [
-    ('Leave', 'Ask for leave, see your balance and follow the answer. A request that is still waiting can be withdrawn. Remember: for now, also request it in Outlook.', 'leaves.png', 'My Leaves'),
     ('News and calendar', 'Company announcements pop up until you close them. The calendar shows holidays, birthdays, work anniversaries and who is on leave.', 'calendar.png', 'Calendar'),
     ('Tasks', 'The Task app holds your own tasks. Press Start on a task and Pause when you stop. You can run several at once. Your time is kept and fills in your end-of-day report.', 'tasks.png', 'My Tasks'),
+    ('Check in and out', 'Start your day with one tap and check out when you finish. Your hours are kept for you. At check-out you send a short end-of-day report of what you worked on.', 'home.png', 'Home'),
     ('Find people', 'The org chart shows who works with whom. Search finds any colleague: press the / key from anywhere.', 'org.png', 'Org chart'),
 ]
 SMALL = [
-    ('Check in and out', 'Start your day with one tap and check out when you finish. Your hours are kept for you. At check-out you send a short end-of-day report of what you worked on.'),
+    ('Leave: Outlook for now', 'Keep requesting leave in Outlook. My Leaves in the portal is switched off for now, and we will tell you when it opens.'),
     ('Payslips: coming soon', 'Requesting a payslip is switched off for now. It shows greyed out in the menu, and we will tell you when it opens.'),
 ]
 GOOD = [
-    ('Greyed-out items.', 'Members, Requests and Payslips show with a lock for now. Only admins can open them. Payslips will open for everyone later.'),
+    ('Greyed-out items.', 'Members, My Leaves, Requests and Payslips show with a lock for now. Only admins can open them. My Leaves and Payslips will open for everyone later.'),
     ('Forgot your password?', 'On the sign-in page choose Forgot password. We email you a 6-digit code. Type it with a new password. The code works once and expires after 10 minutes.'),
     ('Notifications.', 'The bell tells you when a task is given to you, and reminds you 30 and 15 minutes before your shift ends to send your end-of-day report.'),
     ('Phone or computer.', 'It works on both. Choose Light, Dark or match your device from the account menu at the top right.'),
     ('Stuck?', 'If it says your email is not in the staff list, or anything else goes wrong, ask an admin. Tell them the version number shown under About.'),
 ]
 ADMIN = ('For admins and project managers',
-         'Admins approve or decline leave (each request can be copied as a WhatsApp-ready message), see attendance, and answer payslip requests under Requests. '
-         'Making payslips from pasted pay details (Admin > Make payslips) is for admins only. '
+         'Admins manage people, attendance and settings. Making payslips from pasted pay details (Admin > Make payslips) is for admins only. '
          'Admins and project managers also get the full task board, the team view and everyone\'s end-of-day reports.')
 COMING = ('Coming next',
           'Planned, with no dates yet. We will announce each one when it is ready.',
