@@ -1529,3 +1529,5 @@ button.tile:active,.tile.click:active{background:var(--fill)}
 .eod .ed-new:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .eod .ed-acts .eod-l{height:34px;padding:0 14px;border:1px solid var(--line-hi);border-radius:999px;background:var(--card);color:var(--text);font-size:13px;font-weight:550}
 .eod .ed-acts .eod-l:hover{border-color:var(--accent);color:var(--brand-text);background:var(--brand-tint)}
+.kc2-clr{color:var(--err-text);border-color:var(--line-hi);flex:none}
+.kc2-clr:hover{background:var(--err-bg);border-color:var(--red)}

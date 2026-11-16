@@ -529,6 +529,15 @@ t('replay cannot bypass task authorization',!!(await m.supabase.rpc('patch_task_
 t('employee cannot delete even a missing task',!!(await m.supabase.rpc('delete_tasks',{p_ids:['missing-retry-task']})).error);
 as('vijay');
 t('manager repeat deletion succeeds',!(await m.supabase.rpc('delete_tasks',{p_ids:['missing-retry-task']})).error);
+// Clear completed: the board deletes every finished card in one batch and leaves open ones alone
+{ let cb = await m.loadBoard();
+  await m.persistBoard(cb, { ...cb, tasks: [...cb.tasks, T('cl1', ids.vijay, { done: true, cols: ['done'], prev: [ids.vijay] }), T('cl2', ids.vijay, { done: true, cols: ['done'], prev: [ids.vijay] }), T('cl3', ids.vijay, { done: true, cols: ['done'], prev: [ids.vijay] }), T('cl4', ids.vijay)] });
+  cb = await m.loadBoard();
+  t('completed cards exist before clearing', (await q("select count(*)::int n from tasks where id in ('cl1','cl2','cl3')"))[0].n === 3);
+  await m.persistBoard(cb, { ...cb, tasks: cb.tasks.filter(x => !(x.done && ['cl1', 'cl2', 'cl3'].includes(x.id))) });
+  t('clearing completed tasks deletes all of them', (await q("select count(*)::int n from tasks where id in ('cl1','cl2','cl3')"))[0].n === 0);
+  t('and leaves open tasks alone', (await q("select count(*)::int n from tasks where id = 'cl4'"))[0].n === 1);
+  cb = await m.loadBoard(); await m.persistBoard(cb, { ...cb, tasks: cb.tasks.filter(x => x.id !== 'cl4') }); }
 as('abines');
 t('identical missed-day report is reconciled',!(await tryit(async()=>m.submitEod(rowsOk,ids.abines,(await q("select (public.today_ist()-3)::text d"))[0].d))));
 // Follow-up: partial creation acknowledgements must retain the writer's own baseline.

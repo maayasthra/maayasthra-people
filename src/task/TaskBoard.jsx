@@ -3,6 +3,7 @@ import { moveSound, deleteSound, pendingSound, doneSound } from '../alerts.js';
 import { html, Icon, HI, Av } from '../ui.jsx';
 import { BY, activeEmps } from '../data.js';
 import { BoardGroups } from './BoardGroups.jsx';
+import { useConfirm } from '../Confirm.jsx';
 import { PINNED, DONE, LABELS, LABEL_C, moveCard, copyCard, duplicateCard, deleteCard, completeCard, reopenCard, dropColumn, mkTask, colName, statusOf } from '../tasks.js';
 
 /* The three-dots menu: open, move, copy, duplicate to a column, or delete */
@@ -106,6 +107,15 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
   const match = t => !term || t.title.toLowerCase().includes(term);
   const cards = col => tasks.filter(t => match(t) && t.cols.includes(col));
   const isAdmin = role === 'admin' || role === 'pm';
+  const [cfEl, ask] = useConfirm();
+  // Admins and project managers can empty the Completed column to free space. This deletes the cards for good, so it asks first.
+  const clearDone = async () => {
+    const ids = new Set(cards(DONE).filter(t => t.done).map(t => t.id)), n = ids.size; if (!n) return;
+    const ok = await ask({ title: 'Delete all completed tasks?', icon: 'trash', danger: true, confirm: 'Delete ' + n + (n === 1 ? ' task' : ' tasks'),
+      body: n + ' completed ' + (n === 1 ? 'task' : 'tasks') + ' shown in this column will be deleted from the board and the server.',
+      items: [{ tone: 'bad', text: 'This cannot be undone.' }, { tone: 'warn', text: 'Their subtasks, comments and time records are deleted with them. Reports already sent are not affected.' }, { tone: 'ok', text: 'Tasks that are not completed are not touched.' }] });
+    if (ok) { deleteSound(); setTasks(ts => ts.filter(t => !(t.done && ids.has(t.id)))); }
+  };
   // Every column, its look, and the saved order. Retainer first, then Priority, then people A to Z, then added columns.
   const everyone = activeEmps().sort((a, b) => a.name.localeCompare(b.name));
   const defs = {};
@@ -197,6 +207,7 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
     return html`<section key=${key} data-col=${key} className=${cls} style=${style} onDragOver=${ev => onOver(ev, key)} onDrop=${ev => onDrop(ev, key)} onDragLeave=${ev => { if (!ev.currentTarget.contains(ev.relatedTarget)) setOver(o => o && o.col === key ? null : o); }}>
       <header className=${'kc2-h' + (movable ? ' kc2-hd' : '')} draggable=${movable} title=${movable ? 'Drag to move this column' : undefined} onDragStart=${movable ? (ev => { if (ev.target !== ev.currentTarget) return; setColDrag(key); ev.dataTransfer.effectAllowed = 'move'; ev.dataTransfer.setData('text/plain', 'col:' + key); }) : undefined} onDragEnd=${() => { setColDrag(null); setColOver(null); }}>
         ${typeof key === 'number' && BY[key] ? html`<span className="kc2-lead"><${Av} e=${BY[key]} s=${22}/></span>` : html`<span className="kc2-lead kc2-ico" aria-hidden="true"><${Icon} n=${key === 'pending' ? 'clock' : key === 'retainer' ? 'star' : key === 'priority' ? 'flag' : key === DONE ? 'check' : 'tag'} s=${15}/></span>`}<b className="kc2-t" title=${label}>${label}</b><span className="kc-n">${list.length}</span><span style=${{ flex: 1 }}></span>
+        ${key === DONE && isAdmin && list.length > 0 && html`<button className="btn ghost sm kc2-clr" onMouseDown=${ev => ev.stopPropagation()} onClick=${clearDone} title="Delete all completed tasks to free space"><${Icon} n="trash" s=${14}/> Clear</button>`}
         ${movable && html`<button className="ib" onMouseDown=${ev => ev.stopPropagation()} onClick=${ev => { const r = ev.currentTarget.getBoundingClientRect(); setCmenu(cmenu && cmenu.id === key ? null : { id: key, x: r.right - 216, y: r.bottom + 6 }); }} aria-label=${'Options for ' + label} title="Column options"><${Icon} n="dots" s=${16}/></button>`}
         <button className="ib" onClick=${() => toggle(key)} aria-label=${'Hide ' + label} title="Hide this column"><${Icon} n="chevL" s=${16}/></button>
       </header>
@@ -229,6 +240,7 @@ export function TaskBoard({ tasks, setTasks, user, role, tf, setTf, tq, openTask
 
   const lcount = tf.labels.length;
   return html`<div>
+    ${cfEl}
     <div className="pg-h kbh"><div><h1><${HI} n="board" tone="purple"/>Board</h1></div>
       <button className="btn pri new-m" onClick=${() => openTask('new', { col: 'priority' })}><${Icon} n="plus" s=${16}/> New</button>
       <div className="kbh-r">
