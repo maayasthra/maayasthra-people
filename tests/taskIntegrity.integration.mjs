@@ -1,0 +1,40 @@
+// Isolated PGlite only; all identities and tasks are newly synthetic.
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import { PGlite } from '@electric-sql/pglite';
+process.on('uncaughtException',e=>{console.error(e.message,e.where||'');process.exit(1)});
+const db=new PGlite(),q=async(s,p=[])=>(await db.query(s,p)).rows;
+await db.exec(`create schema auth;create table auth.users(id uuid primary key default gen_random_uuid(),email text,last_sign_in_at timestamptz,created_at timestamptz default now());create role anon;create role authenticated;create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.uid',true),'')::uuid$$;grant usage on schema public,auth to authenticated,anon;`);
+for(const f of fs.readdirSync('supabase/migrations').sort())await db.exec(fs.readFileSync('supabase/migrations/'+f,'utf8'));
+async function person(label,role){const email='task-integrity-'+label+'@example.invalid',id=(await q('insert into employees(email,name,role) values($1,$2,$3) returning id',[email,'Synthetic '+label,role]))[0].id,uid=(await q('insert into auth.users(email) values($1) returning id',[email]))[0].id;return{id,uid};}
+const admin=await person('admin','Admin'),a=await person('worker-a','Employee'),b=await person('worker-b','Employee');
+await db.exec('grant select,update,delete on tasks to authenticated');
+async function as(p,s,args=[]){await db.exec('begin;set local role authenticated');await q("select set_config('request.uid',$1,true)",[p.uid]);try{const r=await q(s,args);await db.exec('commit');return r;}catch(e){await db.exec('rollback');throw e;}}
+await q("select set_config('request.uid',$1,false)",[admin.uid]);
+await q("insert into tasks(id,title,cols,prev,done,by_emp) values('reopened','Synthetic reopened','[\"done\"]',$1,true,$2),('completed','Synthetic completed','[\"done\"]',$1,true,$2),('untouched','Synthetic untouched',$1,null,false,$2)",[JSON.stringify([a.id]),admin.id]);
+await q("update tasks set done=false,cols=$1 where id='reopened'",[JSON.stringify([a.id])]);
+assert.deepEqual((await as(admin,'select delete_completed_tasks($1) ids',[JSON.stringify(['reopened','completed'])]))[0].ids,['completed']);
+assert.equal((await q("select done from tasks where id='reopened'"))[0].done,false);
+assert.equal((await q("select count(*)::int n from tasks where id='untouched'"))[0].n,1);
+assert.deepEqual((await as(admin,'select delete_completed_tasks($1) ids',[JSON.stringify(['reopened','completed'])]))[0].ids,[]);
+console.log('PASS completed-only delete preserves reopened/unrelated cards and retry is harmless');
+await assert.rejects(as(a,'select delete_completed_tasks($1)',['["reopened"]']),/Only admins/);
+await assert.rejects(as(admin,'select delete_completed_tasks($1)',['null']),/Invalid task IDs/);
+console.log('PASS employee and invalid deletion requests rejected');
+const day=(await q('select (today_ist()-1)::text d'))[0].d;
+const start=Number((await q("select extract(epoch from ($1::date::timestamp at time zone 'Asia/Kolkata'))*1000 t",[day]))[0].t);
+await q("select set_config('mp.timer','on',false)");
+const sessions=[{id:'mine-hot',emp:a.id,start:start+3600000,end:start+7200000},{id:'other-hot',emp:b.id,start,end:start+36000000}];
+await q("insert into tasks(id,title,cols,by_emp,descr,time_log) values('reassigned','Former task label',$1,$2,'Private new-owner details',$3)",[JSON.stringify([b.id]),admin.id,JSON.stringify(sessions)]);
+await q("insert into task_time_archive(task_id,sessions) values('reassigned',$1)",[JSON.stringify([{id:'mine-archive',emp:a.id,start:start-3600000,end:start+1800000}])]);
+assert.equal((await as(a,"select count(*)::int n from tasks where id='reassigned'"))[0].n,0);
+const own=(await as(a,'select my_task_time_for_day($1) rows',[day]))[0].rows;
+assert.deepEqual(own,[{id:'reassigned',title:'Former task label',ms:5400000}]);
+const theirs=(await as(b,'select my_task_time_for_day($1) rows',[day]))[0].rows;
+assert.equal(theirs[0].ms,36000000);
+console.log('PASS reassigned own time includes archive/day clipping without exposing other sessions or card details');
+await assert.rejects(as(a,"select my_task_time_for_day(today_ist()+1)"),/Invalid report day/);
+await assert.rejects(as(a,"select my_task_time_for_day(today_ist()-8)"),/Invalid report day/);
+await q('update profiles set active=false where id=$1',[a.uid]);await assert.rejects(as(a,'select my_task_time_for_day($1)',[day]),/Not allowed/);
+console.log('PASS history date scope and inactive-session revocation enforced');
+await db.close();

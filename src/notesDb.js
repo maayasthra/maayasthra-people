@@ -50,13 +50,13 @@ export function useNotes(n) {
     if (!IS_DEMO) {
       const row = { updated_at: new Date(updated).toISOString() };
       ['title', 'body', 'pinned'].forEach(k => { if (k in patch) row[k] = patch[k]; });
-      const { error: e } = await supabase.from('notes').update(row).eq('id', id);
+      const { error: e } = await supabase.from('notes').update(row).eq('id', id).eq('employee_id', n).select('id').single();
       if (e) throw new Error('Could not save. Check your connection.');
     }
     keep(l => l.map(x => x.id === id ? { ...x, ...patch, updated } : x));
   };
   const remove = async id => {
-    if (!IS_DEMO) { const { error: e } = await supabase.from('notes').delete().eq('id', id); if (e) throw new Error('Could not delete the note.'); }
+    if (!IS_DEMO) { const { error: e } = await supabase.from('notes').delete().eq('id', id).eq('employee_id', n); if (e) throw new Error('Could not delete the note.'); }
     keep(l => l.filter(x => x.id !== id));
   };
   return { list, ready, error, add, save, remove, reload };

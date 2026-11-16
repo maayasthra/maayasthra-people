@@ -146,6 +146,7 @@ export function parseText(text) {
     }
     const hh = HEADER_RE.exec(line);
     if (hh) {
+      emp = null; lastYM = null; // A broken new header must never reuse the previous person's salary context.
       const doj = parseDMY(hh[3]);
       if (doj) { emp = { name: hh[1].trim(), designation: hh[2].trim(), doj }; lastYM = null; return; }
     }

@@ -364,3 +364,31 @@ test('team grid: untrusted text stays literal and a missing ID fails clearly', (
   assert.equal(g.people[0].name, "'=bad"); assert.ok(g.cells[10][0].text.startsWith("'"));
   assert.throws(() => A.buildTeamGrid([{ ...lines[0], employee_id: null }], '2026-11', { parseDay: i => i, today: 'x' }), /employee IDs/);
 });
+
+test('Team name collisions preserve user tabs and stop before month writes', () => {
+  const fake = connected(fakeGoogle(data)), ss = fake.g.SpreadsheetApp.getActiveSpreadsheet();
+  const personal = ss.insertSheet('Nov 2026 Team'); personal.getRange(1,1).setValue('Keep my notes');
+  const before = fake.log.values.length;
+  assert.throws(() => loadWith(fake).rebuildAll(), /not owned/);
+  assert.equal(fake.log.values.length, before); assert.equal(personal.usedRows, 1);
+  assert.equal(fake.props['TEAM_ID_2026-11'], undefined);
+});
+test('legacy MONTHS never grants ownership of a same-name Team tab', () => {
+  const fake = connected(fakeGoogle(fn => ({body:fn==='eod_export_changes'?{now:'N',versions:{'2026-11':'2'}}:[]})));
+  fake.props.MONTHS='["2026-11"]';const ss=fake.g.SpreadsheetApp.getActiveSpreadsheet();ss.insertSheet('Nov 2026');
+  const personal=ss.insertSheet('Nov 2026 Team');personal.getRange(1,1).setValue('Keep');
+  loadWith(fake).syncChanges();assert.equal(fake.sheets.get('Nov 2026 Team'),personal);assert.equal(personal.usedRows,1);
+});
+test('replacing a deleted owned Team tab with a same-name personal tab never adopts it', () => {
+  const fake=connected(fakeGoogle(data)),api=loadWith(fake),ss=fake.g.SpreadsheetApp.getActiveSpreadsheet();api.rebuildAll();
+  const id=fake.props['TEAM_ID_2026-11'];ss.deleteSheet(fake.sheets.get('Nov 2026 Team'));const personal=ss.insertSheet('Nov 2026 Team');
+  assert.notEqual(String(personal.getSheetId()),id);assert.throws(()=>api.rebuildAll(),/not owned/);
+});
+test('day rollover refreshes Team state without report edits, including month boundaries', () => {
+  let today='2026-11-30';const fake=connected(fakeGoogle(data));fake.g.Utilities.formatDate=(_,__,pattern)=>pattern==='yyyy-MM-dd'?today:'timestamp';
+  const api=loadWith(fake);api.rebuildAll();fake.log.fetches.length=0;fake.log.values.length=0;
+  today='2026-12-01';api.syncChanges();
+  assert.deepEqual(fake.log.fetches.filter(x=>x.url.endsWith('eod_export_month')).map(x=>x.body.p_month),['2026-11']);
+  assert.ok(fake.log.values.some(x=>x[0]==='Nov 2026 Team'));assert.equal(fake.props.TEAM_DAY,today);
+  fake.log.values.length=0;api.syncChanges();assert.equal(fake.log.values.length,0);
+});

@@ -81,6 +81,11 @@ For a new isolated database, apply the files in order. For an existing database,
 | `0049_payslip_requests.sql` | Employees request a payslip for a past month; admins deliver a PDF or image (up to 2 MB) under Requests > Payslips; the employee downloads it and gets a bell notification. Files are private to the owner and admins |
 | `0050_payslip_download_cleanup.sql` | The payslip file is deleted from the database once the employee downloads it; the request stays as a text history (who, which month, delivered by, downloaded when, file name and size) |
 
+| `0051_notes.sql` | Private employee notes |
+| `0052_sheet_worklog_writeback.sql` | Optional scoped, audited two-way worklog sync; disabled until separately configured |
+| `0053_notes_payslip_integrity.sql` | Active-account notes rules and exact-version payslip download acknowledgement |
+| `0054_task_history_integrity.sql` | Atomic completed-only task deletion and day-scoped own time after reassignment |
+
 ## Tests
 
 `npm run test:unit` checks save serialization, failure recovery, departure flushing and account disposal with dummy in-memory state.
@@ -88,6 +93,10 @@ For a new isolated database, apply the files in order. For an existing database,
 `npm run test:db` runs the real application code against a real Postgres (in memory) with every migration applied.
 It checks who can see and change what, the leave rules, check-ins, and people editing the same card at once.
 Run it after any change to `supabase/migrations` or to the files in `src/` that talk to the database.
+
+`npm run test:integrity` checks note/payslip data preservation, task history/deletion and two-way worklog writes with newly created synthetic records. The browser regressions in `tests/notes-browser.mjs`, `tests/taskIntegrity.browser.mjs` and `tests/announcementFilters.browser.mjs` require an isolated Playwright runner.
+
+Apply reviewed pending migrations before the matching frontend. Migration 0053 keeps old-client download acknowledgements from deleting files; those clients must refresh to acknowledge the exact downloaded version. The former undeployed writeback migration 0049 is now 0052; never apply both copies.
 
 ## Make payslips (admin)
 

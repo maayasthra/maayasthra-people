@@ -224,9 +224,16 @@ function syncChanges() {
     var props = PropertiesService.getScriptProperties(), snapshot = exportSnapshot();
     var saved = props.getProperty('EXPORT_VERSIONS'), previous = JSON.parse(saved || '{}');
     var known = JSON.parse(props.getProperty('MONTHS') || '[]');
+    var today = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'), lastDay = props.getProperty('TEAM_DAY');
     var months = Object.keys(snapshot.versions).filter(function (ym) { return !saved || previous[ym] !== snapshot.versions[ym]; });
     // The first run upgrades every old generated tab to the ID-aware layout.
     known.forEach(function (ym) { if ((!saved || !Object.prototype.hasOwnProperty.call(snapshot.versions, ym)) && months.indexOf(ym) < 0) months.push(ym); });
+    // Team status depends on the calendar as well as report revisions.
+    if (lastDay !== today) known.forEach(function (ym) {
+      var from = lastDay && lastDay < today ? lastDay.slice(0, 7) : today.slice(0, 7);
+      var to = lastDay && lastDay > today ? lastDay.slice(0, 7) : today.slice(0, 7);
+      if ((!lastDay || (ym >= from && ym <= to)) && months.indexOf(ym) < 0) months.push(ym);
+    });
     if (months.length) {
       props.setProperty('SUMMARY_DIRTY', '1');
       months.forEach(rebuildMonth);
@@ -235,6 +242,7 @@ function syncChanges() {
       rebuildSummary();
       props.deleteProperty('SUMMARY_DIRTY');
     }
+    props.setProperty('TEAM_DAY', today);
     rememberSnapshot(snapshot); // Only after all writes succeed; retries may repeat safely.
   } finally { lock.releaseLock(); }
 }
@@ -254,6 +262,7 @@ function rebuildAll() {
     refresh.forEach(function (ym) { rebuildMonth(ym); });
     rebuildSummary();
     props.deleteProperty('SUMMARY_DIRTY');
+    props.setProperty('TEAM_DAY', Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'));
     rememberSnapshot(snapshot); // Start snapshot, never completion time: concurrent edits replay next sync.
     ss.toast('Done. ' + months.length + (months.length === 1 ? ' month' : ' months') + ' written.', 'EOD sync', 6);
   } finally { lock.releaseLock(); }
@@ -263,7 +272,11 @@ function rebuildMonth(ym) {
   var lines = rpc('eod_export_month', { p_month: ym });
   var props = PropertiesService.getScriptProperties(), list = JSON.parse(props.getProperty('MONTHS') || '[]');
   var ss = SpreadsheetApp.getActiveSpreadsheet(), name = monthName(ym), sheet = ss.getSheetByName(name);
-  var teamSheet = ss.getSheetByName(teamName(ym));
+  var teamId = props.getProperty('TEAM_ID_' + ym);
+  var teamSheet = teamId ? ss.getSheets().filter(function (s) { return String(s.getSheetId()) === teamId; })[0] : null;
+  // MONTHS is a legacy manifest for the original month tab only, never Team ownership.
+  var namedTeam = ss.getSheetByName(teamName(ym));
+  if (lines.length && namedTeam && (!teamSheet || namedTeam.getSheetId() !== teamSheet.getSheetId())) throw new Error('Existing tab ' + teamName(ym) + ' is not owned by EOD sync. Rename it before syncing; no data was changed.');
   if (!lines.length) {
     if (list.indexOf(ym) >= 0 && (sheet || teamSheet)) {
       if (!ss.getSheetByName(SUMMARY)) ss.insertSheet(SUMMARY); // Google requires at least one tab.
@@ -271,7 +284,7 @@ function rebuildMonth(ym) {
       if (teamSheet) ss.deleteSheet(teamSheet);
     }
     props.setProperty('MONTHS', JSON.stringify(list.filter(function (m) { return m !== ym; })));
-    props.deleteProperty('PEOPLE_' + ym); props.deleteProperty('NAMES_' + ym);
+    props.deleteProperty('PEOPLE_' + ym); props.deleteProperty('NAMES_' + ym); props.deleteProperty('TEAM_ID_' + ym);
     return;
   }
   var grid = buildMonthGrid(lines, {
@@ -280,7 +293,8 @@ function rebuildMonth(ym) {
   });
   sheet = sheet || ss.insertSheet(name);
   writeMonth(sheet, ym, grid);
-  writeTeam(teamSheet || ss.insertSheet(teamName(ym)), ym, buildTeamGrid(lines, ym, { parseDay: function (iso) { return Utilities.parseDate(iso + ' 12:00', TZ, 'yyyy-MM-dd HH:mm'); }, today: Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd') }));
+  if (!teamSheet) { teamSheet = ss.insertSheet(teamName(ym)); props.setProperty('TEAM_ID_' + ym, String(teamSheet.getSheetId())); }
+  writeTeam(teamSheet, ym, buildTeamGrid(lines, ym, { parseDay: function (iso) { return Utilities.parseDate(iso + ' 12:00', TZ, 'yyyy-MM-dd HH:mm'); }, today: Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd') }));
   if (list.indexOf(ym) < 0) list.push(ym);
   props.setProperty('MONTHS', JSON.stringify(sortMonthsDesc(list)));
   props.setProperty('PEOPLE_' + ym, JSON.stringify(peopleIn(grid)));

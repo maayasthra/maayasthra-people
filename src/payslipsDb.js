@@ -15,7 +15,7 @@ const readDemo = () => { try { const v = JSON.parse(localStorage.getItem(KEY) ||
 const writeDemo = v => { try { localStorage.setItem(KEY, JSON.stringify(v)); window.dispatchEvent(new Event('mp-payslips')); } catch (x) { throw new Error('This browser has no room left to keep that file.'); } };
 
 const toApp = r => ({ id: r.id, emp: r.employee_id, month: String(r.month).slice(0, 10), status: r.status, note: r.note || '', requestedAt: Date.parse(r.requested_at) || 0, decidedBy: r.decided_by, decidedAt: r.decided_at ? Date.parse(r.decided_at) : 0, downloadedAt: r.downloaded_at ? Date.parse(r.downloaded_at) : 0, reason: r.decline_reason || '', fileName: r.file_name || '', fileType: r.file_type || '', fileSize: r.file_size || 0 });
-const KNOWN = /Choose a month|not finished|last 12 months|not joined|too long|already asked|cannot be cancelled|not waiting|Send a PDF|needs a name|could not be read|is empty|over 2 MB|does not look like|Not allowed|file is missing|downloaded and the file has been removed/i;
+const KNOWN = /Choose a month|not finished|last 12 months|not joined|too long|already asked|cannot be cancelled|not waiting|Send a PDF|needs a name|could not be read|is empty|over 2 MB|does not look like|Not allowed|file is missing|downloaded and the file has been removed|payslip was replaced|Refresh the app/i;
 const fail = (error, fallback) => { throw new Error(KNOWN.test(error.message) ? error.message : fallback); };
 const newId = () => (crypto.randomUUID ? crypto.randomUUID() : 'p' + Date.now() + Math.random().toString(16).slice(2));
 
@@ -68,7 +68,7 @@ export async function deliverPayslip(admin, id, f) {
   if (IS_DEMO) {
     const d = readDemo();
     d.list = d.list.map(r => r.id === id && (r.status === 'requested' || r.status === 'delivered') ? { ...r, status: 'delivered', decidedBy: admin, decidedAt: Date.now(), reason: '', fileName: f.name, fileType: f.type, fileSize: f.size } : r);
-    d.files[id] = { name: f.name, type: f.type, data: f.base64 }; writeDemo(d); return;
+    d.files[id] = { name: f.name, type: f.type, data: f.base64, revision: newId() }; writeDemo(d); return;
   }
   const { error } = await supabase.rpc('deliver_payslip', { p_id: id, p_name: f.name, p_type: f.type, p_data: f.base64 });
   if (error) fail(error, 'Could not send the file. Check your connection and try again.');
@@ -76,10 +76,10 @@ export async function deliverPayslip(admin, id, f) {
 
 // Once the person the payslip is for has downloaded it, the file is deleted from the server and only the history stays.
 // An admin looking at the file does not remove it.
-async function confirmDownloaded(me, id) {
-  if (IS_DEMO) { const d = readDemo(); d.list = d.list.map(r => r.id === id && r.emp === me && r.status === 'delivered' ? { ...r, status: 'downloaded', downloadedAt: Date.now() } : r); delete d.files[id]; writeDemo(d); return; }
-  const { error } = await supabase.rpc('confirm_payslip_downloaded', { p_id: id });
-  if (error) fail(error, 'The file was saved, but could not be cleared from the server. It will be cleared the next time you open it.');
+async function confirmDownloaded(me, id, revision) {
+  if (IS_DEMO) { const d = readDemo(), r = d.list.find(r => r.id === id && r.emp === me); if (!r || r.status !== 'delivered' || !revision || d.files[id]?.revision !== revision) throw new Error('This payslip was replaced. Download the current file; it has been kept.'); d.list = d.list.map(x => x.id === id ? { ...x, status: 'downloaded', downloadedAt: Date.now() } : x); delete d.files[id]; writeDemo(d); return; }
+  const { error } = await supabase.rpc('confirm_payslip_downloaded', { p_id: id, p_revision: revision });
+  if (error) fail(error, 'The download started, but the server copy was kept. Try downloading again after checking your connection.');
 }
 
 // Hands the file to the browser as a download. Pass the employee's number only when they are downloading their own payslip:
@@ -91,7 +91,7 @@ export async function downloadPayslip(id, owner = null) {
   const bin = atob(f.data), bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
   const url = URL.createObjectURL(new Blob([bytes], { type: f.type })), a = document.createElement('a');
   a.href = url; a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 8000);
-  if (owner != null) { await new Promise(r => setTimeout(r, 1200)); await confirmDownloaded(owner, id); }
+  if (owner != null) { await new Promise(r => setTimeout(r, 1200)); await confirmDownloaded(owner, id, f.revision); }
 }
 
 // The list, kept fresh: reloads when requests change anywhere (live) or in another tab (demo)

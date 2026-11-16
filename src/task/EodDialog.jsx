@@ -1,8 +1,8 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { html, Icon } from '../ui.jsx';
-import { hoursOf, totalOf, fmtH, loadEods } from '../eodDb.js';
+import { hoursOf, totalOf, fmtH, loadEods, loadMyTaskTime } from '../eodDb.js';
 import { dayKey, hm, dayStart } from '../attendance.js';
-import { isDoing, myTasksOf } from '../tasks.js';
+import { isDoing } from '../tasks.js';
 import { trackedIn, hoursText, autoNote, subLines } from '../taskTime.js';
 
 let uid = 0;
@@ -32,15 +32,18 @@ export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel
   const D = day || dayKey(), late = mode === 'late', edit = mode === 'edit';
   const mine = tasks.filter(t => (t.cols || []).includes(user.n) && !t.done);
   const [rows, setRows] = useState(null);
-  const [err, setErr] = useState(''), [busy, setBusy] = useState(false), [restored, setRestored] = useState(null), [savedAt, setSavedAt] = useState(0), [filled, setFilled] = useState(false);
+  const [err, setErr] = useState(''), [busy, setBusy] = useState(false), [restored, setRestored] = useState(null), [savedAt, setSavedAt] = useState(0), [filled, setFilled] = useState(false), [loadFailed, setLoadFailed] = useState(false);
   const first = useRef(null);
 
   // Every task worked on that day, with the time from your Start, Pause and Done presses; then anything in progress that has no time yet
-  const fromClock = () => {
-    const from = dayStart(D), tracked = trackedIn(myTasksOf(tasks, user.n), user.n, from, from + 86400000);
+  const fromClock = async () => {
+    const from = dayStart(D), local = trackedIn(tasks, user.n, from, from + 86400000);
+    const history = await loadMyTaskTime(D);
+    const visible = new Set(tasks.map(t => t.id));
+    const tracked = [...local, ...history.filter(t => !visible.has(t.id))].sort((a, b) => b.ms - a.ms);
     const rows = tracked.map(x => {
       const card = tasks.find(t => t.id === x.id), subs = card && !noHours ? subLines(card, x.ms) : [];
-      return blankRow({ project: x.title, task: x.id, desc: card && !subs.length ? autoNote(card) : '', hours: noHours || subs.length ? '' : hoursText(x.ms), subs: subs.map(q => blankSub(q.title)).map((b, i) => ({ ...b, hours: subs[i].hours })) });
+      return blankRow({ project: x.title, task: x.id, desc: !subs.length ? (card ? autoNote(card) : 'Work recorded on this task') : '', hours: noHours || subs.length ? '' : hoursText(x.ms), subs: subs.map(q => blankSub(q.title)).map((b, i) => ({ ...b, hours: subs[i].hours })) });
     });
     return late ? rows : [...rows, ...mine.filter(t => isDoing(t, user.n) && !tracked.some(x => x.id === t.id)).map(t => blankRow({ project: t.title, task: t.id, desc: autoNote(t) }))];
   };
@@ -50,25 +53,28 @@ export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel
     let live = true; const d = D;
     const dr = readDraft(user.n, D);
     if (dr) { setRows(dr.rows.map(x => ({ ...blankRow(), ...x, id: 'r' + ++uid, subs: (x.subs || []).map(q => ({ ...q, id: 's' + ++uid })) }))); setRestored(dr.at); return () => { live = false; }; }
-    loadEods(d, d).then(l => {
+    loadEods(d, d).then(async l => {
       if (!live) return;
       const r = l.find(x => x.emp === user.n);
       const start = r && r.rows.length ? r.rows.map(x => ({ ...blankRow(), ...x, id: 'r' + ++uid, hours: x.hours || '', subs: (x.subs || []).map(s => ({ ...s, id: 's' + ++uid, hours: s.hours || '' })) }))
-        : fromClock();
+        : await fromClock();
+      if (!live) return;
       if (!(r && r.rows.length) && start.some(x => Number(x.hours) > 0 || (x.subs || []).length)) setFilled(true);
       setRows(start.length ? start : [blankRow()]);
-    }).catch(() => live && setRows([blankRow()]));
+    }).catch(() => { if (live) { setLoadFailed(true); setErr('Could not load your report or recorded task time. Your saved report has not changed. Close and try again.'); setRows([blankRow()]); } });
     return () => { live = false; };
   }, []);
   useLayoutEffect(() => {
-    if (!rows) return;
+    if (!rows || loadFailed) return;
     writeDraft(user.n, rows, D);
     if (hasText(rows)) setSavedAt(Date.now());
-  }, [rows]);
+  }, [rows, loadFailed]);
   useEffect(() => { const k = ev => { if (ev.key === 'Escape' && !busy) onCancel(); }; document.addEventListener('keydown', k); return () => document.removeEventListener('keydown', k); }, [busy]);
   useEffect(() => { if (rows && first.current) first.current.focus(); }, [rows === null]);
 
   if (!rows) return html`<div className="dlg-bg"></div><div className="dlg eod" role="dialog" aria-busy="true"><p>Loading…</p></div>`;
+
+  if (loadFailed) return html`<div className="dlg-bg"></div><div className="dlg eod" role="dialog"><p role="alert">${err}</p><button className="btn ghost" onClick=${onCancel}>Close</button></div>`;
 
   const patch = (id, p) => { setRows(rs => rs.map(r => r.id === id ? { ...r, ...p } : r)); setErr(''); };
   const patchSub = (id, sid, p) => { setRows(rs => rs.map(r => r.id === id ? { ...r, subs: r.subs.map(s => s.id === sid ? { ...s, ...p } : s) } : r)); setErr(''); };
@@ -95,6 +101,7 @@ export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel
     return '';
   };
   const send = async () => {
+    if (loadFailed) return;
     const e = check(); if (e) { setErr(e); return; }
     setBusy(true);
     try { await onSend(rows); clearEodDraft(user.n, D); } catch (x) { setErr(x.message); setBusy(false); }
@@ -106,7 +113,7 @@ export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel
       <div className="eod-h"><div className="dlg-i"><${Icon} n="timer" s=${22}/></div>
         <div><h2 id="eod-t">${edit ? 'Edit report' : late ? 'Missed report' : mode === 'out' ? 'End-of-day report' : 'Today’s report'}</h2>
           <p>${edit ? 'Change what you sent for ' + new Date(D + 'T00:00:00Z').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }) + '.' : late ? 'Fill in what you worked on ' + new Date(D + 'T00:00:00Z').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }) + ', with the time.' : mode === 'out' ? 'Fill in what you worked on today' + (noHours ? '' : ', with the time') + '. You can check out once it is sent.' : 'Save it now, then check out when you are done. A later save replaces this one.'}</p></div></div>
-      ${restored && html`<div className="eod-note" role="status"><span>We brought back your draft from ${hm2(restored)}.</span><button className="link" onClick=${() => { clearEodDraft(user.n, D); setRestored(null); const f = fromClock(); setFilled(f.some(x => Number(x.hours) > 0 || (x.subs || []).length)); setRows(f.length ? f : [blankRow()]); }}>Start over</button></div>`}
+      ${restored && html`<div className="eod-note" role="status"><span>We brought back your draft from ${hm2(restored)}.</span><button className="link" disabled=${busy} onClick=${async () => { setBusy(true); try { const f = await fromClock(); clearEodDraft(user.n, D); setRestored(null); setFilled(f.some(x => Number(x.hours) > 0 || (x.subs || []).length)); setRows(f.length ? f : [blankRow()]); } catch (e) { setErr('Could not load recorded task time. Your draft is still here.'); } finally { setBusy(false); } }}>Start over</button></div>`}
       ${filled && !restored && html`<div className="eod-note" role="status"><span>Project, description and time are filled in from your tasks and your Start and Pause presses. Change anything that is not right.</span></div>`}
       <div className="ed-list">
         ${rows.map((r, i) => {
@@ -139,6 +146,6 @@ export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel
       ${!noHours && html`<div className="eod-f"><span>Total <b>${fmtH(total)}</b></span>${worked > 0 && html`<span className=${over ? 'eod-warn' : ''}>Checked in today: ${hm(worked)}${over ? ' · more than you were here' : ''}</span>`}</div>`}
       ${err && html`<div className="eod-e" role="alert">${err}</div>`}
       <div className="dlg-a"><span className="eod-ds">${savedAt ? 'Draft saved' : ''}</span><button className="btn ghost" disabled=${busy} onClick=${onCancel}>${mode === 'out' ? 'Keep working' : late ? 'Close' : 'Cancel'}</button>
-        <button className="btn pri" disabled=${busy} onClick=${send}>${mode === 'out' && !busy && html`<${Icon} n="logout" s=${18}/>`}${busy ? (edit ? 'Saving…' : 'Sending…') : mode === 'out' ? 'Send and check out' : edit ? 'Save changes' : late ? 'Send report' : 'Save report'}</button></div>
+        <button className="btn pri" disabled=${busy || loadFailed} onClick=${send}>${mode === 'out' && !busy && html`<${Icon} n="logout" s=${18}/>`}${busy ? (edit ? 'Saving…' : 'Sending…') : mode === 'out' ? 'Send and check out' : edit ? 'Save changes' : late ? 'Send report' : 'Save report'}</button></div>
     </div>`;
 }

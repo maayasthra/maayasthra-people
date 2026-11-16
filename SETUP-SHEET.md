@@ -37,7 +37,7 @@ Everything is set in **Inter**. The tabs are rewritten on every sync, so don't t
    ```
 
    Only a fingerprint is stored, so the database never keeps the token itself. Then clear that query from the editor's history.
-4. **Find two details** in Supabase under **Project Settings, API**: the **Project URL** (like `https://abcd1234.supabase.co`) and the **anon public** key. Use the public one, never the one marked secret.
+4. **Find two details** in Supabase under **Project Settings, API**: the **Project URL** (like `https://abcd1234.supabase.co`) and the **publishable** key (or legacy **anon public** key). Use the public one, never the one marked secret.
 
 ### Part 2: in the Google Sheet (signed in as the sheet's owner)
 
@@ -45,7 +45,7 @@ Everything is set in **Inter**. The tabs are rewritten on every sync, so don't t
 2. Delete the sample code. Open `integrations/google-sheet/Code.gs` from this project, copy everything, paste it in, and press **Save**.
 3. Optional but tidy: in Apps Script **Project Settings**, set the time zone to **(GMT+05:30) India Standard Time**.
 4. Go back to the sheet and **reload the page**. A new menu **EOD sync** appears.
-5. **EOD sync, Connect to Maayasthra People.** Google asks you to allow the script (choose your account, Advanced, Go to project, Allow). Then enter the three things when asked: the Project URL, the anon public key, and your token. They are saved in the script's private settings, not in any cell.
+5. **EOD sync, Connect to Maayasthra People.** Google asks you to allow the script (choose your account, Advanced, Go to project, Allow). Then enter the three things when asked: the Project URL, the publishable or anon public key, and your token. They are saved in the script's private settings, not in any cell.
 6. **EOD sync, Rebuild all months.** The month tabs and the Summary appear.
 7. **EOD sync, Start automatic sync (every minute).** From now on new reports arrive on their own.
 
@@ -76,3 +76,7 @@ Keep automatic sync stopped while updating. Apply the approved migrations throug
 Month revisions are committed in the same transaction as report edits/deletions. A successful run remembers the revisions fetched **before** it reads the reports; concurrent commits are picked up by a later sync. A failed run does not advance that snapshot. Deleting a month's final report removes its generated tab; other personal tabs are retained. Only tabs recorded in the script's `MONTHS` manifest are treated as owned. Keep personal notes on separate, differently named tabs.
 
 Employee-authored names, descriptions and project text are written as literal text; only formulas built by this script are evaluated. Validate leading-equals sample text and duplicate names in a disposable Google Sheet before enabling the production integration. Local adapters test the write calls but cannot replace Google's interpreter and permission checks.
+
+### Upgrading existing Team tabs
+
+Team tabs now use stored sheet IDs to establish ownership. The old month list does not establish ownership of a Team tab. If a same-name Team tab exists without a stored ownership ID, sync stops before writing that month. Review and rename that old tab to preserve its contents, then sync to create a newly owned Team tab. Do not delete or automatically adopt personal tabs to resolve a collision. Missing-report statuses also refresh when the India calendar date changes, even if no report was edited.

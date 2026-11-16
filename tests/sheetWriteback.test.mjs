@@ -49,11 +49,38 @@ test('dedicated workbook setup pins IST and keeps employee IDs and dates as plai
  const calls=[],sheet=new Proxy({}, {get:(_,k)=> k==='getMaxRows'?()=>1000:k==='getMaxColumns'?()=>26:k==='getProtections'?()=>[]:k==='getRange'?(...args)=>new Proxy({}, {get:(_,method)=>(...v)=>{calls.push([method,args,...v]);return sheet;}}):()=>sheet});
  const c=vm.createContext({console,SpreadsheetApp:{ProtectionType:{SHEET:'sheet'},newDataValidation:()=>new Proxy({}, {get:(_,k)=>()=>k==='build'?{}:chain})}});
  const chain={requireValueInList(){return this;},setAllowInvalid(){return this;},build(){return {};}};c.SpreadsheetApp.newDataValidation=()=>chain;
- vm.runInContext(code,c);c.wbBook=()=>({setSpreadsheetTimeZone:z=>calls.push(['timezone',z]),getSheetByName:()=>sheet});c.wbSheet=()=>sheet;c.wbSetup();
+ vm.runInContext(code,c);c.wbBook=()=>({setSpreadsheetTimeZone:z=>calls.push(['timezone',z]),getSheetByName:()=>{throw Error('Must use owned People sheet');}});c.wbSheet=()=>sheet;c.wbSetup();
  assert.ok(calls.some(x=>x[0]==='timezone'&&x[1]==='Asia/Kolkata'));assert.equal(calls.filter(x=>x[0]==='setNumberFormat'&&x[2]==='@').length,3);
 });
 
 test('adding drafts expands a full queue instead of failing at the default row limit',()=>{
  let max=1000,writeRow=0;const s={getLastRow:()=>1000,getMaxRows:()=>max,insertRowsAfter:(at,n)=>{assert.equal(at,1000);max+=n;},getRange:(r,c,n,w)=>({setNumberFormat(){},setValues(){assert.ok(r<=max);writeRow=r;}})};
  const c=vm.createContext({console,Utilities:{getUuid:()=> 'draft-capacity'}});vm.runInContext(code,c);c.wbSheet=()=>s;c.wbBook=()=>({setActiveSheet(){}});c.wbAppendDraft(target,null);assert.equal(writeRow,1001);assert.equal(max,1100);
+});
+
+test('two-way RPC accepts publishable keys without bearer and refuses secret/service-role keys',()=>{
+ const fetches=[],c=vm.createContext({console,Utilities:{base64DecodeWebSafe:s=>Buffer.from(s,'base64url'),newBlob:b=>({getDataAsString:()=>b.toString()})},UrlFetchApp:{fetch:(url,opt)=>{fetches.push(opt);return {getResponseCode:()=>200,getContentText:()=>'{"reports":[]}'};}}});vm.runInContext(code,c);
+ const key=role=>'eyJhbGciOiJIUzI1NiJ9.'+Buffer.from(JSON.stringify({role})).toString('base64url')+'.synthetic';
+ c.wbRpc('eod_sheet_snapshot',{p_month:'2026-11'},{url:'https://dummy.invalid',key:'sb_publishable_dummy',token:'dummy'});
+ assert.deepEqual(plain(fetches[0].headers),{apikey:'sb_publishable_dummy'});
+ c.wbRpc('eod_sheet_snapshot',{}, {url:'https://dummy.invalid',key:key('anon'),token:'dummy'});assert.equal(fetches[1].headers.Authorization,'Bearer '+key('anon'));
+ for(const bad of ['sb_secret_dummy',key('service_role'),key('authenticated')])assert.throws(()=>c.wbRpc('eod_sheet_mutate',{}, {url:'https://dummy.invalid',key:bad,token:'dummy'}),/never|anon public/);
+ assert.equal(fetches.length,2);
+});
+test('editing hidden target metadata during an earlier request cannot send a stale target',()=>{
+ const a=adapter([draft('first'),draft('second')]);a.hook=()=>{a.records[1][10]=JSON.stringify({...target,employee:'202'});return {revision:'2'};};ctx.wbProcess(a);assert.equal(a.calls.length,1);assert.equal(a.records[1][0],'REVIEW');
+});
+
+test('two-way refresh refuses a replacement same-name tab without clearing user data',()=>{
+ const c=vm.createContext({console});vm.runInContext(code,c);const personal={getSheetId:()=>22},props={WB_TAB_Worklogs:'11'};
+ c.wbProps=()=>({getProperty:k=>props[k]});c.wbBook=()=>({getSheetByName:()=>personal,getSheets:()=>[personal]});
+ assert.throws(()=>c.wbSheet('Worklogs',[]),/not owned/);
+});
+
+
+test('queue refuses a replacement Worklogs tab before reading or drafting a worklog',()=>{
+ const c=vm.createContext({console});vm.runInContext(code,c);
+ const personal={getSheetId:()=>22,getName:()=> 'Worklogs',getActiveRange:()=>({getRow:()=>2,getNumRows:()=>1}),getRange:()=>{throw Error('Must not read replacement data');}};
+ c.wbProps=()=>({getProperty:()=> '11'});c.wbBook=()=>({getActiveSheet:()=>personal,getSheetByName:()=>personal,getSheets:()=>[personal]});c.wbLock=fn=>fn();c.wbAppendDraft=()=>{throw Error('Must not stage a draft');};
+ assert.throws(()=>c.wbQueue('update'),/not owned/);assert.throws(()=>c.wbQueue('delete'),/not owned/);
 });

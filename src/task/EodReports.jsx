@@ -65,7 +65,7 @@ export function EodReports({ user, role, tick, onEditToday, checkedIn, att }) {
     </div>
     ${!mgr && checkedIn && !mine && html`<div className="er-nav"><span style=${{ flex: 1 }}></span><button className="btn sec2 sm" onClick=${onEditToday}>Write today’s report</button></div>`}
     ${err && html`<div className="eod-e" role="alert">${err}</div>`}
-    ${mgr && rowsAll.length > 2 && html`<${FilterBar} q=${fq} setQ=${setFq} placeholder="Search people" shown=${rows.length} total=${rowsAll.length} noun="people" groups=${[{ label: 'Department', value: fd, set: setFd, options: [['All', 'All departments'], ...DEPTS.filter(d => d !== 'All').map(d => [d, d])] }]}/>`}
+    ${mgr && (rowsAll.length > 2 || fq.trim() || fd !== 'All') && html`<${FilterBar} q=${fq} setQ=${setFq} placeholder="Search people" shown=${rows.length} total=${rowsAll.length} noun="people" groups=${[{ label: 'Department', value: fd, set: setFd, options: [['All', 'All departments'], ...DEPTS.filter(d => d !== 'All').map(d => [d, d])] }]}/>`}
     <div className="ph3">
       ${list === null && html`<div className="none">Loading…</div>`}
       ${list !== null && rows.length === 0 && html`<div className="none"><b>No reports ${view === 'day' ? 'for this day' : 'in this period'}</b>${mgr ? 'Reports appear here when people check out.' : 'You send one each day when you check out.'}</div>`}

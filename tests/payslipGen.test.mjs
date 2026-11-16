@@ -119,3 +119,9 @@ test('the ZIP writer produces a readable archive', async () => {
   assert.equal(dv.getUint32(buf.length - 22, true), 0x06054b50);             // end of central directory
   assert.equal(dv.getUint16(buf.length - 22 + 10, true), 2);                 // two entries
 });
+
+test('an invalid new employee header cannot attach salary to the preceding employee', () => {
+  const result=parseText('Alice - Designer - 01/01/26\nJan - 30k\nBob - Engineer - 31/02/26\nMar - 90k\nCarol - Developer - 01/01/26\nApr - 40k');
+  assert.equal(result.items.length,2);assert.deepEqual(result.items.map(x=>[x.name,x.amt]),[['Alice','30000'],['Carol','40000']]);
+  assert.equal(result.ignored.length,2);assert.ok(result.ignored.some(x=>x.line==='Mar - 90k'));
+});

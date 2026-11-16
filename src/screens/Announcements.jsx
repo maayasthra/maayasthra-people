@@ -43,7 +43,7 @@ export function AnnList({ ann, setAnn, canPost, tracker = false, limit = 0, filt
   const found = filters ? ann.filter(a => matches(q, a.title, a.body, a.by) && (kd0 === 'all' || a.kind === kd0)) : ann, shown = limit ? found.slice(0, limit) : found;
   return html`<div className="anl">
     ${cfEl}
-    ${filters && ann.length > 3 && html`<${FilterBar} q=${q} setQ=${setQ} placeholder="Search announcements" shown=${found.length} total=${ann.length} noun="announcements" groups=${[{ label: 'Type', value: kd0, set: setKd0, options: [['all', 'All types'], ...Object.entries(KINDS).map(([k, v]) => [k, v.label])] }]}/>`}
+    ${filters && (ann.length > 3 || q.trim() || kd0 !== 'all') && html`<${FilterBar} q=${q} setQ=${setQ} placeholder="Search announcements" shown=${found.length} total=${ann.length} noun="announcements" groups=${[{ label: 'Type', value: kd0, set: setKd0, options: [['all', 'All types'], ...Object.entries(KINDS).map(([k, v]) => [k, v.label])] }]}/>`}
     ${filters && ann.length > 0 && found.length === 0 ? html`<div className="tc-empty"><b>No announcements match</b>Try a different search or clear the filters.</div>` : ann.length === 0 ? html`<div className="empty" style=${{ textAlign: 'left' }}>No announcements right now.</div>` :
       shown.map(a => { const kd = KINDS[a.kind] || KINDS.general; return html`<article className="an" key=${a.id}>
         <span className="an-i" style=${{ '--c': kd.c }}><${Icon} n=${kd.icon} s=${22}/></span>

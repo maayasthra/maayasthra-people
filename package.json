@@ -12,7 +12,8 @@
     "test:unit": "node --test tests/*.test.mjs",
     "test:attendance": "node tests/attendanceIntegrity.mjs",
     "test:sheet-writeback": "node tests/sheetWriteback.integration.mjs",
-    "test:regressions": "node tests/attendanceIntegrity.mjs && node tests/sheetExport.integration.mjs && node tests/cover-db.mjs"
+    "test:regressions": "node tests/attendanceIntegrity.mjs && node tests/sheetExport.integration.mjs && node tests/cover-db.mjs",
+    "test:integrity": "node tests/notesPayslipIntegrity.mjs && node tests/taskIntegrity.integration.mjs && node tests/sheetWriteback.integration.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
