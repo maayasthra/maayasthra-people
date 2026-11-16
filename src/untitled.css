@@ -1531,3 +1531,12 @@ button.tile:active,.tile.click:active{background:var(--fill)}
 .eod .ed-acts .eod-l:hover{border-color:var(--accent);color:var(--brand-text);background:var(--brand-tint)}
 .kc2-clr{color:var(--err-text);border-color:var(--line-hi);flex:none}
 .kc2-clr:hover{background:var(--err-bg);border-color:var(--red)}
+
+/* Check-in widget: the buttons sit inside the pill with the same space on top, bottom and right (3px), and the break button lines up with Check out */
+.hdr .ck{padding:0 3px 0 14px;gap:8px;align-items:center}
+.hdr .ck .ck-aw{width:32px;height:32px;padding:0;border-radius:6px}
+.hdr .ck .btn.sm{height:32px;padding:0 12px;border-radius:6px}
+/* on phones the buttons keep their 40px touch size, so the pill is 48px tall: 4px all round */
+.ck-m .ck{height:48px;padding-right:3px}
+.ck-m .ck .ck-aw{width:40px;height:40px;padding:0}
+.ck-m .ck .btn.sm{height:40px}
