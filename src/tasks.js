@@ -92,7 +92,7 @@ export const spentMs = (t, now = Date.now(), n) => (t.time || []).reduce((sum, s
 export const spentIn = (t, from, to, now = Date.now(), n) => (t.time || []).reduce((sum, s) => (n == null || s.emp === n) ? sum + Math.max(0, Math.min(s.end == null ? now : s.end, to) - Math.max(s.start, from)) : sum, 0);
 export const fmtDur = (ms, secs = false) => { const t = Math.floor(Math.max(0, ms) / 1000), h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), s = t % 60; return secs ? String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0') : h ? h + 'h ' + String(m).padStart(2, '0') + 'm' : m ? m + ' min' : t ? '< 1 min' : '0 min'; };
 // Mark a card as Doing for me (reopening it if it was completed). Several cards can be Doing at once. Pause takes mine off a card;
-// the time already recorded is kept. The end-of-day report shares time that ran in parallel (see taskTime.js).
+// the time already recorded is kept. The cards and the end-of-day report read the time through the same function (taskTime.js), so they match.
 export function startTimer(ts, id, n, now = Date.now()) {
   return ts.map(t => {
     if (t.id !== id) return t;
