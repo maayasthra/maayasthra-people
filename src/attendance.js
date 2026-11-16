@@ -67,7 +67,7 @@ export function getDay(att, n, iso, now = Date.now()) {
   return sampleDay(e, iso, now) || { sessions: [] };
 }
 const putDay = (att, n, iso, rec) => ({ ...att, [n]: { ...(att[n] || {}), [iso]: rec } });
-export const saveDay = (att, n, iso, sessions, by) => putDay(att, n, iso, { sessions, edited: { by, at: Date.now() } });
+export const saveDay = (att, n, iso, sessions, by) => putDay(att, n, iso, { ...getDay(att, n, iso), sessions, edited: { by, at: Date.now() } });
 
 /* ---------- today's check-in / check-out for the signed-in person ---------- */
 export const sessionsOf = (att, n) => getDay(att, n, dayKey()).sessions;
@@ -80,7 +80,7 @@ export function checkOut(att, n, at = Date.now()) { const iso = dayKey(), cur = 
 export const AWAY_WHY = [['power', 'Power cut', 'zap'], ['net', 'Internet down', 'wifioff'], ['out', 'Stepped out', 'logout'], ['break', 'Break', 'cup'], ['meet', 'Meeting away from desk', 'people'], ['other', 'Other', 'dots']];
 export const EARLY_WHY = [['personal', 'Personal', 'user'], ['unwell', 'Unwell', 'heart'], ['power', 'Power cut or internet', 'zap'], ['work', 'Working elsewhere', 'building'], ['other', 'Other', 'dots']];
 export const whyLabel = (k, list = AWAY_WHY) => (list.find(x => x[0] === k) || [0, 'Away'])[1];
-export const awayOpen = away => away && away.length && away[away.length - 1].to == null ? away[away.length - 1] : null;
+export const awayOpen = away => (away || []).find(a => a.to == null) || null;
 const closeAway = (away, at) => (away || []).map(a => a.to == null ? { ...a, to: Math.max(at, a.from) } : a);
 // Milliseconds of away time that fall inside checked-in time
 export function awayMs(sessions, away, now) {

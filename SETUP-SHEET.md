@@ -1,13 +1,14 @@
 # Send every end-of-day report to the Google Sheet
 
 Every report an employee submits (or later edits) appears in the Google Sheet **Employee EOD Updates - (Review)** within about a minute.
+Sync depends on successful Google trigger executions; large exports or service limits can delay an update.
 Each month gets its own tab ("Nov 2026"), newest first, plus a **Summary** tab. The sheet only reads from Maayasthra People; it never changes anything there.
 
 ## What the sheet shows
 
 **Each month tab**
 - A title bar, then a strip with **total hours, reports, people, average hours per report, days covered** and the last sync time.
-- A table with one row per project line or subtask: **Date, Employee, Department, Project, Subtask, What was done, Hours, Day total, Submitted**.
+- A table with one row per project line or subtask: **Date, Employee, Department, Project, Subtask, What was done, Hours, Day total, Submitted**. A hidden Employee ID column keeps namesakes separate.
 - The **Day total** and **Submitted** time are on the first row of each report, so you can see where one report ends and the next begins. Reports are shaded in turn.
 - A **Total for the month** row under the table, and a filter on the header so a project manager can pick one person or project.
 - Hours are always numbers (2.5 means 2 hours 30 minutes), so they add up. A project that has subtasks carries no hours itself; its subtasks do, so nothing is counted twice.
@@ -23,7 +24,7 @@ Everything is set in **Inter**. The tabs are rewritten on every sync, so don't t
 
 ### Part 1: in Supabase
 
-1. **SQL Editor, New query.** Paste the whole of `supabase/migrations/0045_eod_sheet_export.sql` and Run. (Run `0044` first if you haven't.)
+1. Apply the approved database migrations through `0047_eod_export_integrity.sql` in order (including `0045` and its prerequisites). Validate in staging first; do not enable this script against the old `0045` export alone.
 2. **Make a secret token.** Use your password manager to generate a random string of at least 32 characters. Keep it to yourself: don't paste it into chat or email. It is the only thing that lets the sheet read reports.
 3. **Save the token's fingerprint.** In a new query, replace `PASTE-YOUR-TOKEN` with your token and Run:
 
@@ -64,3 +65,12 @@ Everything is set in **Inter**. The tabs are rewritten on every sync, so don't t
 - Times are India time.
 - Only reports that have been submitted appear. Reports for months with no submissions have no tab.
 - The sheet uses Google's built-in `COUNTUNIQUE` and `SUMIFS`, so keep it in Google Sheets rather than exporting to Excel.
+
+
+## Updating an existing export to the integrity fixes
+
+Keep automatic sync stopped while updating. Apply the approved migrations through **0047** first, replace Apps Script with this version, and run **Rebuild all months** before restarting automatic sync. The script refuses an older server response without month revisions or employee IDs. No export token is changed by the migration.
+
+Month revisions are committed in the same transaction as report edits/deletions. A successful run remembers the revisions fetched **before** it reads the reports; concurrent commits are picked up by a later sync. A failed run does not advance that snapshot. Deleting a month's final report removes its generated tab; other personal tabs are retained. Only tabs recorded in the script's `MONTHS` manifest are treated as owned. Keep personal notes on separate, differently named tabs.
+
+Employee-authored names, descriptions and project text are written as literal text; only formulas built by this script are evaluated. Validate leading-equals sample text and duplicate names in a disposable Google Sheet before enabling the production integration. Local adapters test the write calls but cannot replace Google's interpreter and permission checks.

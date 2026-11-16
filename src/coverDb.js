@@ -2,24 +2,24 @@ import { useState, useEffect } from 'react';
 import { supabase } from './auth.js';
 import { IS_DEMO } from './env.js';
 
-/* The Home page cover picture. One for everyone; admins change it. '' means the built-in default. In demo mode it lives in this browser. */
+/* The private Home page cover picture, owned by the signed-in employee. '' means the built-in default. In demo mode it lives in this browser. */
 const KEY = n => 'mp-cover-' + n;
 let cache = { n: null, v: null };       // remembered between visits to Home so the picture does not flash
-const subs = new Set();
-const publish = (n, v) => { cache = { n, v }; subs.forEach(f => f(n, v)); };
+const subs = new Set(), revisions = new Map();
+const publish = (n, v) => { revisions.set(n, (revisions.get(n) || 0) + 1); cache = { n, v }; subs.forEach(f => f(n, v)); };
 export const MAX_COVER_BYTES = 2 * 1024 * 1024;
 
 export async function loadCover(n) {
   if (IS_DEMO) { try { return localStorage.getItem(KEY(n)) || ''; } catch (x) { return ''; } }
-  const { data, error } = await supabase.from('employee_covers').select('image').maybeSingle();
+  const { data, error } = await supabase.from('employee_covers').select('image').eq('employee_id', n).maybeSingle();
   if (error) throw new Error('Could not load your cover.');
   return data ? data.image || '' : '';
 }
 
 export async function saveCover(n, image) {
   if (IS_DEMO) { try { image ? localStorage.setItem(KEY(n), image) : localStorage.removeItem(KEY(n)); } catch (x) { throw new Error('That picture is too large to keep in this browser.'); } publish(n, image); return; }
-  const { error } = await supabase.rpc('set_my_cover', { p_image: image });
-  if (error) throw new Error(/Not allowed|not a picture|too large/.test(error.message) ? error.message : 'Could not save your cover. Check your connection and try again.');
+  const { error } = await supabase.rpc('set_my_cover', { p_image: image, p_employee: Number(n) });
+  if (error) throw new Error(/Not allowed|not a picture|too large|account changed|Refresh/.test(error.message) ? error.message : 'Could not save your cover. Check your connection and try again.');
   publish(n, image);
 }
 
@@ -27,9 +27,9 @@ export async function saveCover(n, image) {
 export function useCover(n) {
   const [v, setV] = useState(cache.n === n ? cache.v : null);
   useEffect(() => {
-    let live = true; const f = (who, val) => { if (who === n) setV(val); };
+    let live = true; const revision = revisions.get(n) || 0; const f = (who, val) => { if (who === n) setV(val); };
     subs.add(f); setV(cache.n === n ? cache.v : null);
-    loadCover(n).then(c => { if (live) publish(n, c); }).catch(() => { if (live && cache.n !== n) publish(n, ''); });
+    loadCover(n).then(c => { if (live && revision === (revisions.get(n) || 0)) publish(n, c); }).catch(() => { if (live && revision === (revisions.get(n) || 0) && cache.n !== n) publish(n, ''); });
     return () => { live = false; subs.delete(f); };
   }, [n]);
   return v;
