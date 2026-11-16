@@ -7,7 +7,6 @@ export const CHANGELOG = [
     'Tasks keep your time. Back to pending is now Pause: a paused card shows the time worked and a Resume button, and several tasks can run at once',
     'The end-of-day report fills itself in from your tasks: each task you worked on, its time, a starting description and its subtasks. The report is now one clear card per task, with subtasks inside',
     'Admins and project managers can clear the Completed Tasks column in one go. It asks first',
-    'Make payslips (admins): paste pay details and download A4 payslip PDFs, one by one or all in a ZIP. It runs in your browser and nothing is stored',
     'Payslip requests: a person asks for a past month and an admin delivers the file under Requests > Payslips. The file is removed from the server once it is downloaded. For now it is switched off for employees and project managers (shown with a lock)',
     'Leave requests are clearer, with status pills, and Copy gives a WhatsApp-ready message with bold headings. My Leaves stays switched off for employees and project managers for now (shown with a lock)',
     'My settings brings theme, sounds, reminders, desktop alerts, password and the tour into one personal page',
