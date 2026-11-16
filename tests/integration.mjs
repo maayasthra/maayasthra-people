@@ -365,6 +365,28 @@ await m.supabase.from('notifications').delete().eq('employee_id', ids.abines).eq
 t('clearing one kind leaves the others', ((await m.supabase.from('notifications').select('key, kind')).data || []).every(r => r.kind !== 'eod'));
 
 
+// ================= PERSONAL NOTES =================
+as('abines'); await m.loadStaff();
+const nA = await m.supabase.from('notes').insert({ employee_id: ids.abines, title: 'Mine', body: 'private text' }).select('id, title').single();
+t('a person can write a note of their own', !nA.error && nA.data.title === 'Mine');
+const nForge = await m.supabase.from('notes').insert({ employee_id: ids.arunkumar, title: 'Forged', body: 'x' });
+t('but not a note in someone else’s name', !!nForge.error);
+as('arunkumar'); await m.loadStaff();
+t('nobody else can read it', ((await m.supabase.from('notes').select('id')).data || []).length === 0);
+await m.supabase.from('notes').update({ body: 'overwritten' }).eq('id', nA.data.id);
+await m.supabase.from('notes').delete().eq('id', nA.data.id);
+as('vijay'); await m.loadStaff();
+t('not even an admin can read it', ((await m.supabase.from('notes').select('id')).data || []).length === 0);
+as('abines'); await m.loadStaff();
+const nBack = ((await m.supabase.from('notes').select('title, body')).data || [])[0];
+t('and nobody else can change or delete it', nBack && nBack.body === 'private text');
+await m.supabase.from('notes').update({ employee_id: ids.arunkumar }).eq('id', nA.data.id);
+t('a note cannot be handed to someone else', (await q('select employee_id from notes where id=$1', [nA.data.id]))[0].employee_id === ids.abines);
+const nTooLong = await m.supabase.from('notes').update({ body: 'x'.repeat(20001) }).eq('id', nA.data.id);
+t('a note over 20,000 characters is refused', !!nTooLong.error);
+await m.supabase.from('notes').delete().eq('id', nA.data.id);
+t('a person can delete their own note', ((await m.supabase.from('notes').select('id')).data || []).length === 0);
+
 // ================= RETAINER FLAG =================
 as('vijay'); await m.loadStaff();
 const rb = await m.loadBoard();

@@ -25,6 +25,7 @@ import { CheckWidget } from './Attendance.jsx';
 import { EarlyDialog } from './AwayDialog.jsx';
 import { MySettings } from './screens/MySettings.jsx';
 import { Payslips } from './screens/Payslips.jsx';
+import { Notes } from './screens/Notes.jsx';
 import { PayslipGenerator } from './screens/PayslipGenerator.jsx';
 import { usePayslips } from './payslipsDb.js';
 import { applySettings, withChange, normalize } from './settings.js';
@@ -57,8 +58,8 @@ import './untitled.css';
 import { startExitMotion } from './exit.js';
 import { startTooltips } from './tooltips.js';
 
-const ALL = { about: 'About', mysettings: 'My settings', payslips: 'Payslips', paygen: 'Make payslips', announcements: 'Announcements', members: 'Members', board: 'Board', mytasks: 'My Tasks', eod: 'EOD reports', team: 'Team', home: 'Home', people: 'People', org: 'Org chart', calendar: 'Calendar', attendance: 'Attendance', hours: 'My Hours', leaves: 'My Leaves', requests: 'Requests', settings: 'Settings' };
-const SHORT = { mytasks: 'Mine', eod: 'EOD', org: 'Org', leaves: 'Leaves', attendance: 'Hours', hours: 'Hours' };
+const ALL = { notes: 'My notes', about: 'About', mysettings: 'My settings', payslips: 'Payslips', paygen: 'Make payslips', announcements: 'Announcements', members: 'Members', board: 'Board', mytasks: 'My Tasks', eod: 'EOD reports', team: 'Team', home: 'Home', people: 'People', org: 'Org chart', calendar: 'Calendar', attendance: 'Attendance', hours: 'My Hours', leaves: 'My Leaves', requests: 'Requests', settings: 'Settings' };
+const SHORT = { notes: 'Notes', mytasks: 'Mine', eod: 'EOD', org: 'Org', leaves: 'Leaves', attendance: 'Hours', hours: 'Hours' };
 
 const SEED_ANN = IS_DEMO ? [
   { id: 1, kind: 'holiday', title: 'Studio closed for Dussehra', body: 'The studio is closed on 20 October. Normal hours resume the next working day.', date: TODISO, by: 'Meera Iyer' },
@@ -338,9 +339,9 @@ function App() {
   if (!auth) return html`<${Login} onLogin=${(user, role) => { setMe(user.n); setNav({ view: 'home' }); setAuth({ user, role }); window.scrollTo({ top: 0 }); }}/>`;
   // The live record, so a change to your own details (shift times, name) shows straight away
   const user = (!IS_DEMO && BY[auth.user.n]) || auth.user, role = auth.role;
-  const TASKGROUPS = [['Tasks', ['board', 'mytasks']], ['Reports', ['eod', 'team']]];
-  const NAVGROUPS = [[null, ['home']], ['Company', ['announcements', 'members', 'org', 'calendar']], ['Time, leave and pay', ['attendance', 'hours', 'leaves', 'requests', 'payslips']], ['Admin', ['settings', 'paygen']]];
-  const peopleKeys = role === 'admin' ? ['home', 'announcements', 'members', 'org', 'calendar', 'attendance', 'leaves', 'requests', 'settings', 'paygen'] : ['home', 'announcements', 'members', 'org', 'calendar', 'hours', 'leaves', 'requests', 'payslips'];
+  const TASKGROUPS = [['Tasks', ['board', 'mytasks']], ['Reports', ['eod', 'team']], ['Personal', ['notes']]];
+  const NAVGROUPS = [[null, ['home', 'notes']], ['Company', ['announcements', 'members', 'org', 'calendar']], ['Time, leave and pay', ['attendance', 'hours', 'leaves', 'requests', 'payslips']], ['Admin', ['settings', 'paygen']]];
+  const peopleKeys = role === 'admin' ? ['home', 'notes', 'announcements', 'members', 'org', 'calendar', 'attendance', 'leaves', 'requests', 'settings', 'paygen'] : ['home', 'notes', 'announcements', 'members', 'org', 'calendar', 'hours', 'leaves', 'requests', 'payslips'];
   // These stay in the menu for everyone but only admins can open them. Everyone else sees them switched off.
   const locked = k => app === 'people' && role !== 'admin' && ['members', 'leaves', 'requests', 'payslips'].includes(k);
   // Admins and project managers get the whole task app. Everyone else gets only their own tasks.
@@ -361,7 +362,7 @@ function App() {
   };
   const sendEdit = async rows => { await submitEod(rows, user.n, eodEdit); setEodEdit(null); setEodTick(t => t + 1); };
   const sendLate = async rows => { await submitEod(rows, user.n, eodLate); setEodLate(null); setEodTick(t => t + 1); };
-  const keys = app === 'task' ? (isMgr ? ['board', 'mytasks', 'eod', 'team'] : ['mytasks', 'eod']) : peopleKeys;
+  const keys = app === 'task' ? (isMgr ? ['board', 'mytasks', 'eod', 'team', 'notes'] : ['mytasks', 'eod', 'notes']) : peopleKeys;
   const setApp = a => { setAppState(a); setNav({ view: a === 'task' ? (isMgr ? 'board' : 'mytasks') : 'home' }); setTaskSel(null); setSOpen(false); window.scrollTo({ top: 0 }); };
   const openTask = (id, ctx) => setTaskSel({ id, ctx });
   // Where a bell entry takes you: a new task opens it, an EOD reminder opens today's report
@@ -398,7 +399,7 @@ function App() {
     : nav.view === 'mytasks' || !isMgr ? html`<${MyTasks} tasks=${tasks} setTasks=${setTasks} user=${user} tq=${tq} openTask=${openTask} canDelete=${isMgr} tick=${eodTick} onEdit=${setEodEdit}/>`
     : nav.view === 'team' && isMgr ? html`<${TeamView} tasks=${tasks} onPick=${n => { setTf(f => ({ ...f, dept: 'All' })); setFocus(n); go('board'); }}/>`
     : html`<${TaskBoard} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} tf=${tf} setTf=${setTf} tq=${tq} openTask=${openTask} focus=${focus} collapsed=${collapsed} setCollapsed=${setCollapsed} custom=${custom} setCustom=${setCustom} groups=${groups} setGroups=${setGroups} layout=${layout} setLayout=${setLayout}/>`;
-  const screen = nav.view === 'about' ? html`<${About}/>` : nav.view === 'payslips' && !locked('payslips') ? html`<${Payslips} user=${user} pay=${pay}/>` : nav.view === 'mysettings' ? html`<${MySettings} user=${user} role=${role} st=${mySet} change=${changeSettings} reset=${resetSettings} onPassword=${() => setPwOpen(true)} onTour=${startTour}/>` : app === 'task' ? taskScreen : nav.view === 'home' ? home
+  const screen = nav.view === 'about' ? html`<${About}/>` : nav.view === 'notes' ? html`<${Notes} user=${user}/>` : nav.view === 'payslips' && !locked('payslips') ? html`<${Payslips} user=${user} pay=${pay}/>` : nav.view === 'mysettings' ? html`<${MySettings} user=${user} role=${role} st=${mySet} change=${changeSettings} reset=${resetSettings} onPassword=${() => setPwOpen(true)} onTour=${startTour}/>` : app === 'task' ? taskScreen : nav.view === 'home' ? home
     : nav.view === 'org' ? html`<${OrgChart} open=${open} user=${user} key=${ver}/>`
     : nav.view === 'profile' ? html`<${Profile} key=${nav.id + '-' + ver + (nav.tab || '')} id=${nav.id} tab=${nav.tab} from=${nav.from} back=${back} open=${open} openForm=${openForm} user=${user} role=${role} leaves=${leaves} att=${att} setAtt=${setAtt} ver=${ver}/>`
     : nav.view === 'form' ? html`<${EmployeeForm} key=${'f' + nav.id} id=${nav.id} role=${role} user=${user} done=${formDone} bump=${bump}/>`
