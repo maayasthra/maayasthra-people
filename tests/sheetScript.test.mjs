@@ -6,7 +6,7 @@ import vm from 'node:vm';
 // Load the Google Apps Script file as plain JavaScript. Only its pure helpers are called, so no Google services are needed.
 const src = fs.readFileSync(new URL('../integrations/google-sheet/Code.gs', import.meta.url), 'utf8');
 const ctx = vm.createContext({ console });
-vm.runInContext(src + '\nthis.__api = { authHeaders, monthName, monthTitle, quoteSheet, buildMonthGrid, peopleIn, sortMonthsDesc, colLetter, FIRST, NCOL, HEADERS, WIDTHS, FONT };', ctx);
+vm.runInContext(src + '\nthis.__api = { authHeaders, monthName, monthTitle, quoteSheet, buildMonthGrid, buildTeamGrid, teamName, peopleIn, sortMonthsDesc, colLetter, FIRST, NCOL, HEADERS, WIDTHS, FONT };', ctx);
 const A = ctx.__api, plain = x => JSON.parse(JSON.stringify(x));
 const env = { parseDay: iso => 'D:' + iso, fmtTime: ts => 'T:' + ts };
 
@@ -60,7 +60,7 @@ test('column letters', () => { assert.equal(A.colLetter(1), 'A'); assert.equal(A
 test('the sheet is set in Inter', () => { assert.equal(A.FONT, 'Inter'); assert.match(src, /setFontFamily\(FONT\)/); });
 
 /* ---- run the whole sync against a stand-in for Google's services ---- */
-const RANGE_METHODS = new Set(['setValues', 'setValue', 'setFormula', 'setFormulas', 'setBackground', 'setBackgrounds', 'setFontColor', 'setFontColors', 'setFontWeight', 'setFontWeights', 'setFontFamily', 'setFontSize', 'setFontSizes', 'setFontStyle', 'setVerticalAlignment', 'setHorizontalAlignment', 'setNumberFormat', 'setWrap', 'setBorder', 'merge', 'breakApart', 'createFilter', 'offset', 'getSheet', 'getRow', 'getNumColumns', 'getValues']);
+const RANGE_METHODS = new Set(['setValues', 'setValue', 'setFormula', 'setFormulas', 'setBackground', 'setBackgrounds', 'setFontColor', 'setFontColors', 'setFontWeight', 'setFontWeights', 'setFontFamily', 'setFontSize', 'setFontSizes', 'setFontStyle', 'setVerticalAlignment', 'setHorizontalAlignment', 'setNumberFormat', 'setWrap', 'setWrapStrategy', 'setBorder', 'merge', 'breakApart', 'createFilter', 'offset', 'getSheet', 'getRow', 'getNumColumns', 'getValues']);
 const SHEET_METHODS = new Set(['getDataRange', 'clear', 'getMaxRows', 'getMaxColumns', 'insertRowsAfter', 'insertColumnsAfter', 'getRange', 'setHiddenGridlines', 'setColumnWidth', 'setRowHeight', 'setFrozenRows', 'setFrozenColumns', 'getFilter', 'getSheetId', 'getLastRow', 'hideColumns', 'getRangeList']);
 function fakeGoogle(rpcData) {
   const sheets = new Map(), props = {}, log = { fetches: [], toasts: [], triggers: [], formulas: [], values: [], fonts: new Set() };
@@ -125,7 +125,7 @@ function fakeGoogle(rpcData) {
     toast: (...a) => log.toasts.push(a[0]), setSpreadsheetTimeZone: () => {}
   };
   const g = {
-    SpreadsheetApp: { getActiveSpreadsheet: () => ssObj, BorderStyle: { SOLID: 'S', SOLID_MEDIUM: 'M', SOLID_THICK: 'T' }, getUi: () => ({}) },
+    SpreadsheetApp: { getActiveSpreadsheet: () => ssObj, WrapStrategy: { CLIP: 'CLIP' }, BorderStyle: { SOLID: 'S', SOLID_MEDIUM: 'M', SOLID_THICK: 'T' }, getUi: () => ({}) },
     Utilities: { parseDate: (s) => 'date:' + s, formatDate: () => '14 Nov, 8:14 PM' },
     PropertiesService: { getScriptProperties: () => ({ getProperty: k => props[k] ?? null, setProperty: (k, v) => { props[k] = v; }, setProperties: values => { Object.assign(props, values); }, deleteProperty: k => { delete props[k]; } }) },
     LockService: { getScriptLock: () => ({ tryLock: () => true, releaseLock: () => {} }) },
@@ -146,7 +146,7 @@ const data = (fn, b) => fn === 'eod_export_months' ? { body: ['2026-11', '2026-1
 test('rebuild all writes a tab per month and a summary, in Inter, with formulas for the totals', () => {
   const fake = fakeGoogle(data); fake.props.SUPABASE_URL = 'https://x.supabase.co/'; fake.props.SUPABASE_ANON_KEY = 'anon'; fake.props.EXPORT_TOKEN = 'tok';
   const api = loadWith(fake); api.rebuildAll();
-  assert.deepEqual([...fake.sheets.keys()].sort(), ['Nov 2026', 'Oct 2026', 'Summary']);
+  assert.deepEqual([...fake.sheets.keys()].sort(), ['Nov 2026', 'Nov 2026 Team', 'Oct 2026', 'Oct 2026 Team', 'Summary']);
   assert.ok(fake.log.fonts.has('Inter') && fake.log.fonts.size === 1);
   const f = fake.log.formulas.filter(x => x[0] === 'Nov 2026').map(x => x[1]);
   assert.ok(f.includes('=SUM(G6:G10)') && f.includes('=COUNT(H6:H10)') && f.includes('=COUNTUNIQUE(J6:J10)'), f.join(' | '));
@@ -164,7 +164,7 @@ test('every call carries the token, and the sheet never writes to Maayasthra Peo
 test('sync only rewrites months that changed, and remembers the database clock', () => {
   const fake = fakeGoogle(data); Object.assign(fake.props, { SUPABASE_URL: 'https://x.supabase.co', SUPABASE_ANON_KEY: 'anon', EXPORT_TOKEN: 'tok', LAST_SYNC: '2026-11-14T14:00:00+00:00', EXPORT_VERSIONS: JSON.stringify({ '2026-11': '1', '2026-10': '1' }) });
   const api = loadWith(fake); api.syncChanges();
-  assert.deepEqual([...fake.sheets.keys()].sort(), ['Nov 2026', 'Summary']);
+  assert.deepEqual([...fake.sheets.keys()].sort(), ['Nov 2026', 'Nov 2026 Team', 'Summary']);
   assert.equal(fake.props.LAST_SYNC, '2026-11-14T14:06:28+00:00');
   assert.deepEqual(JSON.parse(fake.props.EXPORT_VERSIONS), { '2026-11': '2', '2026-10': '1' });
 });
@@ -210,7 +210,7 @@ test('deleting the final report removes only the owned generated month, includin
   const api = loadWith(fake); api.rebuildAll();
   fake.g.SpreadsheetApp.getActiveSpreadsheet().insertSheet('My notes');
   deleted = true; api.syncChanges();
-  assert.ok(!fake.sheets.has('Nov 2026')); assert.ok(fake.sheets.has('My notes')); assert.ok(fake.sheets.has('Summary'));
+  assert.ok(!fake.sheets.has('Nov 2026')); assert.ok(!fake.sheets.has('Nov 2026 Team')); assert.ok(fake.sheets.has('My notes')); assert.ok(fake.sheets.has('Summary'));
   assert.deepEqual(JSON.parse(fake.props.MONTHS), []); assert.equal(fake.props['PEOPLE_2026-11'], undefined);
   deleted = false; api.rebuildAll(); deleted = true; api.rebuildAll();
   assert.ok(!fake.sheets.has('Nov 2026')); assert.deepEqual(JSON.parse(fake.props.MONTHS), []);
@@ -341,4 +341,26 @@ test('days are marked: one date group per day, the first line of each day flagge
   assert.deepEqual(plain(g.dayGroup), [0, 0, 0, 0, 1]);
   const two = A.buildMonthGrid([lines[0], { ...lines[4], day: '2026-11-10', employee_id: '202' }, lines[4]], env);   // two people on one day, then a new day
   assert.deepEqual(plain(two.dayStart), [true, false, true]); assert.deepEqual(plain(two.first), [true, true, true]);
+});
+
+test('team grid: a row per calendar day, a text and an hours cell per person, hours kept separate', () => {
+  const g = A.buildTeamGrid(lines, '2026-11', { parseDay: iso => 'D:' + iso, today: '2026-11-12' });
+  assert.equal(g.days.length, 30); assert.deepEqual(plain(g.people.map(p => p.name)), ['Aarav Menon', 'Kavya Reddy']);
+  const a = g.cells[9][0];                                   // 10 Nov, Aarav
+  assert.equal(a.hours, 5); assert.equal(a.text, 'CMC - Layouts  |  WL - Carousel  |  \u2022 Slide 1 - Copy  |  \u2022 Slide 2');
+  assert.ok(!/hrs?\b|\d\.\d/.test(a.text), 'no hours inside the text');
+  assert.deepEqual(plain(g.totals), [5, 3]);
+  assert.equal(g.cells[10][1].hours, 3); assert.equal(g.days[0].date, 'D:2026-11-01');
+});
+test('team grid: weekends grey, past weekdays without a report missing, later days open', () => {
+  const g = A.buildTeamGrid(lines, '2026-11', { parseDay: iso => iso, today: '2026-11-12' });
+  assert.equal(g.days[0].name, 'Sunday'); assert.equal(g.days[0].state[0], 'weekend');       // 1 Nov 2026 is a Sunday
+  assert.equal(g.days[1].state[0], 'missing');                                               // Monday 2 Nov, nothing sent
+  assert.equal(g.days[9].state[0], 'report'); assert.equal(g.days[9].state[1], 'missing');   // Kavya sent nothing on the 10th
+  assert.equal(g.days[11].state[0], 'open'); assert.equal(g.days[12].state[0], 'open');     // 12 Nov is today, 13 Nov is later
+});
+test('team grid: untrusted text stays literal and a missing ID fails clearly', () => {
+  const g = A.buildTeamGrid([{ ...lines[4], note: '=HYPERLINK("x")', project: '', name: '=bad' }], '2026-11', { parseDay: i => i, today: '2026-11-30' });
+  assert.equal(g.people[0].name, "'=bad"); assert.ok(g.cells[10][0].text.startsWith("'"));
+  assert.throws(() => A.buildTeamGrid([{ ...lines[0], employee_id: null }], '2026-11', { parseDay: i => i, today: 'x' }), /employee IDs/);
 });

@@ -82,6 +82,41 @@ function peopleIn(grid) {
   return Object.keys(seen).map(function (id) { return seen[id]; }).sort(function (a, b) { return a.name.localeCompare(b.name) || a.id.localeCompare(b.id); });
 }
 
+/**
+ * The team grid for one month: one row per calendar day, and for every employee a text column and an "Hrs" column beside it.
+ * env.parseDay(iso) returns a date value; env.today is today's date as yyyy-MM-dd (days before it with no report count as missing).
+ * Returns { people, days, cells, totals }. cells[day][person] is null, or { text, hours }. days[i].state[p] is
+ * 'report', 'weekend' (nobody expected), 'missing' (a past weekday with no report) or 'open' (today or later, no report yet).
+ */
+var DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+function buildTeamGrid(lines, ym, env) {
+  var y = Number(ym.slice(0, 4)), m = Number(ym.slice(5, 7)), count = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  var seen = Object.create(null), byKey = Object.create(null);
+  (lines || []).forEach(function (l) {
+    var id = employeeId(l.employee_id), key = id + '|' + String(l.day).slice(0, 10), sub = l.kind === 'sub';
+    seen[id] = { id: id, name: literalText(l.name) };
+    var c = byKey[key] || (byKey[key] = { lines: [], hours: 0 });
+    var text = sub ? '\u2022 ' + (l.sub || '') + (l.note ? ' - ' + l.note : '') : (l.project || '') + (l.note ? ' - ' + l.note : '');
+    c.lines.push(text);
+    if (l.day_total !== null && l.day_total !== undefined) c.hours += Number(l.day_total);
+  });
+  var people = Object.keys(seen).map(function (id) { return seen[id]; }).sort(function (a, b) { return a.name.localeCompare(b.name) || a.id.localeCompare(b.id); });
+  var days = [], cells = [], totals = people.map(function () { return 0; });
+  for (var d = 1; d <= count; d++) {
+    var iso = ym + '-' + (d < 10 ? '0' : '') + d, dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay(), weekend = dow === 0 || dow === 6;
+    var row = [], state = [];
+    people.forEach(function (p, i) {
+      var c = byKey[p.id + '|' + iso];
+      if (c) { row.push({ text: literalText(c.lines.join('  |  ')), hours: Math.round(c.hours * 100) / 100 }); state.push('report'); totals[i] += c.hours; }
+      else { row.push(null); state.push(weekend ? 'weekend' : iso < env.today ? 'missing' : 'open'); }
+    });
+    days.push({ iso: iso, date: env.parseDay(iso), name: DAY_NAMES[dow], weekend: weekend, state: state });
+    cells.push(row);
+  }
+  return { people: people, days: days, cells: cells, totals: totals.map(function (t) { return Math.round(t * 100) / 100; }) };
+}
+function teamName(ym) { return monthName(ym) + ' Team'; }
+
 /** Months to show on the Summary tab: newest first */
 function sortMonthsDesc(list) { return list.slice().sort().reverse(); }
 
@@ -228,10 +263,12 @@ function rebuildMonth(ym) {
   var lines = rpc('eod_export_month', { p_month: ym });
   var props = PropertiesService.getScriptProperties(), list = JSON.parse(props.getProperty('MONTHS') || '[]');
   var ss = SpreadsheetApp.getActiveSpreadsheet(), name = monthName(ym), sheet = ss.getSheetByName(name);
+  var teamSheet = ss.getSheetByName(teamName(ym));
   if (!lines.length) {
-    if (list.indexOf(ym) >= 0 && sheet) {
+    if (list.indexOf(ym) >= 0 && (sheet || teamSheet)) {
       if (!ss.getSheetByName(SUMMARY)) ss.insertSheet(SUMMARY); // Google requires at least one tab.
-      ss.deleteSheet(sheet);
+      if (sheet) ss.deleteSheet(sheet);
+      if (teamSheet) ss.deleteSheet(teamSheet);
     }
     props.setProperty('MONTHS', JSON.stringify(list.filter(function (m) { return m !== ym; })));
     props.deleteProperty('PEOPLE_' + ym); props.deleteProperty('NAMES_' + ym);
@@ -243,6 +280,7 @@ function rebuildMonth(ym) {
   });
   sheet = sheet || ss.insertSheet(name);
   writeMonth(sheet, ym, grid);
+  writeTeam(teamSheet || ss.insertSheet(teamName(ym)), ym, buildTeamGrid(lines, ym, { parseDay: function (iso) { return Utilities.parseDate(iso + ' 12:00', TZ, 'yyyy-MM-dd HH:mm'); }, today: Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd') }));
   if (list.indexOf(ym) < 0) list.push(ym);
   props.setProperty('MONTHS', JSON.stringify(sortMonthsDesc(list)));
   props.setProperty('PEOPLE_' + ym, JSON.stringify(peopleIn(grid)));
@@ -340,6 +378,55 @@ function writeMonth(sheet, ym, grid) {
   sheet.getRange(5, 1, n + 1, NCOL).createFilter();
 }
 
+/* ------------------------------------------------------------------ the team grid tab */
+
+var T = { head: '#1155cc', dateCol: '#d9d9d9', weekend: '#999999', missing: '#ff0000', report: '#ffffff' };
+function writeTeam(sheet, ym, g) {
+  var P = g.people.length, ncol = 2 + 2 * P, nrow = g.days.length + 2;   // header, one row per day, totals
+  sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns()).breakApart();
+  sheet.clear();
+  if (sheet.getMaxRows() < nrow + 1) sheet.insertRowsAfter(sheet.getMaxRows(), nrow + 1 - sheet.getMaxRows());
+  if (sheet.getMaxColumns() < ncol) sheet.insertColumnsAfter(sheet.getMaxColumns(), ncol - sheet.getMaxColumns());
+  sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns()).setFontFamily(FONT).setFontSize(10).setFontColor(C.text).setVerticalAlignment('middle').setBackground(C.white);
+  sheet.setHiddenGridlines(true);
+  sheet.setColumnWidth(1, 100); sheet.setColumnWidth(2, 100);
+  for (var p = 0; p < P; p++) { sheet.setColumnWidth(3 + 2 * p, 300); sheet.setColumnWidth(4 + 2 * p, 56); }
+  var head = ['Date', 'Day'];
+  g.people.forEach(function (pp) { head.push(pp.name, 'Hrs'); });
+  var hr = sheet.getRange(1, 1, 1, ncol);
+  hr.setValues([head]).setBackground(T.head).setFontColor(C.white).setFontWeight('bold').setFontSize(11).setHorizontalAlignment('center');
+  sheet.setRowHeight(1, 44);
+  var values = [], bgs = [], fcs = [], fws = [];
+  g.days.forEach(function (day, i) {
+    var v = [day.date, day.name], b = [T.dateCol, T.dateCol], fc = [C.text, C.text], fw = ['normal', 'normal'];
+    g.people.forEach(function (pp, j) {
+      var cell = g.cells[i][j], st = day.state[j], bg = st === 'weekend' ? T.weekend : st === 'missing' ? T.missing : T.report;
+      v.push(cell ? cell.text : '', cell ? cell.hours : ''); b.push(bg, bg); fc.push(C.text, C.text); fw.push('normal', 'bold');
+    });
+    values.push(v); bgs.push(b); fcs.push(fc); fws.push(fw);
+  });
+  var n = g.days.length;
+  if (n) {
+    var body = sheet.getRange(2, 1, n, ncol);
+    body.setValues(values).setBackgrounds(bgs).setFontColors(fcs).setFontWeights(fws).setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP)
+      .setBorder(true, true, true, true, true, true, C.dim, SpreadsheetApp.BorderStyle.SOLID);
+    sheet.getRange(2, 1, n, 1).setNumberFormat('dd/mm/yyyy').setHorizontalAlignment('center');
+    sheet.getRange(2, 2, n, 1).setHorizontalAlignment('center');
+    for (var rr = 0; rr < n; rr++) sheet.setRowHeight(2 + rr, 34);   // every box the same size; the full text is in the cell
+    for (var q = 0; q < P; q++) {
+      sheet.getRange(2, 3 + 2 * q, n, 1).setHorizontalAlignment('left');
+      sheet.getRange(2, 4 + 2 * q, n, 1).setNumberFormat('0.00').setHorizontalAlignment('center');
+    }
+  }
+  // Totals under the grid: hours only, with a formula so a hand correction in the sheet still adds up
+  var tr = n + 2, tot = sheet.getRange(tr, 1, 1, ncol);
+  tot.setBackground(C.brandTint).setFontWeight('bold').setBorder(true, null, null, null, null, null, C.brand, SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+  sheet.getRange(tr, 1).setValue('Total hours');
+  for (var k = 0; k < P; k++) sheet.getRange(tr, 4 + 2 * k).setFormula('=SUM(' + colLetter(4 + 2 * k) + '2:' + colLetter(4 + 2 * k) + (n + 1) + ')').setNumberFormat('0.00').setHorizontalAlignment('center');
+  sheet.setRowHeight(tr, 30);
+  sheet.setFrozenRows(1); sheet.setFrozenColumns(2);
+}
+
 /* ------------------------------------------------------------------ the Summary tab */
 
 function rebuildSummary() {
@@ -429,8 +516,10 @@ function tidyTabs() {
   var sum = ss.getSheetByName(SUMMARY);
   if (sum) { ss.setActiveSheet(sum); ss.moveActiveSheet(pos); pos++; }
   months.forEach(function (ym) {
-    var s = ss.getSheetByName(monthName(ym));
-    if (s) { ss.setActiveSheet(s); ss.moveActiveSheet(pos); pos++; }
+    [teamName(ym), monthName(ym)].forEach(function (nm) {
+      var s = ss.getSheetByName(nm);
+      if (s) { ss.setActiveSheet(s); ss.moveActiveSheet(pos); pos++; }
+    });
   });
   var starter = ss.getSheetByName('Sheet1');
   if (starter && starter.getLastRow() === 0 && ss.getSheets().length > 1) ss.deleteSheet(starter);
