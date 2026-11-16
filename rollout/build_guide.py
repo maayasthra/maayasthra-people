@@ -1,6 +1,7 @@
 """Builds Maayasthra-People-Guide.pdf, the three-page staff guide sent with the launch announcement.
-Run with a Python that has reportlab and svglib:  python build_guide.py [out.pdf] [page-to-keep]
-Edit the TEXT below, run it again, and send the new PDF. Screenshots are in ./shots (demo data, light theme)."""
+Run with a Python that has reportlab and svglib:  python build_guide.py [out.pdf] [page-to-keep] [light]
+Dark is the default (screens from ./shots/dark); add the word light for the printable version (./shots/light).
+Edit the TEXT below, run it again, and send the new PDF. Screenshots are in ./shots (demo data)."""
 import sys
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
@@ -12,12 +13,16 @@ from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPDF
 
 HERE = __file__.rsplit('/', 1)[0]
-OUT = sys.argv[1] if len(sys.argv) > 1 else HERE + '/Maayasthra-People-Guide.pdf'
-KEEP = int(sys.argv[2]) if len(sys.argv) > 2 else 0          # preview helper: draw only this page
+LIGHT = 'light' in sys.argv[1:]; THEME = 'light' if LIGHT else 'dark'
+args = [a for a in sys.argv[1:] if a != 'light']
+OUT = args[0] if len(args) > 0 else HERE + ('/Maayasthra-People-Guide-Light.pdf' if LIGHT else '/Maayasthra-People-Guide.pdf')
+KEEP = int(args[1]) if len(args) > 1 else 0                  # preview helper: draw only this page
 pdfmetrics.registerFont(TTFont('Ar', '/System/Library/Fonts/Supplemental/Arial.ttf'))
 pdfmetrics.registerFont(TTFont('ArB', '/System/Library/Fonts/Supplemental/Arial Bold.ttf'))
 
-ORANGE, INK, MUTED, LINE, TINT, WHITE = HexColor('#FE6D00'), HexColor('#171717'), HexColor('#525252'), HexColor('#E5E5E5'), HexColor('#FFF4EB'), HexColor('#FFFFFF')
+ORANGE, WHITE = HexColor('#FE6D00'), HexColor('#FFFFFF')
+if LIGHT: BG, CARD, INK, MUTED, LINE, TINT, TINT_LINE = WHITE, WHITE, HexColor('#171717'), HexColor('#525252'), HexColor('#E5E5E5'), HexColor('#FFF4EB'), HexColor('#FFCBA0')
+else:     BG, CARD, INK, MUTED, LINE, TINT, TINT_LINE = HexColor('#0A0A0A'), HexColor('#171717'), HexColor('#FAFAFA'), HexColor('#A3A3A3'), HexColor('#2E2E2E'), HexColor('#26160B'), HexColor('#6B3410')
 W, H = A4; M = 42; CW = W - 2 * M
 URL = 'people.maayasthra.com'; PAGES = 3
 
@@ -91,7 +96,8 @@ def bullet(x, y, lead_in, text, width, size=10.5, lead=15):
     return yy - 6
 
 def header(page):
-    logo = svg2rlg(HERE + '/../public/maayasthra-logo-dark.svg'); s = 118 / logo.width
+    c.setFillColor(BG); c.rect(0, 0, W, H, fill=1, stroke=0)
+    logo = svg2rlg(HERE + '/../public/' + ('maayasthra-logo-dark.svg' if LIGHT else 'maayasthra-logo.svg')); s = 118 / logo.width
     logo.width *= s; logo.height *= s; logo.scale(s, s)
     renderPDF.draw(logo, c, M, H - 40 - logo.height)
     c.setFont('Ar', 9); c.setFillColor(MUTED); c.drawRightString(W - M, H - 52, 'Staff guide  ·  page %d of %d' % (page, PAGES))
@@ -101,7 +107,7 @@ def footer():
     c.setFont('Ar', 8.5); c.setFillColor(MUTED); c.drawString(M, 28, URL); c.drawRightString(W - M, 28, 'Maayasthra People')
 
 def box(x, ytop, w, h, tint=False):
-    c.setFillColor(TINT if tint else WHITE); c.setStrokeColor(HexColor('#FFCBA0') if tint else LINE); c.setLineWidth(.8)
+    c.setFillColor(TINT if tint else CARD); c.setStrokeColor(TINT_LINE if tint else LINE); c.setLineWidth(.8)
     c.roundRect(x, ytop - h, w, h, 8, fill=1, stroke=1)
 
 def notice(ytop, title, body, size=9.8):
@@ -113,7 +119,7 @@ def notice(ytop, title, body, size=9.8):
     return h
 
 def shot(x, ytop, w, name):
-    img = ImageReader(HERE + '/shots/' + name); iw, ih = img.getSize(); h = w * ih / iw
+    img = ImageReader(HERE + '/shots/' + THEME + '/' + name); iw, ih = img.getSize(); h = w * ih / iw
     c.drawImage(img, x, ytop - h, w, h)
     c.setStrokeColor(LINE); c.setLineWidth(.8); c.rect(x, ytop - h, w, h, fill=0, stroke=1)
     return h
@@ -126,7 +132,7 @@ def feature_card(x, ytop, w, title, body, img, h):
     para(x + pad, ty - 14, body, 'Ar', 9.2, MUTED, w - 2 * pad)
 
 def feature_h(w, body, img):
-    pad = 12; iw, ih = ImageReader(HERE + '/shots/' + img).getSize()
+    pad = 12; iw, ih = ImageReader(HERE + '/shots/' + THEME + '/' + img).getSize()
     return pad + (w - 2 * pad) * ih / iw + 8 + 14 + 4 + height(body, 'Ar', 9.2, w - 2 * pad) + pad - 2
 
 def small_card(x, ytop, w, title, body, h):
