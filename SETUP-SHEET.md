@@ -25,6 +25,8 @@ Everything is set in **Inter**. The tabs are rewritten on every sync, so don't t
 ### Part 1: in Supabase
 
 1. Apply the approved database migrations through `0047_eod_export_integrity.sql` in order (including `0045` and its prerequisites). Validate in staging first; do not enable this script against the old `0045` export alone.
+**Shortcut for steps 2 and 3:** open `rollout/eod-sheet-token.sql`, paste it into the SQL Editor and Run. It makes the token inside the database, stores only its fingerprint and shows the token once in the result. Copy it straight into the Apps Script prompt in Part 2. Then carry on at step 4.
+
 2. **Make a secret token.** Use your password manager to generate a random string of at least 32 characters. Keep it to yourself: don't paste it into chat or email. It is the only thing that lets the sheet read reports.
 3. **Save the token's fingerprint.** In a new query, replace `PASTE-YOUR-TOKEN` with your token and Run:
 
