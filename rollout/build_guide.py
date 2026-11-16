@@ -37,16 +37,16 @@ LEAVE_NOTICE = ('Leave: use Outlook and the portal, for now',
 # (title, text, screenshot or None)
 FEATURES = [
     ('Leave', 'Ask for leave, see your balance and follow the answer. A request that is still waiting can be withdrawn. Remember: for now, also request it in Outlook.', 'leaves.png', 'My Leaves'),
-    ('Request a payslip', 'Ask for the payslip of a past month. An admin prepares it, you are told when it is ready, and you download it from the Payslips page.', 'payslips.png', 'Payslips'),
     ('News and calendar', 'Company announcements pop up until you close them. The calendar shows holidays, birthdays, work anniversaries and who is on leave.', 'calendar.png', 'Calendar'),
     ('Tasks', 'The Task app holds your own tasks. Press Start on the one you are working on, and it moves to In progress.', 'tasks.png', 'My Tasks'),
+    ('Find people', 'The org chart shows who works with whom. Search finds any colleague: press the / key from anywhere.', 'org.png', 'Org chart'),
 ]
 SMALL = [
     ('Check in and out', 'Start your day with one tap and check out when you finish. Your hours are kept for you. At check-out you send a short end-of-day report of what you worked on.'),
-    ('Find people', 'The org chart shows who works with whom. Search finds any colleague: press the / key from anywhere.'),
+    ('Payslips: coming soon', 'Requesting a payslip is switched off for now. It shows greyed out in the menu, and we will tell you when it opens.'),
 ]
 GOOD = [
-    ('Your payslip is private.', 'Only you and the admins who issue payslips can open it. Once you download a payslip, the file is removed from our servers, so save your copy.'),
+    ('Greyed-out items.', 'Members, Requests and Payslips show with a lock for now. Only admins can open them. Payslips will open for everyone later.'),
     ('Forgot your password?', 'On the sign-in page choose Forgot password. We email you a 6-digit code. Type it with a new password. The code works once and expires after 10 minutes.'),
     ('Notifications.', 'The bell tells you when a task is given to you, and reminds you 30 and 15 minutes before your shift ends to send your end-of-day report.'),
     ('Phone or computer.', 'It works on both. Choose Light, Dark or match your device from the account menu at the top right.'),
@@ -103,12 +103,16 @@ def badge(cx, cy, n):
     c.setFillColor(WHITE); c.setFont('ArB', 12); c.drawCentredString(cx, cy - 4.2, str(n))
 
 PAD, BODY, LEAD = 14, 9.4, 13.4
+import os
+def shot_path(name):
+    p = HERE + '/shots/' + THEME + '/' + name
+    return p if os.path.exists(p) else HERE + '/shots/dark/' + name     # a theme with a missing screen falls back to the dark one
 def shot(x, ytop, w, name):
-    img = ImageReader(HERE + '/shots/' + THEME + '/' + name); iw, ih = img.getSize(); h = w * ih / iw
+    img = ImageReader(shot_path(name)); iw, ih = img.getSize(); h = w * ih / iw
     c.drawImage(img, x, ytop - h, w, h); c.setStrokeColor(LINE); c.setLineWidth(.8); c.rect(x, ytop - h, w, h, fill=0, stroke=1)
     return h
 def shot_h(w, name):
-    iw, ih = ImageReader(HERE + '/shots/' + THEME + '/' + name).getSize(); return w * ih / iw
+    iw, ih = ImageReader(shot_path(name)).getSize(); return w * ih / iw
 
 def cols(n, gap=GUT): return (CW - gap * (n - 1)) / n
 
@@ -122,7 +126,7 @@ def row_of_cards(y, items, n, body_h, draw):
 def page1():
     header(1); y = TOP
     c.setFont('ArB', 27); c.setFillColor(INK); c.drawString(M, y - 27, 'Welcome to Maayasthra People'); y -= 27 + 8
-    y = text(M, y, 'One place for your attendance, leave, tasks and payslips. This guide takes two minutes to read.', 'Ar', 12, MUTED, CW, 17) - 22
+    y = text(M, y, 'One place for your attendance, leave and tasks. This guide takes two minutes to read.', 'Ar', 12, MUTED, CW, 17) - 22
     y = heading(y, 'Get started in three steps') - 4
     sw = cols(3)
     def step_h(w, it): return PAD + 24 + 10 + th(it[2], 'Ar', BODY, w - 2 * PAD, LEAD) + PAD - 2

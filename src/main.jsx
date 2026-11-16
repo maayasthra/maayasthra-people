@@ -342,7 +342,7 @@ function App() {
   const NAVGROUPS = [[null, ['home']], ['Company', ['announcements', 'members', 'org', 'calendar']], ['Time, leave and pay', ['attendance', 'hours', 'leaves', 'requests', 'payslips']], ['Admin', ['settings', 'paygen']]];
   const peopleKeys = role === 'admin' ? ['home', 'announcements', 'members', 'org', 'calendar', 'attendance', 'leaves', 'requests', 'settings', 'paygen'] : ['home', 'announcements', 'members', 'org', 'calendar', 'hours', 'leaves', 'requests', 'payslips'];
   // These stay in the menu for everyone but only admins can open them. Everyone else sees them switched off.
-  const locked = k => app === 'people' && role !== 'admin' && ['members', 'requests'].includes(k);
+  const locked = k => app === 'people' && role !== 'admin' && ['members', 'requests', 'payslips'].includes(k);
   // Admins and project managers get the whole task app. Everyone else gets only their own tasks.
   const isMgr = role === 'admin' || role === 'pm';
   const seenNow = seenVer === VERSION || nav.view === 'about';
@@ -398,7 +398,7 @@ function App() {
     : nav.view === 'mytasks' || !isMgr ? html`<${MyTasks} tasks=${tasks} setTasks=${setTasks} user=${user} tq=${tq} openTask=${openTask} canDelete=${isMgr} tick=${eodTick} onEdit=${setEodEdit}/>`
     : nav.view === 'team' && isMgr ? html`<${TeamView} tasks=${tasks} onPick=${n => { setTf(f => ({ ...f, dept: 'All' })); setFocus(n); go('board'); }}/>`
     : html`<${TaskBoard} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} tf=${tf} setTf=${setTf} tq=${tq} openTask=${openTask} focus=${focus} collapsed=${collapsed} setCollapsed=${setCollapsed} custom=${custom} setCustom=${setCustom} groups=${groups} setGroups=${setGroups} layout=${layout} setLayout=${setLayout}/>`;
-  const screen = nav.view === 'about' ? html`<${About}/>` : nav.view === 'payslips' ? html`<${Payslips} user=${user} pay=${pay}/>` : nav.view === 'mysettings' ? html`<${MySettings} user=${user} role=${role} st=${mySet} change=${changeSettings} reset=${resetSettings} onPassword=${() => setPwOpen(true)} onTour=${startTour}/>` : app === 'task' ? taskScreen : nav.view === 'home' ? home
+  const screen = nav.view === 'about' ? html`<${About}/>` : nav.view === 'payslips' && !locked('payslips') ? html`<${Payslips} user=${user} pay=${pay}/>` : nav.view === 'mysettings' ? html`<${MySettings} user=${user} role=${role} st=${mySet} change=${changeSettings} reset=${resetSettings} onPassword=${() => setPwOpen(true)} onTour=${startTour}/>` : app === 'task' ? taskScreen : nav.view === 'home' ? home
     : nav.view === 'org' ? html`<${OrgChart} open=${open} user=${user} key=${ver}/>`
     : nav.view === 'profile' ? html`<${Profile} key=${nav.id + '-' + ver + (nav.tab || '')} id=${nav.id} tab=${nav.tab} from=${nav.from} back=${back} open=${open} openForm=${openForm} user=${user} role=${role} leaves=${leaves} att=${att} setAtt=${setAtt} ver=${ver}/>`
     : nav.view === 'form' ? html`<${EmployeeForm} key=${'f' + nav.id} id=${nav.id} role=${role} user=${user} done=${formDone} bump=${bump}/>`

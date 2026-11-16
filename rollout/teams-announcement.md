@@ -1,4 +1,4 @@
-**🚀 Maayasthra People is live: your new workspace for attendance, leave, tasks and payslips**
+**🚀 Maayasthra People is live: your new workspace for attendance, leave and tasks**
 
 Hi team,
 
@@ -15,7 +15,7 @@ If it says your email is not in the staff list, message an admin.
 - ✅ **Check in and out.** Your hours are kept for you. At check-out, send a short end-of-day report of what you worked on.
 - 🌴 **Leave.** Ask for leave, see your balance and follow the answer. **For the next few months, please request leave in both Outlook and the portal.** Later we will move to the portal alone, and we will tell you when.
 - 📋 **Tasks.** Your own tasks live in the Task app.
-- 🧾 **Request a payslip.** Ask for a past month's payslip and download it when you are told it is ready. Once you download it, the file is removed from our servers, so save your copy.
+- 🧾 **Payslips.** Coming soon. It shows greyed out in the menu for now, and we will tell you when you can request one.
 - 📣 **Announcements and calendar.** Company news, holidays, birthdays and who is on leave.
 
 **Coming next** (no dates yet): leave in one place, installing it like an app on your phone, and a monthly summary of your hours.
