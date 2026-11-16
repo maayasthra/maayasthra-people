@@ -1480,3 +1480,4 @@ button.tile:active,.tile.click:active{background:var(--fill)}
   .cv-b .cv-l{display:none}
   .cv-in .date-l{padding-right:44px}
 }
+.mt3-st.mt3-ps{color:var(--warn-text)}

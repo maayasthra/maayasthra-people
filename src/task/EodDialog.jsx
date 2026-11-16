@@ -1,8 +1,9 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { html, Icon } from '../ui.jsx';
 import { hoursOf, totalOf, fmtH, loadEods } from '../eodDb.js';
-import { dayKey, hm } from '../attendance.js';
-import { isDoing } from '../tasks.js';
+import { dayKey, hm, dayStart } from '../attendance.js';
+import { isDoing, myTasksOf } from '../tasks.js';
+import { trackedIn, hoursText } from '../taskTime.js';
 
 let uid = 0;
 const blankSub = (title = '') => ({ id: 's' + ++uid, title, desc: '', hours: '' });
@@ -31,8 +32,15 @@ export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel
   const D = day || dayKey(), late = mode === 'late', edit = mode === 'edit';
   const mine = tasks.filter(t => (t.cols || []).includes(user.n) && !t.done);
   const [rows, setRows] = useState(null);
-  const [err, setErr] = useState(''), [busy, setBusy] = useState(false), [restored, setRestored] = useState(null), [savedAt, setSavedAt] = useState(0);
+  const [err, setErr] = useState(''), [busy, setBusy] = useState(false), [restored, setRestored] = useState(null), [savedAt, setSavedAt] = useState(0), [filled, setFilled] = useState(false);
   const first = useRef(null);
+
+  // Every task worked on that day, with the time from your Start, Pause and Done presses; then anything in progress that has no time yet
+  const fromClock = () => {
+    const from = dayStart(D), tracked = trackedIn(myTasksOf(tasks, user.n), user.n, from, from + 86400000);
+    const rows = tracked.map(x => blankRow({ project: x.title, task: x.id, hours: noHours ? '' : hoursText(x.ms) }));
+    return late ? rows : [...rows, ...mine.filter(t => isDoing(t, user.n) && !tracked.some(x => x.id === t.id)).map(t => blankRow({ project: t.title, task: t.id }))];
+  };
 
   // Start from today's report if one was already sent, otherwise from the tasks that are in progress
   useEffect(() => {
@@ -43,7 +51,8 @@ export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel
       if (!live) return;
       const r = l.find(x => x.emp === user.n);
       const start = r && r.rows.length ? r.rows.map(x => ({ ...blankRow(), ...x, id: 'r' + ++uid, hours: x.hours || '', subs: (x.subs || []).map(s => ({ ...s, id: 's' + ++uid, hours: s.hours || '' })) }))
-        : late ? [] : mine.filter(t => isDoing(t, user.n)).map(t => blankRow({ project: t.title, task: t.id }));
+        : fromClock();
+      if (!(r && r.rows.length) && start.some(x => Number(x.hours) > 0)) setFilled(true);
       setRows(start.length ? start : [blankRow()]);
     }).catch(() => live && setRows([blankRow()]));
     return () => { live = false; };
@@ -94,7 +103,8 @@ export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel
       <div className="eod-h"><div className="dlg-i"><${Icon} n="timer" s=${22}/></div>
         <div><h2 id="eod-t">${edit ? 'Edit report' : late ? 'Missed report' : mode === 'out' ? 'End-of-day report' : 'Today’s report'}</h2>
           <p>${edit ? 'Change what you sent for ' + new Date(D + 'T00:00:00Z').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }) + '.' : late ? 'Fill in what you worked on ' + new Date(D + 'T00:00:00Z').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }) + ', with the time.' : mode === 'out' ? 'Fill in what you worked on today' + (noHours ? '' : ', with the time') + '. You can check out once it is sent.' : 'Save it now, then check out when you are done. A later save replaces this one.'}</p></div></div>
-      ${restored && html`<div className="eod-note" role="status"><span>We brought back your draft from ${hm2(restored)}.</span><button className="link" onClick=${() => { clearEodDraft(user.n, D); setRestored(null); setRows([blankRow()]); }}>Start over</button></div>`}
+      ${restored && html`<div className="eod-note" role="status"><span>We brought back your draft from ${hm2(restored)}.</span><button className="link" onClick=${() => { clearEodDraft(user.n, D); setRestored(null); const f = fromClock(); setFilled(f.some(x => Number(x.hours) > 0)); setRows(f.length ? f : [blankRow()]); }}>Start over</button></div>`}
+      ${filled && !restored && html`<div className="eod-note" role="status"><span>Time is filled in from your Start and Pause presses. Change anything that is not right.</span></div>`}
       <div className="eod-t" role="table" aria-label="Today's work">
         <div className="eod-hd" role="row"><span>Project</span><span>Description</span>${!noHours && html`<span>Time</span>`}<span></span></div>
         ${rows.map((r, i) => {

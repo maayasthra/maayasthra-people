@@ -1,13 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { startSound, pendingSound, doneSound, deleteSound } from '../alerts.js';
 import { html, Icon, HI } from '../ui.jsx';
 import { WorkLog } from './WorkLog.jsx';
 import { mkTask, completeCard, reopenCard, startTimer, pauseTimer, isDoing, myTasksOf } from '../tasks.js';
+import { workedMs, shortDur } from '../taskTime.js';
 
-// My Tasks: Pending, In progress, Completed. In progress is a marker for what you are on right now; it resets when you check out.
+// My Tasks: Pending, In progress, Completed. One card is In progress at a time. Pause sends it back to Pending and keeps the time worked on it;
+// the time so far shows on the card and fills the end-of-day report.
 export function MyTasks({ tasks, setTasks, user, tq, openTask, canDelete, tick, onEdit }) {
   const [title, setTitle] = useState(''), [drag, setDrag] = useState(null), [over, setOver] = useState(null), [allDone, setAllDone] = useState(false), [adding, setAdding] = useState(false), [ask, setAsk] = useState(null), [tab, setTab] = useState('tasks');
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { const i = setInterval(() => setNow(Date.now()), 30000); return () => clearInterval(i); }, []);   // keeps the time on the cards fresh
   const term = tq.trim().toLowerCase();
   const mine = myTasksOf(tasks, user.n).filter(t => !term || t.title.toLowerCase().includes(term));
   const doing = mine.filter(t => isDoing(t, user.n));
@@ -16,7 +20,7 @@ export function MyTasks({ tasks, setTasks, user, tq, openTask, canDelete, tick, 
   const done = mine.filter(t => t.done).sort((a, b) => lastEnd(b) - lastEnd(a));
   const shownDone = allDone ? done : done.slice(0, 12);
 
-  // The three moves. Any number of cards can be Doing at once.
+  // The three moves. Starting a card pauses the one you were on.
   const toDoing = id => { startSound(); setTasks(ts => startTimer(ts, id, user.n)); };
   const toTodo = id => { pendingSound(); setTasks(ts => { const t = ts.find(x => x.id === id); return t && t.done ? reopenCard(ts, id, user.n) : pauseTimer(ts, id, user.n); }); };
   const toDone = id => { doneSound(); setTasks(ts => completeCard(ts, id)); };
@@ -29,11 +33,11 @@ export function MyTasks({ tasks, setTasks, user, tq, openTask, canDelete, tick, 
       <button className="mt3-t" onClick=${() => openTask(t.id)}>${t.title}</button>
       ${canDelete && ask === t.id && html`<div className="mt3-del" role="alert"><span>Delete this task?</span><button className="btn ghost sm" onClick=${() => setAsk(null)}>Keep</button><button className="btn danger sm" onClick=${() => { deleteSound(); setTasks(ts => ts.filter(x => x.id !== t.id)); setAsk(null); }}>Delete</button></div>`}
       <div className="mt3-f">
-        ${col === 'doing' ? html`<span className="kt-st doing mt3-st"><i></i>In progress${t.client ? ' · ' + t.client : ''}</span>` : col === 'done' ? html`<span className="mt3-st mt3-dn"><${Icon} n="check" s=${13}/>Completed${t.client ? ' · ' + t.client : ''}</span>` : html`<span className="mt3-st">${t.client || 'Not started'}</span>`}
+        ${col === 'doing' ? html`<span className="kt-st doing mt3-st"><i></i>In progress · ${shortDur(workedMs(t, user.n, now))}${t.client ? ' · ' + t.client : ''}</span>` : col === 'done' ? html`<span className="mt3-st mt3-dn"><${Icon} n="check" s=${13}/>Completed${t.client ? ' · ' + t.client : ''}</span>` : workedMs(t, user.n, now) >= 60000 ? html`<span className="mt3-st mt3-ps" title="Time already worked on this task is kept">Paused · ${shortDur(workedMs(t, user.n, now))}${t.client ? ' · ' + t.client : ''}</span>` : html`<span className="mt3-st">${t.client || 'Not started'}</span>`}
         <span className="mt3-a">
           ${canDelete && ask !== t.id && html`<button className="mt3-rm" onClick=${() => setAsk(t.id)} title="Delete this task" aria-label=${'Delete ' + t.title}><${Icon} n="trash" s=${15}/></button>`}
-          ${col === 'todo' && html`<button className="btn pri sm" onClick=${() => toDoing(t.id)}>Start</button>`}
-          ${col === 'doing' && html`<button className="btn ghost sm" onClick=${() => toTodo(t.id)}>Back to pending</button><button className="mt3-ok" onClick=${() => toDone(t.id)} title="Complete" aria-label=${'Complete ' + t.title}><${Icon} n="check" s=${14}/></button>`}
+          ${col === 'todo' && html`<button className="btn pri sm" onClick=${() => toDoing(t.id)}>${workedMs(t, user.n, now) >= 60000 ? 'Resume' : 'Start'}</button>`}
+          ${col === 'doing' && html`<button className="btn ghost sm" onClick=${() => toTodo(t.id)} title="Stop the clock. The time so far is kept.">Pause</button><button className="mt3-ok" onClick=${() => toDone(t.id)} title="Complete" aria-label=${'Complete ' + t.title}><${Icon} n="check" s=${14}/></button>`}
           ${col === 'done' && html`<button className="btn ghost sm" onClick=${() => toDoing(t.id)}>Reopen</button>`}
         </span>
       </div></article>`;
@@ -53,7 +57,7 @@ export function MyTasks({ tasks, setTasks, user, tq, openTask, canDelete, tick, 
     <div className="tabs" role="tablist" aria-label="View">${[['tasks', 'Tasks', 'mytasks'], ['log', 'Submitted work', 'eod']].map(([k, l, ic]) => html`<button key=${k} role="tab" aria-selected=${tab === k} className=${tab === k ? 'on' : ''} onClick=${() => setTab(k)}><${Icon} n=${ic} s=${17}/>${l}</button>`)}</div>
     ${tab === 'log' ? html`<${WorkLog} user=${user} tick=${tick} onEdit=${onEdit}/>` : html`<div className="mt3">
       ${Col({ id: 'todo', label: 'Pending', list: todo, empty: 'Nothing waiting.' })}
-      ${Col({ id: 'doing', label: 'In progress', list: doing, empty: 'Drag a card here, or press Start, to mark what you are on.' })}
+      ${Col({ id: 'doing', label: 'In progress', list: doing, empty: 'Press Start on a card to begin. Pause or Done stops the clock.' })}
       ${Col({ id: 'done', label: 'Completed', list: shownDone, empty: 'Finished tasks appear here.' })}
     </div>`}
   </div>`;

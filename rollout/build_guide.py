@@ -38,7 +38,7 @@ LEAVE_NOTICE = ('Leave: use Outlook and the portal, for now',
 FEATURES = [
     ('Leave', 'Ask for leave, see your balance and follow the answer. A request that is still waiting can be withdrawn. Remember: for now, also request it in Outlook.', 'leaves.png', 'My Leaves'),
     ('News and calendar', 'Company announcements pop up until you close them. The calendar shows holidays, birthdays, work anniversaries and who is on leave.', 'calendar.png', 'Calendar'),
-    ('Tasks', 'The Task app holds your own tasks. Press Start on the one you are working on, and it moves to In progress.', 'tasks.png', 'My Tasks'),
+    ('Tasks', 'The Task app holds your own tasks. Press Start on the one you are on, and Pause when you stop. Your time is kept and fills in your end-of-day report.', 'tasks.png', 'My Tasks'),
     ('Find people', 'The org chart shows who works with whom. Search finds any colleague: press the / key from anywhere.', 'org.png', 'Org chart'),
 ]
 SMALL = [
