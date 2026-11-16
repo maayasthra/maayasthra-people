@@ -1,8 +1,18 @@
 /* What this build is, and what changed in each release. Update CHANGELOG (newest first) and the version in package.json when you ship. */
-export const VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.6.0';
+export const VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.7.0';
 export const BUILT = typeof __BUILD_DATE__ !== 'undefined' ? new Date(__BUILD_DATE__) : new Date();
 
 export const CHANGELOG = [
+  { version: '1.7.0', date: '16 Nov 2026', title: 'Task time, smarter reports and payslips', items: [
+    'Tasks keep your time. Back to pending is now Pause: a paused card shows the time worked and a Resume button, and several tasks can run at once',
+    'The end-of-day report fills itself in from your tasks: each task you worked on, its time, a starting description and its subtasks. Time when tasks ran together is shared between them. The report is now one clear card per task, with subtasks inside',
+    'Admins and project managers can clear the Completed Tasks column in one go. It asks first',
+    'Make payslips (admins): paste pay details and download A4 payslip PDFs, one by one or all in a ZIP. It runs in your browser and nothing is stored',
+    'Payslip requests: a person asks for a past month and an admin delivers the file under Requests > Payslips. The file is removed from the server once it is downloaded. For now it is switched off for employees and project managers (shown with a lock)',
+    'My Leaves is open to everyone. Leave requests are clear cards with status pills, and Copy gives a WhatsApp-ready message with bold headings',
+    'My settings brings theme, sounds, reminders, desktop alerts, password and the tour into one personal page',
+    'Filters on the long lists (requests, leaves, payslips, announcements, EOD reports), and a confirmation before important actions such as approving leave or removing an announcement'
+  ] },
   { version: '1.6.0', date: '26 Oct 2026', title: 'End-of-day reports', items: [
     'The Org chart is open to everyone again. Members, My Leaves and Requests stay greyed out for project managers and employees',
     'Members, Org chart, My Leaves and Requests now show in the menu for project managers and employees as switched off (greyed with a lock). Only admins can open them',
