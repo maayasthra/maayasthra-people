@@ -1,0 +1,82 @@
+/* Payslip generator. Two parts: the page around it (.pgn-*, uses the portal's tokens) and the paper itself (.pgs-*, fixed colours:
+   the payslip is always white and always 595 x 842, in light and dark theme alike). */
+
+/* ---------- the page ---------- */
+.pgn{container-type:inline-size;min-width:0}
+.pgn-grid{display:grid;grid-template-columns:minmax(320px,430px) minmax(0,1fr);gap:24px;align-items:start;margin-top:24px}
+.pgn-left,.pgn-right{min-width:0}
+.pgn-right{position:sticky;top:92px}
+@container (max-width:860px){.pgn-grid{grid-template-columns:minmax(0,1fr)}.pgn-right{position:static}}
+
+.pgn-panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);padding:18px;box-shadow:var(--shadow-xs)}
+.pgn-panel+.pgn-panel{margin-top:16px}
+.pgn-panel h2{margin:0 0 4px;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.pgn-hint{margin:0 0 10px;color:var(--muted);font-size:13px;line-height:19px}
+textarea.pgn-ta{font:13px/1.55 ui-monospace,'SF Mono',Menlo,Consolas,monospace;min-height:260px;resize:vertical;tab-size:2}
+
+.pgn-sum{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;margin-bottom:12px}
+.pgn-count{flex:1 1 160px;font-weight:600;color:var(--text)}
+.pgn-count span{font-weight:400;color:var(--muted)}
+.pgn-status{min-height:20px;margin:0 0 10px;font-size:13px;line-height:19px;color:var(--muted)}
+.pgn-status.ok{color:var(--ok-text)}
+.pgn-status.err{color:var(--err-text)}
+
+.pgn-list{display:flex;flex-direction:column;gap:10px}
+.pgn-item{border:1px solid var(--line);border-radius:var(--r-card);background:var(--card)}
+.pgn-item.pgn-on{border-color:var(--accent);background:var(--brand-tint)}
+.pgn-head{display:flex;align-items:center;gap:10px;width:100%;padding:12px 14px 8px;border-radius:var(--r-card) var(--r-card) 0 0;color:inherit;text-align:left}
+.pgn-head:hover{background:var(--card-hover)}
+.pgn-who{flex:1;min-width:0}
+.pgn-who b{display:block;font-weight:600;overflow-wrap:anywhere}
+.pgn-who small{display:block;color:var(--muted);font-size:12.5px;margin-top:1px;overflow-wrap:anywhere}
+.pgn-fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:6px 14px 0}
+.pgn-fields label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:500;min-width:0}
+.pgn-fields label{grid-column:span 2}
+.pgn-fields .inp{width:100%;min-width:0;font-variant-numeric:tabular-nums}
+@container (max-width:480px){.pgn-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.pgn-fields label{grid-column:span 1}.pgn-fields label.dt{grid-column:span 2}}
+.pgn-foot{display:flex;align-items:center;gap:10px 12px;padding:10px 14px 14px;flex-wrap:wrap}
+.pgn-basis{flex:1 1 180px;min-width:0;font-size:12.5px;line-height:18px;color:var(--muted)}
+.pgn-basis.warn{color:var(--warn-text)}
+.pgn-empty{padding:20px;text-align:center;color:var(--muted);border:1px dashed var(--line-hi);border-radius:var(--r-card)}
+.pgn-ign{margin-top:14px;font-size:13px;color:var(--muted)}
+.pgn-ign summary{cursor:pointer}
+.pgn-ign ul{margin:8px 0 0;padding-left:18px}
+.pgn-ign li{overflow-wrap:anywhere;margin-top:3px}
+.pgn-ign code{color:var(--text);font-size:12.5px}
+
+.pgn-paper{max-width:100%;margin:0 auto;overflow:hidden;border-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,.12),0 8px 28px rgba(0,0,0,.14);background:#fff}
+.pgn-scale{transform-origin:0 0;width:595px}
+.pgn-none{display:none;padding:80px 24px;text-align:center;color:#5d636e;background:#fff;font-size:14px}
+
+/* ---------- the paper: A4 at 595 x 842 ---------- */
+.pgs{position:relative;width:595px;height:842px;background:#fff;overflow:hidden;color:#000;text-align:left;font-style:normal;text-transform:none;
+  font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-synthesis:none;-webkit-font-smoothing:antialiased}
+.pgs p,.pgs span{margin:0;padding:0;letter-spacing:-.03em;white-space:nowrap}
+.pgs b{font-weight:700}
+.pgs img{max-width:none}
+/* One line box the height of the capital letters, so text lands where the design puts it in every browser. */
+.pgs .pgs-t{display:block;line-height:.714em;height:.714em}
+.pgs .pgs-a{position:absolute;display:block}
+.pgs .pgs-hd{left:0;top:0;width:595px;height:89px;background:#000 url('./assets/header.png') center/100% 100% no-repeat}
+.pgs .pgs-logo{left:35px;top:29px;width:172px;height:32.27px}
+.pgs .pgs-bg{left:-62.68px;top:204.3px;width:681.75px;height:434.43px}
+.pgs .pgs-wm-foot{left:326.3px;top:764.3px;width:236.75px;height:88.43px}
+.pgs .pgs-badge{right:33px;top:37px;font-size:22.437px;font-weight:700;color:#fff}
+.pgs .pgs-content{position:absolute;left:35px;top:122px;width:526px;display:flex;flex-direction:column;gap:28px}
+.pgs .pgs-rule{height:1px;width:100%;background:rgba(0,0,0,.11);flex:none}
+.pgs .pgs-title{font-size:20.133px;font-weight:500}
+.pgs .pgs-net{font-size:14px;color:#7e7e7e;margin-top:22px}
+.pgs .pgs-net b{font-weight:700;color:#000}
+.pgs .pgs-days{font-size:12px;color:#7e7e7e;margin-top:13px}
+.pgs .pgs-h12{font-size:12px;font-weight:500;text-transform:uppercase}
+.pgs .pgs-kv{display:grid;grid-template-columns:125px max-content;column-gap:29px;row-gap:10px;margin-top:21px;font-size:10px}
+.pgs .pgs-k{display:flex;justify-content:space-between;font-weight:400}
+.pgs .pgs-v{font-weight:500}
+.pgs .pgs-sec{display:flex;flex-direction:column;gap:22px;width:100%}
+.pgs .pgs-row{display:flex;justify-content:space-between;align-items:center;width:100%}
+.pgs .pgs-items{display:flex;flex-direction:column;gap:10px;font-size:10px;font-weight:400}
+.pgs .pgs-words{font-size:12px;color:#7e7e7e;display:flex;flex-direction:column}
+.pgs .pgs-words p{line-height:17px}
+.pgs .pgs-words p:first-child{margin-top:-4px}
+.pgs .pgs-foot-rule{left:35px;top:787px;width:292px;height:1px;background:#dedede}
+.pgs .pgs-foot-text{left:35px;top:802px;font-size:10px;font-weight:500}

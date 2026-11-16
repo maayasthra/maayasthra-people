@@ -25,6 +25,7 @@ import { CheckWidget } from './Attendance.jsx';
 import { EarlyDialog } from './AwayDialog.jsx';
 import { MySettings } from './screens/MySettings.jsx';
 import { Payslips } from './screens/Payslips.jsx';
+import { PayslipGenerator } from './screens/PayslipGenerator.jsx';
 import { usePayslips } from './payslipsDb.js';
 import { applySettings, withChange, normalize } from './settings.js';
 import { loadAtt, saveAtt, setMe, checkOut, dayKey as dayKeyNow, sessionsOf, isIn, workedNet, getDay, toTs, setEarly, minuteOfDay } from './attendance.js';
@@ -56,7 +57,7 @@ import './untitled.css';
 import { startExitMotion } from './exit.js';
 import { startTooltips } from './tooltips.js';
 
-const ALL = { about: 'About', mysettings: 'My settings', payslips: 'Payslips', announcements: 'Announcements', members: 'Members', board: 'Board', mytasks: 'My Tasks', eod: 'EOD reports', team: 'Team', home: 'Home', people: 'People', org: 'Org chart', calendar: 'Calendar', attendance: 'Attendance', hours: 'My Hours', leaves: 'My Leaves', requests: 'Requests', settings: 'Settings' };
+const ALL = { about: 'About', mysettings: 'My settings', payslips: 'Payslips', paygen: 'Make payslips', announcements: 'Announcements', members: 'Members', board: 'Board', mytasks: 'My Tasks', eod: 'EOD reports', team: 'Team', home: 'Home', people: 'People', org: 'Org chart', calendar: 'Calendar', attendance: 'Attendance', hours: 'My Hours', leaves: 'My Leaves', requests: 'Requests', settings: 'Settings' };
 const SHORT = { mytasks: 'Mine', eod: 'EOD', org: 'Org', leaves: 'Leaves', attendance: 'Hours', hours: 'Hours' };
 
 const SEED_ANN = IS_DEMO ? [
@@ -338,8 +339,8 @@ function App() {
   // The live record, so a change to your own details (shift times, name) shows straight away
   const user = (!IS_DEMO && BY[auth.user.n]) || auth.user, role = auth.role;
   const TASKGROUPS = [['Tasks', ['board', 'mytasks']], ['Reports', ['eod', 'team']]];
-  const NAVGROUPS = [[null, ['home']], ['Company', ['announcements', 'members', 'org', 'calendar']], ['Time, leave and pay', ['attendance', 'hours', 'leaves', 'requests', 'payslips']], ['Admin', ['settings']]];
-  const peopleKeys = role === 'admin' ? ['home', 'announcements', 'members', 'org', 'calendar', 'attendance', 'leaves', 'requests', 'settings'] : ['home', 'announcements', 'members', 'org', 'calendar', 'hours', 'leaves', 'requests', 'payslips'];
+  const NAVGROUPS = [[null, ['home']], ['Company', ['announcements', 'members', 'org', 'calendar']], ['Time, leave and pay', ['attendance', 'hours', 'leaves', 'requests', 'payslips']], ['Admin', ['settings', 'paygen']]];
+  const peopleKeys = role === 'admin' ? ['home', 'announcements', 'members', 'org', 'calendar', 'attendance', 'leaves', 'requests', 'settings', 'paygen'] : ['home', 'announcements', 'members', 'org', 'calendar', 'hours', 'leaves', 'requests', 'payslips'];
   // These stay in the menu for everyone but only admins can open them. Everyone else sees them switched off.
   const locked = k => app === 'people' && role !== 'admin' && ['members', 'leaves', 'requests'].includes(k);
   // Admins and project managers get the whole task app. Everyone else gets only their own tasks.
@@ -405,6 +406,7 @@ function App() {
     : nav.view === 'attendance' && role === 'admin' ? html`<${AttendancePage} att=${att} leaves=${leaves} open=${open} user=${user}/>`
     : nav.view === 'hours' ? html`<${MyHours} user=${user} att=${att} setAtt=${setAtt} leaves=${leaves}/>`
     : nav.view === 'leaves' ? html`<${MyLeaves} leaves=${leaves} setLeaves=${setLeaves} user=${user} key=${ver}/>`
+    : nav.view === 'paygen' && role === 'admin' ? html`<${PayslipGenerator}/>`
     : nav.view === 'requests' && role === 'admin' ? html`<${Requests} user=${user} leaves=${leaves} setLeaves=${setLeaves} open=${open} pay=${pay}/>`
     : nav.view === 'announcements' ? html`<${Announcements} ann=${ann} setAnn=${setAnn} user=${user} role=${role}/>`
     : nav.view === 'members' && role === 'admin' ? html`<${Members} open=${open} openForm=${openForm}/>`

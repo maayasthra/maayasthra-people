@@ -89,6 +89,13 @@ For a new isolated database, apply the files in order. For an existing database,
 It checks who can see and change what, the leave rules, check-ins, and people editing the same card at once.
 Run it after any change to `supabase/migrations` or to the files in `src/` that talk to the database.
 
+## Make payslips (admin)
+
+Admin > Make payslips turns pasted pay details into A4 payslip PDFs, one at a time or all in one ZIP. It runs entirely in the browser: no database, no upload, nothing is kept when the page is left.
+The rules (input format, paid-days and Loss of Pay maths, the document layout) are in [payslip-generator-spec.md](payslip-generator-spec.md).
+Code: `src/screens/PayslipGenerator.jsx` (page), `src/payslipGen/payslip.js` (reading and maths, unit-tested), `Sheet.jsx` (the paper, used for preview and PDF), `pdf.js` and `zip.js` (export), `payslipGen.css`.
+`html2canvas` and `jspdf` are loaded only on the first download. The sample text uses made-up names on purpose: the app's files are public, so no real name or salary may be put in them.
+
 ## Design
 
 The visual rules (colours, type, spacing, components) are in [DESIGN.md](DESIGN.md). Styling lives in `src/styles.css` and `src/untitled.css`; new work uses the tokens in `untitled.css`.
