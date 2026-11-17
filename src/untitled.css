@@ -1588,7 +1588,3 @@ button.tile:active,.tile.click:active{background:var(--fill)}
   .nt-title{font-size:21px;line-height:28px}
   .nt-body{font-size:16px}
 }
-
-/* A card an employee has marked done, waiting for a manager to complete it */
-.kt-fin{display:flex;align-items:center;gap:6px;margin-top:8px;padding:4px 8px;border-radius:8px;background:var(--ok-bg,rgba(48,209,88,.12));color:var(--ok-text);font-size:12px;font-weight:600;line-height:16px}
-.kt-fin span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
