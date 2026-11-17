@@ -66,7 +66,7 @@ set('Fix checkout bug on Kaveri store', { desc: 'Customers see a blank screen af
 export const isOpen = t => !t.done;
 export const dueState = (due, done) => done ? 'done' : !due ? 'none' : due < TODISO ? 'over' : due === TODISO ? 'today' : due <= isoOf(TOD + 7 * DAY) ? 'soon' : 'later';
 export const newId = () => 't' + Date.now().toString(36) + Math.floor(Math.random() * 1000);
-export const mkTask = (o, user) => ({ id: newId(), title: '', client: '', cols: [], prio: 'med', due: '', labels: [], by: user.n, done: false, desc: '', subs: [], comments: [], time: [], created: Date.now(), ...o });
+export const mkTask = (o, user) => ({ id: newId(), title: '', client: '', cols: [], prio: 'med', due: '', labels: [], by: user.n, done: false, finished: [], desc: '', subs: [], comments: [], time: [], created: Date.now(), ...o });
 export const colName = (c, BY, custom = []) => c === 'priority' ? 'Priority Tasks' : c === 'pending' ? 'Pending Tasks' : c === 'retainer' ? 'Retainer Tasks' : c === DONE ? 'Completed Tasks' : typeof c === 'string' ? ((custom.find(x => x.id === c) || {}).name || '') : (BY[c] ? BY[c].name : '');
 // Removing a custom column sends its cards back to Priority Tasks.
 export const dropColumn = (ts, id) => ts.map(t => !t.cols.includes(id) ? t : { ...t, cols: [...new Set(t.cols.map(c => c === id ? 'priority' : c))] });
@@ -87,6 +87,11 @@ export function statusOf(t) {
   return open.length ? { k: 'doing', label: 'In progress', who: open } : tm.length ? { k: 'idle', label: 'Paused', who: began } : { k: 'new', label: 'Not started', who: [] };
 }
 export const isDoing = (t, n) => !t.done && (t.time || []).some(s => s.emp === n && s.end == null);
+// An employee cannot complete a card, only say they have finished their part: the card stays where it is on the board, with a
+// "Finished by" note, until an admin or project manager completes it. On their own My Tasks it shows under Completed.
+export const finishedBy = (t, n) => (t.finished || []).includes(n);
+export const finishCard = (ts, id, n, now = Date.now()) => ts.map(t => t.id !== id || t.done || finishedBy(t, n) ? t : { ...t, finished: [...(t.finished || []), n], time: stopFor(t.time, n, now) });
+export const unfinishCard = (ts, id, n) => ts.map(t => t.id !== id ? t : { ...t, finished: (t.finished || []).filter(x => x !== n) });
 export const spentMs = (t, now = Date.now(), n) => (t.time || []).reduce((sum, s) => (n == null || s.emp === n) ? sum + Math.max(0, (s.end == null ? now : s.end) - s.start) : sum, 0);
 // Time inside a window (a week, a month), for the hours report
 export const spentIn = (t, from, to, now = Date.now(), n) => (t.time || []).reduce((sum, s) => (n == null || s.emp === n) ? sum + Math.max(0, Math.min(s.end == null ? now : s.end, to) - Math.max(s.start, from)) : sum, 0);
@@ -98,7 +103,7 @@ export function startTimer(ts, id, n, now = Date.now()) {
     if (t.id !== id) return t;
     if (isDoing(t, n)) return t;
     const open = t.done ? { ...t, done: false, cols: t.prev && t.prev.length ? t.prev : [n] } : t;
-    return { ...open, time: [...(t.time || []), { id: now + '-' + n, emp: n, start: now, end: null }] };
+    return { ...open, finished: (open.finished || []).filter(x => x !== n), time: [...(t.time || []), { id: now + '-' + n, emp: n, start: now, end: null }] };
   });
 }
 export const pauseTimer = (ts, id, n, now = Date.now()) => ts.map(t => t.id !== id ? t : { ...t, time: (t.time || []).map(s => s.emp === n && s.end == null ? { ...s, end: Math.max(now, s.start) } : s) });
@@ -107,7 +112,7 @@ export function moveCard(ts, id, from, to, beforeId) {
   const t = ts.find(x => x.id === id); if (!t) return ts;
   let nt;
   if (to === DONE) nt = { ...t, done: true, prev: t.cols.filter(c => c !== DONE), cols: [DONE], time: closeSessions(t.time) };
-  else if (from === DONE || t.done) nt = { ...t, done: false, cols: [to] };
+  else if (from === DONE || t.done) nt = { ...t, done: false, finished: [], cols: [to] };
   else nt = stopRemoved(t, { ...t, cols: from === to ? t.cols : t.cols.includes(to) ? without(t.cols, from) : t.cols.map(c => c === from ? to : c) });
   const rest = ts.filter(x => x.id !== id), i = beforeId ? rest.findIndex(x => x.id === beforeId) : -1;
   if (i >= 0) rest.splice(i, 0, nt); else rest.push(nt);
@@ -115,14 +120,14 @@ export function moveCard(ts, id, from, to, beforeId) {
 }
 export const completeCard = (ts, id) => { const t = ts.find(x => x.id === id); return t && !t.done ? moveCard(ts, id, t.cols[0], DONE) : ts; };
 export function reopenCard(ts, id, fallback) {
-  return ts.map(t => t.id !== id ? t : { ...t, done: false, cols: t.prev && t.prev.length ? t.prev : [fallback] });
+  return ts.map(t => t.id !== id ? t : { ...t, done: false, finished: [], cols: t.prev && t.prev.length ? t.prev : [fallback] });
 }
 // Copy: the same card also appears in another column and stays in sync.
 export const copyCard = (ts, id, to) => ts.map(t => t.id === id && !t.done && !t.cols.includes(to) ? { ...t, cols: [...t.cols, to] } : t);
 // Duplicate: an independent copy in another column.
 export function duplicateCard(ts, id, to, user) {
   const t = ts.find(x => x.id === id); if (!t) return ts;
-  const c = { ...t, id: newId(), cols: [to], prev: undefined, by: user.n, done: false, created: Date.now(), subs: t.subs.map(s => ({ ...s, id: Date.now() + Math.random(), done: false })), comments: [], time: [], labels: [...t.labels] };
+  const c = { ...t, id: newId(), cols: [to], prev: undefined, by: user.n, done: false, finished: [], created: Date.now(), subs: t.subs.map(s => ({ ...s, id: Date.now() + Math.random(), done: false })), comments: [], time: [], labels: [...t.labels] };
   const i = ts.findIndex(x => x.id === id); const out = [...ts]; out.splice(i + 1, 0, c); return out;
 }
 // Delete a card from one column. The task itself goes when no column is left.

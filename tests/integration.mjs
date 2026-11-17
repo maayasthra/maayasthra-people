@@ -242,8 +242,11 @@ as('karthik'); tb = await m.loadBoard(); c = tb.tasks.find(x => x.id === 'tm1');
 t('two people can time the same card at once', c.time.filter(x => x.end === null).length === 2, c.time.map(x => x.emp + ':' + (x.end === null ? 'running' : 'done')));
 await wait(40);
 as('abines'); tb = await m.loadBoard();
-await m.persistBoard(tb, { ...tb, tasks: m.tasks.completeCard(tb.tasks, 'tm1') }, { mgr: false, me: ids.abines });
+await m.persistBoard(tb, { ...tb, tasks: m.tasks.finishCard(tb.tasks, 'tm1', ids.abines) }, { mgr: false, me: ids.abines });
 as('karthik'); tb = await m.loadBoard(); c = tb.tasks.find(x => x.id === 'tm1');
+t('an employee finishing a card does not complete it for the manager; only their own timer stops', !c.done && c.finished.join() === String(ids.abines) && !m.tasks.isDoing(c, ids.abines) && m.tasks.isDoing(c, ids.arunkumar));
+await m.persistBoard(tb, { ...tb, tasks: m.tasks.completeCard(tb.tasks, 'tm1') });
+tb = await m.loadBoard(); c = tb.tasks.find(x => x.id === 'tm1');
 t('completing a card stops everyone’s timer and records the total', c.done && c.time.every(x => x.end !== null) && m.tasks.spentMs(c) > 0, { ms: m.tasks.spentMs(c) });
 t('hours per person add up from the sessions', m.tasks.spentMs(c, Date.now(), ids.abines) > 0 && m.tasks.spentMs(c, Date.now(), ids.arunkumar) > 0 && m.tasks.spentMs(c) >= m.tasks.spentMs(c, Date.now(), ids.abines));
 t('the project manager can total hours for everyone', tb.tasks.reduce((s, x) => s + m.tasks.spentMs(x), 0) >= m.tasks.spentMs(c));
@@ -364,6 +367,26 @@ as('abines'); await m.loadStaff();
 await m.supabase.from('notifications').delete().eq('employee_id', ids.abines).eq('kind', 'eod');
 t('clearing one kind leaves the others', ((await m.supabase.from('notifications').select('key, kind')).data || []).every(r => r.kind !== 'eod'));
 
+
+// ================= EMPLOYEE "DONE" IS NOT "COMPLETED" =================
+as('vijay'); await m.loadStaff(); b = await m.loadBoard();
+await m.persistBoard(b, { ...b, tasks: [...b.tasks, T('fin1', ids.vijay, { cols: [ids.abines, ids.yogan] })] });
+as('abines'); await m.loadStaff();
+const fin1 = await m.supabase.from('tasks').update({ finished: [ids.abines] }).eq('id', 'fin1');
+t('an employee can mark their part as finished', !fin1.error && (await q('select finished from tasks where id=$1', ['fin1']))[0].finished.join() === String(ids.abines));
+const fin2 = await m.supabase.from('tasks').update({ done: true, cols: ['done'], prev: [ids.abines, ids.yogan] }).eq('id', 'fin1');
+t('but cannot complete the card', !!fin2.error && (await q('select done from tasks where id=$1', ['fin1']))[0].done === false);
+await m.supabase.from('tasks').update({ finished: [ids.abines, ids.yogan] }).eq('id', 'fin1');
+t('and cannot mark it finished for someone else', (await q('select finished from tasks where id=$1', ['fin1']))[0].finished.join() === String(ids.abines));
+as('yogan'); await m.loadStaff();
+await m.supabase.from('tasks').update({ finished: [ids.yogan] }).eq('id', 'fin1');
+t('each person only adds their own name', (await q('select finished from tasks where id=$1', ['fin1']))[0].finished.length === 2);
+as('abines'); await m.loadStaff();
+await m.supabase.from('tasks').update({ finished: [] }).eq('id', 'fin1');
+t('and takes only their own name off again', (await q('select finished from tasks where id=$1', ['fin1']))[0].finished.join() === String(ids.yogan));
+as('vijay'); await m.loadStaff();
+const fin3 = await m.supabase.from('tasks').update({ done: true, cols: ['done'], prev: [ids.abines, ids.yogan] }).eq('id', 'fin1');
+t('an admin can complete it', !fin3.error && (await q('select done from tasks where id=$1', ['fin1']))[0].done === true);
 
 // ================= PERSONAL NOTES =================
 as('abines'); await m.loadStaff();

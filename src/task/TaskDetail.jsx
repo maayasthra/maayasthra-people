@@ -4,7 +4,7 @@ import { pendingSound, doneSound, deleteSound } from '../alerts.js';
 import { html, Icon, Av, Switch } from '../ui.jsx';
 import { Sheet } from './parts.jsx';
 import { BY, activeEmps } from '../data.js';
-import { PRIO, LABELS, PINNED, mkTask, colName, completeCard, reopenCard, statusOf, startTimer, pauseTimer, stopFor } from '../tasks.js';
+import { PRIO, LABELS, PINNED, mkTask, colName, completeCard, reopenCard, statusOf, startTimer, pauseTimer, stopFor, finishedBy, finishCard, unfinishCard } from '../tasks.js';
 
 const RET_COLORS = ['#0A84FF', '#BF5AF2', '#FF375F', '#FF9F0A', '#FFD60A', '#30D158', '#30B0C7', '#8E8E93'];
 const ago = t => { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? 'Just now' : m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' d ago'; };
@@ -36,15 +36,17 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close
     setTasks(ts => { const nt = mkTask({ title, client: t.client, prio: t.prio, labels: t.labels, cols: [person] }, user); return [...(keepSub ? ts : ts.map(x => x.id === t.id ? { ...x, subs: x.subs.filter(q => q.id !== sub.id) } : x)), nt]; });
     setMade('Made “' + title + '” and gave it to ' + (BY[person] ? BY[person].name : 'them') + '.'); setSm(null); setSmQ('');
   };
-  const stNow = t.done ? 'done' : statusOf(t).k;
+  const myFin = !t.done && finishedBy(t, user.n), stNow = t.done || myFin ? 'done' : statusOf(t).k;
+  const complete = ts => mgr ? completeCard(ts, t.id) : finishCard(ts, t.id, user.n);
+  const reopen = ts => t.done ? reopenCard(ts, t.id, user.n) : unfinishCard(ts, t.id, user.n);
   const ST = { new: ['Not started', 'var(--faint)'], idle: ['Paused', '#F5B301'], doing: ['In progress', '#30D158'], done: ['Completed', '#30D158'] };
   const setStatus = v => {
     setStm(null);
     if (v === 'doing') { setTasks(ts => startTimer(ts, t.id, user.n)); }
-    else if (v === 'done') { doneSound(); setTasks(ts => completeCard(ts, t.id)); }
-    else { if (t.done) { pendingSound(); setTasks(ts => reopenCard(ts, t.id, user.n)); } else setTasks(ts => pauseTimer(ts, t.id, user.n)); }
+    else if (v === 'done') { doneSound(); setTasks(complete); }
+    else { if (t.done || myFin) { pendingSound(); setTasks(reopen); } else setTasks(ts => pauseTimer(ts, t.id, user.n)); }
   };
-  const toggleDone = () => { t.done ? pendingSound() : doneSound(); setTasks(ts => t.done ? reopenCard(ts, t.id, user.n) : completeCard(ts, t.id)); };
+  const toggleDone = () => { t.done || myFin ? pendingSound() : doneSound(); setTasks(t.done || myFin ? reopen : complete); };
 
   const footer = isNew ? html`<button className="btn ghost" onClick=${close}>Cancel</button><span style=${{ flex: 1 }}></span><button className="btn pri" onClick=${create}>Create card</button>`
     : mgr ? (confirm ? html`<span className="sh-c">Delete this card?</span><button className="btn ghost" onClick=${() => setConfirm(false)}>Keep</button><button className="btn danger" onClick=${() => { deleteSound(); setTasks(ts => ts.filter(x => x.id !== t.id)); close(); }}>Delete</button>`
@@ -54,7 +56,7 @@ export function TaskDetail({ id, ctx, tasks, setTasks, user, role, custom, close
   return html`<${Sheet} title=${isNew ? 'New task' : 'Task details'} onClose=${close} footer=${footer}>
     ${!canEdit && html`<div className="note-row" style=${{ marginBottom: 14 }}><${Icon} n="user" s=${16}/> <span>View only. You are not on this card.</span></div>`}
     <div className="td2-top">
-      ${!isNew && html`<button className=${'td2-tick' + (t.done ? ' on' : '')} disabled=${!canEdit} onClick=${toggleDone} title=${t.done ? 'Reopen' : 'Mark complete'} aria-label=${t.done ? 'Reopen this task' : 'Mark this task complete'}><${Icon} n="check" s=${15}/></button>`}
+      ${!isNew && html`<button className=${'td2-tick' + (t.done || myFin ? ' on' : '')} disabled=${!canEdit} onClick=${toggleDone} title=${t.done || myFin ? 'Reopen' : 'Mark complete'} aria-label=${t.done || myFin ? 'Reopen this task' : 'Mark this task complete'}><${Icon} n="check" s=${15}/></button>`}
       <div className="td2-tw">
         <textarea id="td-title" rows="1" autoFocus=${isNew} className="td-title" value=${t.title} disabled=${!canEdit} placeholder="Task name" aria-label="Task name" title=${canEdit ? 'Click to rename' : undefined} ref=${el => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }} onChange=${ev => upd({ title: ev.target.value.replace(/\n/g, ' ') })} onKeyDown=${ev => { if (ev.key === 'Enter') { ev.preventDefault(); ev.currentTarget.blur(); } }}></textarea>
         ${canEdit && html`<span className="td2-pen" aria-hidden="true"><${Icon} n="edit" s=${15}/></span>`}

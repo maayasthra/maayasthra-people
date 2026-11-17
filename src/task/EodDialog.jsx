@@ -40,9 +40,9 @@ export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel
     const from = dayStart(D), tracked = trackedIn(myTasksOf(tasks, user.n), user.n, from, from + 86400000);
     const rows = tracked.map(x => {
       const card = tasks.find(t => t.id === x.id), subs = card && !noHours ? subLines(card, x.ms) : [];
-      return blankRow({ project: x.title, task: x.id, desc: card && !subs.length ? autoNote(card) : '', hours: noHours || subs.length ? '' : hoursText(x.ms), subs: subs.map(q => blankSub(q.title)).map((b, i) => ({ ...b, hours: subs[i].hours })) });
+      return blankRow({ project: x.title, task: x.id, desc: card && !subs.length ? autoNote(card, user.n) : '', hours: noHours || subs.length ? '' : hoursText(x.ms), subs: subs.map(q => blankSub(q.title)).map((b, i) => ({ ...b, hours: subs[i].hours })) });
     });
-    return late ? rows : [...rows, ...mine.filter(t => isDoing(t, user.n) && !tracked.some(x => x.id === t.id)).map(t => blankRow({ project: t.title, task: t.id, desc: autoNote(t) }))];
+    return late ? rows : [...rows, ...mine.filter(t => isDoing(t, user.n) && !tracked.some(x => x.id === t.id)).map(t => blankRow({ project: t.title, task: t.id, desc: autoNote(t, user.n) }))];
   };
 
   // Start from today's report if one was already sent, otherwise from the tasks that are in progress

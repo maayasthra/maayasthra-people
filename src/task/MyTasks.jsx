@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { startSound, pendingSound, doneSound, deleteSound } from '../alerts.js';
 import { html, Icon, HI } from '../ui.jsx';
 import { WorkLog } from './WorkLog.jsx';
-import { mkTask, completeCard, reopenCard, startTimer, pauseTimer, isDoing, myTasksOf } from '../tasks.js';
+import { mkTask, completeCard, reopenCard, startTimer, pauseTimer, isDoing, myTasksOf, finishedBy, finishCard, unfinishCard } from '../tasks.js';
 import { workedMs, workedIn, shortDur } from '../taskTime.js';
 import { dayKey, dayStart } from '../attendance.js';
 
@@ -19,15 +19,16 @@ export function MyTasks({ tasks, setTasks, user, tq, openTask, canDelete, tick, 
   const term = tq.trim().toLowerCase();
   const mine = myTasksOf(tasks, user.n).filter(t => !term || t.title.toLowerCase().includes(term));
   const doing = mine.filter(t => isDoing(t, user.n));
-  const todo = mine.filter(t => !t.done && !isDoing(t, user.n));
+  const fin = t => t.done || finishedBy(t, user.n);      // completed, or finished by me and waiting for a manager
+  const todo = mine.filter(t => !fin(t) && !isDoing(t, user.n));
   const lastEnd = t => Math.max(0, ...(t.time || []).map(s => s.end || 0), t.created || 0);
-  const done = mine.filter(t => t.done).sort((a, b) => lastEnd(b) - lastEnd(a));
+  const done = mine.filter(fin).sort((a, b) => lastEnd(b) - lastEnd(a));
   const shownDone = allDone ? done : done.slice(0, 12);
 
   // The three moves. Any number of cards can be In progress at once.
   const toDoing = id => { startSound(); setTasks(ts => startTimer(ts, id, user.n)); };
-  const toTodo = id => { pendingSound(); setTasks(ts => { const t = ts.find(x => x.id === id); return t && t.done ? reopenCard(ts, id, user.n) : pauseTimer(ts, id, user.n); }); };
-  const toDone = id => { doneSound(); setTasks(ts => completeCard(ts, id)); };
+  const toTodo = id => { pendingSound(); setTasks(ts => { const t = ts.find(x => x.id === id); return t && t.done ? reopenCard(ts, id, user.n) : t && finishedBy(t, user.n) ? unfinishCard(ts, id, user.n) : pauseTimer(ts, id, user.n); }); };
+  const toDone = id => { doneSound(); setTasks(ts => canDelete ? completeCard(ts, id) : finishCard(ts, id, user.n)); };
   const drop = (ev, col) => { ev.preventDefault(); if (drag) { (col === 'doing' ? toDoing : col === 'todo' ? toTodo : toDone)(drag); } setDrag(null); setOver(null); };
   // Paste or type one task per line; Enter adds them
   const add = () => { const lines = title.split('\n').map(l => l.trim()).filter(Boolean); if (!lines.length) { setAdding(false); return; } setTasks(ts => [...ts, ...lines.map(l => mkTask({ title: l, cols: [user.n] }, user))]); setTitle(''); setAdding(false); };
@@ -37,7 +38,7 @@ export function MyTasks({ tasks, setTasks, user, tq, openTask, canDelete, tick, 
       <button className="mt3-t" onClick=${() => openTask(t.id)}>${t.title}</button>
       ${canDelete && ask === t.id && html`<div className="mt3-del" role="alert"><span>Delete this task?</span><button className="btn ghost sm" onClick=${() => setAsk(null)}>Keep</button><button className="btn danger sm" onClick=${() => { deleteSound(); setTasks(ts => ts.filter(x => x.id !== t.id)); setAsk(null); }}>Delete</button></div>`}
       <div className="mt3-f">
-        ${col === 'doing' ? html`<span className="kt-st doing mt3-st"><i></i>In progress · ${spent(t)}${t.client ? ' · ' + t.client : ''}</span>` : col === 'done' ? html`<span className="mt3-st mt3-dn"><${Icon} n="check" s=${13}/>Completed${t.client ? ' · ' + t.client : ''}</span>` : workedMs(t, user.n, now) >= 60000 ? html`<span className="mt3-st mt3-ps" title="Time already worked on this task is kept">Paused · ${spent(t)}${t.client ? ' · ' + t.client : ''}</span>` : html`<span className="mt3-st">${t.client || 'Not started'}</span>`}
+        ${col === 'doing' ? html`<span className="kt-st doing mt3-st"><i></i>In progress · ${spent(t)}${t.client ? ' · ' + t.client : ''}</span>` : col === 'done' ? html`<span className="mt3-st mt3-dn"><${Icon} n="check" s=${13}/>${t.done ? 'Completed' : 'Done · your manager will confirm'}${t.client ? ' · ' + t.client : ''}</span>` : workedMs(t, user.n, now) >= 60000 ? html`<span className="mt3-st mt3-ps" title="Time already worked on this task is kept">Paused · ${spent(t)}${t.client ? ' · ' + t.client : ''}</span>` : html`<span className="mt3-st">${t.client || 'Not started'}</span>`}
         <span className="mt3-a">
           ${canDelete && ask !== t.id && html`<button className="mt3-rm" onClick=${() => setAsk(t.id)} title="Delete this task" aria-label=${'Delete ' + t.title}><${Icon} n="trash" s=${15}/></button>`}
           ${col === 'todo' && html`<button className="btn pri sm" onClick=${() => toDoing(t.id)}>${workedMs(t, user.n, now) >= 60000 ? 'Resume' : 'Start'}</button>`}

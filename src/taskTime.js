@@ -23,7 +23,7 @@ export const hoursText = ms => String(+(Math.round(ms / 60000) / 60).toFixed(4))
 export const shortDur = ms => { const m = Math.max(0, Math.round(ms / 60000)), h = Math.floor(m / 60); return h ? h + 'h ' + String(m % 60).padStart(2, '0') + 'm' : m + 'm'; };
 
 // A starting description for a report line, so nothing has to be typed: "Orbit Fitness · in progress", "Completed"
-export const autoNote = t => { const st = t.done ? 'completed' : 'in progress'; return t.client ? t.client + ' · ' + st : st[0].toUpperCase() + st.slice(1); };
+export const autoNote = (t, n) => { const st = t.done || (n != null && (t.finished || []).includes(n)) ? 'completed' : 'in progress'; return t.client ? t.client + ' · ' + st : st[0].toUpperCase() + st.slice(1); };
 
 // Subtask lines for a card that has subtasks (the report asks for time against each one). The subtasks ticked off are used; if none are,
 // all of them. The time on the card is shared out evenly to the minute, and the first lines take the odd minutes. Too little time to share: none.
