@@ -70,15 +70,14 @@ export function Notes({ user }) {
   const sorted = useMemo(() => [...list].sort((a, b) => (b.pinned - a.pinned) || (b.updated - a.updated)), [list]);
   const shown = useMemo(() => { const s = q.trim().toLowerCase(); return s ? sorted.filter(x => (x.title + '\n' + x.body).toLowerCase().includes(s)) : sorted; }, [sorted, q]);
   const cur = list.find(x => x.id === sel) || null;
-  const lastSel = useRef(null);
   // On a wide screen the newest note opens by itself. On a phone you start at the list.
   const wide = () => window.matchMedia && window.matchMedia('(min-width: 861px)').matches;
   useEffect(() => { if (ready && !cur && shown.length && wide()) setSel(shown[0].id); }, [ready, cur, shown.length]);
   useEffect(() => { if (sel && !list.some(x => x.id === sel)) { setSel(null); setOnPage(false); } }, [list, sel]);   // deleted on another device
 
-  const tidy = () => { const prev = list.find(x => x.id === lastSel.current); if (prev && isEmpty(prev) && prev.id !== sel) remove(prev.id).catch(() => {}); };
-  const pick = id => { lastSel.current = sel; setSel(id); setOnPage(true); setErr(''); };
-  useEffect(() => { tidy(); }, [sel]);
+  // Only an explicit delete may remove a note. The persisted list can still be
+  // blank while the editor's asynchronous first save is pending.
+  const pick = id => { setSel(id); setOnPage(true); setErr(''); };
   const create = async () => {
     setErr('');
     const blank = list.find(isEmpty); if (blank) { pick(blank.id); return; }

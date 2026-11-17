@@ -31,7 +31,7 @@ const browser=await chromium.launch({headless:true,args:['--disable-dev-shm-usag
 try{
  const page=await browser.newPage();page.setDefaultTimeout(10000);await page.goto('http://127.0.0.1:8080');await page.waitForFunction(()=>window.login);await page.evaluate(()=>window.login(1));await page.getByText('Dummy 1',{exact:true}).waitFor();
  const png=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=2;c.height=2;c.getContext('2d').fillRect(0,0,2,2);return c.toDataURL('image/png').split(',')[1]});
- await page.locator('input[type=file]').setInputFiles({name:'dummy.png',mimeType:'image/png',buffer:Buffer.from(png,'base64')});await page.getByRole('button',{name:'Saving…'}).waitFor();
+ await page.locator('input[type=file]').setInputFiles({name:'dummy.png',mimeType:'image/png',buffer:Buffer.from(png,'base64')});await page.locator('.cv[aria-busy="true"]').waitFor();
  await page.evaluate(()=>window.switchAccount(2));await page.getByText('Dummy 2',{exact:true}).waitFor();await page.evaluate(()=>window.release());
  // Let the actual image decode and promise continuation finish, with bounded polling.
  await page.waitForFunction(()=>window.pending.length===0);await page.waitForTimeout(300);
@@ -41,7 +41,7 @@ try{
   console.log('PASS delayed cover decoding cancelled after auth.js sign-out/sign-in and component unmount; no RPC to B');
   const denial=await page.evaluate(async()=>{try{await window.saveCover(1,'data:image/png;base64,dummy');return '';}catch(e){return e.message;}});assert.match(denial,/account changed/);assert.equal(records[2],undefined);
   await page.evaluate(()=>window.switchAccount(1));await page.getByText('Dummy 1',{exact:true}).waitFor();
-  await page.locator('input[type=file]').setInputFiles({name:'dummy.png',mimeType:'image/png',buffer:Buffer.from(png,'base64')});await page.getByRole('button',{name:'Saving…'}).waitFor();await page.evaluate(()=>window.release());await page.getByRole('button',{name:'Change cover'}).waitFor();assert.ok(records[1]);
+  await page.locator('input[type=file]').setInputFiles({name:'dummy.png',mimeType:'image/png',buffer:Buffer.from(png,'base64')});await page.locator('.cv[aria-busy="true"]').waitFor();await page.evaluate(()=>window.release());await page.locator('.cv[aria-busy="false"]').waitFor();assert.ok(records[1]);
   console.log('PASS same-account upload succeeds; real Supabase client sends expected employee ID; cross-session stale caller is rejected by fixture RPC');
   // Hold an old load, save a new image, then release the old response.
   holdRead=true;await page.evaluate(()=>window.remount());await page.getByText('Dummy 1',{exact:true}).waitFor();

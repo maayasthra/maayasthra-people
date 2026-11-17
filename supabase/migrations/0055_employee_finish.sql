@@ -1,5 +1,5 @@
--- 0052: An employee marking a task done no longer completes it for everyone. They are recorded in "finished" (who has said they are done),
--- the card stays where it is on the board, and only an admin or project manager can move it to Completed. Run after 0051.
+-- 0055: An employee marking a task done no longer completes it for everyone. They are recorded in "finished" (who has said they are done),
+-- the card stays where it is on the board, and only an admin or project manager can move it to Completed. Run after 0054.
 
 alter table public.tasks add column if not exists finished jsonb not null default '[]'::jsonb check (jsonb_typeof(finished) = 'array');
 

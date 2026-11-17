@@ -201,3 +201,11 @@ export function subscribeTables(name, tables, onChange) {
   return () => { supabase.removeChannel(ch); };
 }
 export const subscribeBoard = onChange => subscribeTables('mp-board', ['tasks', 'task_board', 'announcements', 'board_layout'], onChange);
+
+// Used only by Clear completed, after pending board writes have been flushed.
+// Do not route these removals through persistBoard's ordinary unconditional deletion.
+export async function clearCompletedTasks(ids) {
+  const { data, error } = await supabase.rpc('delete_completed_tasks', { p_ids: ids });
+  if (error) throw new Error('Could not clear completed tasks. Refresh and try again.');
+  return data || [];
+}

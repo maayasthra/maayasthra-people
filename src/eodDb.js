@@ -48,3 +48,12 @@ export async function submitEod(rows, emp, day) {
   }
   if (error) throw new Error(/^(Line \d+|Add at least|That (adds|report)|Not allowed)/.test(error.message) ? error.message : 'Could not save your report. Check your connection and try again.');
 }
+
+// Minimal own-session totals include cards reassigned away from this person.
+// The server chooses the identity; no other employee's sessions or card content is returned.
+export async function loadMyTaskTime(day) {
+  if (IS_DEMO) return [];
+  const { data, error } = await supabase.rpc('my_task_time_for_day', { p_day: day });
+  if (error) throw new Error('Could not load your recorded task time.');
+  return (data || []).map(r => ({ id: r.id, title: r.title, ms: Number(r.ms) }));
+}
