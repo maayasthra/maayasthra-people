@@ -1,7 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { html, Icon } from '../ui.jsx';
 import { hoursOf, totalOf, fmtH, loadEods, loadMyTaskTime } from '../eodDb.js';
-import { dayKey, hm, dayStart } from '../attendance.js';
+import { dayKey, hm, dayStart, awayIntervals } from '../attendance.js';
 import { isDoing } from '../tasks.js';
 import { trackedIn, hoursText, autoNote, subLines } from '../taskTime.js';
 
@@ -28,7 +28,7 @@ export const clearEodDraft = (n, d) => { try { localStorage.removeItem(draftKey(
 
 /* The end-of-day report. Opens when someone checks out, and nobody can check out without sending it.
    mode 'out' sends the report and then checks out; mode 'save' only updates today's report. */
-export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel, day }) {
+export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel, day, att }) {
   const D = day || dayKey(), late = mode === 'late', edit = mode === 'edit';
   const mine = tasks.filter(t => (t.cols || []).includes(user.n) && !t.done);
   const [rows, setRows] = useState(null);
@@ -37,7 +37,7 @@ export function EodDialog({ user, tasks, worked, mode, noHours, onSend, onCancel
 
   // Every task worked on that day, with the time from your Start, Pause and Done presses; then anything in progress that has no time yet
   const fromClock = async () => {
-    const from = dayStart(D), local = trackedIn(tasks, user.n, from, from + 86400000);
+    const from = dayStart(D), local = trackedIn(tasks, user.n, from, from + 86400000, Date.now(), att ? awayIntervals(att, user.n, D) : []);
     const history = await loadMyTaskTime(D);
     const visible = new Set(tasks.map(t => t.id));
     const tracked = [...local, ...history.filter(t => !visible.has(t.id))].sort((a, b) => b.ms - a.ms);

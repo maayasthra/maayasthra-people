@@ -10,11 +10,18 @@ export const workedMs = (t, n, now = Date.now()) => (t.time || []).reduce((sum, 
 
 // Time this person worked on one card inside a window (a day, in milliseconds), running session included.
 // The cards on My Tasks and the end-of-day report both use this, so the two always show the same time.
-export const workedIn = (t, n, from, to, now = Date.now()) => (t.time || []).reduce((sum, s) => s.emp !== n ? sum : sum + Math.max(0, Math.min(s.end == null ? now : s.end, to) - Math.max(s.start, from)), 0);
+// away: the person's breaks, [{ from, to }] (to is null while still away). Time they were away is not worked time, even if the clock was left running.
+export const workedIn = (t, n, from, to, now = Date.now(), away = []) => (t.time || []).reduce((sum, s) => {
+  if (s.emp !== n) return sum;
+  const a = Math.max(s.start, from), b = Math.min(s.end == null ? now : s.end, to);
+  if (b <= a) return sum;
+  const cut = (away || []).reduce((c, x) => c + Math.max(0, Math.min(b, x.to == null ? now : x.to) - Math.max(a, x.from)), 0);
+  return sum + Math.max(0, b - a - cut);
+}, 0);
 
 // Each card this person worked on in the window, longest first. Under a minute is left out.
-export const trackedIn = (tasks, n, from, to, now = Date.now()) =>
-  tasks.map(t => ({ id: t.id, title: t.title, ms: workedIn(t, n, from, to, now) })).filter(r => r.ms >= 60000).sort((a, b) => b.ms - a.ms);
+export const trackedIn = (tasks, n, from, to, now = Date.now(), away = []) =>
+  tasks.map(t => ({ id: t.id, title: t.title, ms: workedIn(t, n, from, to, now, away) })).filter(r => r.ms >= 60000).sort((a, b) => b.ms - a.ms);
 
 // Milliseconds as decimal hours rounded to the minute, the way the report keeps time (1h 30m = 1.5)
 export const hoursText = ms => String(+(Math.round(ms / 60000) / 60).toFixed(4));

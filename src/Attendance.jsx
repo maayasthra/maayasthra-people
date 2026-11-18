@@ -12,6 +12,15 @@ export function SessionList({ sessions, now }) {
     <span className="ck-r"><b>${clock(s.in)} – ${s.out ? clock(s.out) : 'now'}</b><small>${s.out ? hm(s.out - s.in) : 'running ' + hm(now - s.in)}</small></span></div>`)}</div>`;
 }
 
+// The breaks taken today and the totals under them. Used in the Today pop-up and on the Home "Your day" panel.
+export function AwaySummary({ sessions, away, worked, now }) {
+  if (!away.length) return sessions.length ? html`<div className="ck-sum"><span>Worked today</span><b>${hm(worked)}</b></div>` : null;
+  const total = away.reduce((t, a) => t + ((a.to == null ? now : a.to) - a.from), 0);
+  return html`<div className="ck-awl"><b>Away</b>${away.map((a, i) => html`<div key=${i}><span>${clock(a.from)} – ${a.to == null ? 'now' : clock(a.to)}</span><small>${whyLabel(a.why)}${a.later ? ' · added later' : ''}</small></div>`)}</div>
+    ${sessions.length > 0 && html`<div className="ck-sum"><span>Worked today</span><b>${hm(worked)}</b></div>`}
+    <div className="ck-sum"><span>Away</span><b>${hm(total)}</b></div>`;
+}
+
 export function useDay(user, att) {
   const now = useNow(1000);
   const sessions = sessionsOf(att, user.n), live = isIn(sessions), away = getDay(att, user.n, dayKey()).away || [], open = live ? awayOpen(away) : null;
@@ -19,7 +28,7 @@ export function useDay(user, att) {
 }
 
 /* Top-right check-in / check-out with a running timer. While checked in you can step away; that time is not counted. */
-export function CheckWidget({ user, att, setAtt, onOut, onAway }) {
+export function CheckWidget({ user, att, setAtt, onOut, onAway, onBack }) {
   const { now, sessions, live, away, open, worked } = useDay(user, att);
   const [pop, setPop] = useState(false), [aw, setAw] = useState(false), [add, setAdd] = useState(false);
   const ref = useRef(null);
@@ -35,7 +44,7 @@ export function CheckWidget({ user, att, setAtt, onOut, onAway }) {
     : live ? 'Shift ends ' + fmtTime(user.shiftEnd)
     : sessions.length ? 'Checked out ' + clock(sessions[sessions.length - 1].out) : fmtTime(user.shiftStart) + ' – ' + fmtTime(user.shiftEnd);
   const main = live ? hms(worked) : sessions.length ? hm(worked) + ' worked' : 'Not checked in';
-  const act = () => { if (open) { backSound(); setAtt(a => comeBack(a, user.n)); } else if (live) onOut(); else { checkInSound(); setAtt(a => checkIn(a, user.n)); } };
+  const act = () => { if (open) { backSound(); setAtt(a => comeBack(a, user.n)); if (onBack) onBack(); } else if (live) onOut(); else { checkInSound(); setAtt(a => checkIn(a, user.n)); } };
   const step = why => { setAw(false); awayStartSound(why); setAtt(a => goAway(a, user.n, why)); if (onAway) onAway(); };
   const awayTotal = away.reduce((t, a) => t + ((a.to == null ? now : a.to) - a.from), 0);
   return html`<div className="ck" ref=${ref}>

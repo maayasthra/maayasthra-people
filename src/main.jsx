@@ -29,7 +29,7 @@ import { Notes } from './screens/Notes.jsx';
 import { PayslipGenerator } from './screens/PayslipGenerator.jsx';
 import { usePayslips } from './payslipsDb.js';
 import { applySettings, withChange, normalize } from './settings.js';
-import { loadAtt, saveAtt, setMe, checkOut, dayKey as dayKeyNow, sessionsOf, isIn, workedNet, getDay, toTs, setEarly, minuteOfDay } from './attendance.js';
+import { loadAtt, saveAtt, setMe, checkOut, dayKey as dayKeyNow, sessionsOf, isIn, workedNet, getDay, toTs, setEarly, minuteOfDay, awayIntervals } from './attendance.js';
 import { MyHours } from './screens/Hours.jsx';
 import { AttendancePage } from './screens/AttendancePage.jsx';
 import { TaskBoard } from './task/TaskBoard.jsx';
@@ -50,7 +50,7 @@ import { useNotifications } from './notifications.js';
 import { NotificationBell } from './NotificationBell.jsx';
 import { AnnouncementAlert } from './AnnouncementAlert.jsx';
 import { TaskDetail } from './task/TaskDetail.jsx';
-import { isDoing, stopFor, loadTasks, saveTasks, loadCollapsed, saveCollapsed, loadCustom, saveCustom, loadLayout, saveLayout, loadView, saveView } from './tasks.js';
+import { isDoing, stopFor, startTimer, finishedBy, loadTasks, saveTasks, loadCollapsed, saveCollapsed, loadCustom, saveCustom, loadLayout, saveLayout, loadView, saveView } from './tasks.js';
 import { IS_DEMO } from './env.js';
 import { createSaveQueue } from './saveQueue.js';
 import './styles.css';
@@ -349,6 +349,18 @@ function App() {
   const seenNow = seenVer === VERSION || nav.view === 'about';
   // Employees check out only after sending the day's report; admins and project managers just check out. Anything marked as in progress goes back to the to-do list at check-out.
   const stopMyTimers = at => setTasks(ts => ts.map(t => isDoing(t, user.n) ? { ...t, time: stopFor(t.time, user.n, at) } : t));
+  // Stepping away pauses the clock on every card running for you, and remembers which ones. "I'm back" starts those again, so a break never counts as work and nothing needs restarting by hand.
+  const AWAYK = 'mp-away-timers-' + user.n;
+  const pauseForAway = () => {
+    const ids = tasks.filter(t => isDoing(t, user.n)).map(t => t.id);
+    try { localStorage.setItem(AWAYK, JSON.stringify(ids)); } catch (x) { /* ignore */ }
+    stopMyTimers(Date.now());
+  };
+  const resumeAfterAway = () => {
+    let ids = []; try { ids = JSON.parse(localStorage.getItem(AWAYK) || '[]'); localStorage.removeItem(AWAYK); } catch (x) { ids = []; }
+    if (!Array.isArray(ids) || !ids.length) return;
+    setTasks(ts => ids.reduce((acc, id) => { const t = acc.find(x => x.id === id); return t && !t.done && !finishedBy(t, user.n) && (t.cols || []).includes(user.n) && !isDoing(t, user.n) ? startTimer(acc, id, user.n) : acc; }, ts));
+  };
   const reallyOut = () => { if (isMgr) { setAtt(a => checkOut(a, user.n)); stopMyTimers(Date.now()); checkOutSound(); } else setEodAsk('out'); };
   // Checking out more than 30 minutes before the shift ends (and not just for lunch) asks for a reason once; it can be skipped
   const requestOut = () => {
@@ -407,7 +419,7 @@ function App() {
     return result;
   };
   const taskScreen = nav.view === 'eod' ? html`<${EodReports} user=${user} role=${role} tick=${eodTick} checkedIn=${isIn(sessionsOf(att, user.n))} att=${att} onEditToday=${() => setEodAsk('save')}/>`
-    : nav.view === 'mytasks' || !isMgr ? html`<${MyTasks} tasks=${tasks} setTasks=${setTasks} user=${user} tq=${tq} openTask=${openTask} canDelete=${isMgr} tick=${eodTick} onEdit=${setEodEdit}/>`
+    : nav.view === 'mytasks' || !isMgr ? html`<${MyTasks} tasks=${tasks} setTasks=${setTasks} user=${user} tq=${tq} openTask=${openTask} canDelete=${isMgr} tick=${eodTick} onEdit=${setEodEdit} away=${awayIntervals(att, user.n, dayKeyNow())}/>`
     : nav.view === 'team' && isMgr ? html`<${TeamView} tasks=${tasks} onPick=${n => { setTf(f => ({ ...f, dept: 'All' })); setFocus(n); go('board'); }}/>`
     : html`<${TaskBoard} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} tf=${tf} setTf=${setTf} tq=${tq} openTask=${openTask} focus=${focus} collapsed=${collapsed} setCollapsed=${setCollapsed} custom=${custom} setCustom=${setCustom} groups=${groups} setGroups=${setGroups} layout=${layout} setLayout=${setLayout} onClearCompleted=${clearCompleted}/>`;
   const screen = nav.view === 'about' ? html`<${About}/>` : nav.view === 'notes' ? html`<${Notes} user=${user}/>` : nav.view === 'payslips' && !locked('payslips') ? html`<${Payslips} user=${user} pay=${pay}/>` : nav.view === 'mysettings' ? html`<${MySettings} user=${user} role=${role} st=${mySet} change=${changeSettings} reset=${resetSettings} onPassword=${() => setPwOpen(true)} onTour=${startTour}/>` : app === 'task' ? taskScreen : nav.view === 'home' ? home
@@ -441,10 +453,10 @@ function App() {
       <header className="hdr"><button className="ib nav-t" onClick=${() => setNavHidden(h => !h)} aria-label=${navHidden ? 'Show the navigation bar' : 'Hide the navigation bar'} title=${navHidden ? 'Show the navigation bar' : 'Hide the navigation bar'}><${Icon} n="sidebar" s=${18}/></button><div className="hdr-b"><${AppSwitch} app=${app} setApp=${setApp}/></div>
         <div className=${'hs' + (sOpen ? ' open' : '')}>${app === 'task' ? html`<div className="qs"><${Icon} n="search"/><input id="quick-search" className="qs-in" value=${tq} placeholder="Search tasks" onChange=${ev => setTq(ev.target.value)} aria-label="Search tasks"/></div>` : html`<${QuickSearch} open=${id => { setSOpen(false); open(id); }}/>`}</div>
         <button className="ib hs-b" onClick=${() => { setSOpen(o => !o); setTimeout(() => { const el = document.getElementById('quick-search'); if (el) el.focus(); }, 30); }} aria-label="Search"><${Icon} n="search" s=${17}/></button>
-        <div className="ck-d"><${CheckWidget} user=${user} att=${att} setAtt=${setAtt} onOut=${requestOut} onAway=${() => stopMyTimers(Date.now())}/></div>
+        <div className="ck-d"><${CheckWidget} user=${user} att=${att} setAtt=${setAtt} onOut=${requestOut} onAway=${pauseForAway} onBack=${resumeAfterAway}/></div>
         <${NotificationBell} notif=${notif} onOpen=${onNotif}/>
         <${TopRight} user=${user} role=${role} open=${open} signOut=${signOut} goAbout=${() => go('about')} goSettings=${() => go('mysettings')} isNew=${!seenNow}/></header>
-      <div className="ck-m"><${CheckWidget} user=${user} att=${att} setAtt=${setAtt} onOut=${requestOut} onAway=${() => stopMyTimers(Date.now())}/></div>
+      <div className="ck-m"><${CheckWidget} user=${user} att=${att} setAtt=${setAtt} onOut=${requestOut} onAway=${pauseForAway} onBack=${resumeAfterAway}/></div>
       <main className="main" key=${app + nav.view + (nav.id || '')}>${screen}</main>
       ${updateReady && html`<div className="sync-err upd" role="status"><span>A new version of Maayasthra People is ready.</span><button onClick=${refreshApp}>Refresh</button></div>`}
       ${unsaved && html`<div role="status"><span>Changes are not saved yet. Keep this page open.</span> <button onClick=${() => flushSaves().then(() => setSyncErr('')).catch(() => {})}>Save now / retry</button></div>`}
@@ -454,9 +466,9 @@ function App() {
     ${pwOpen && html`<${ChangePassword} user=${user} onClose=${() => setPwOpen(false)}/>`}
     ${alerts.current && html`<${AnnouncementAlert} a=${alerts.current} count=${alerts.count} perm=${alerts.perm} askPerm=${alerts.askPerm} onClose=${() => alerts.dismiss(alerts.current.id)}/>`}
     ${earlyAsk && html`<${EarlyDialog} left=${earlyAsk.left} onCancel=${() => setEarlyAsk(null)} onDone=${r => { if (r) setAtt(a => setEarly(a, user.n, r.why, r.note)); setEarlyAsk(null); reallyOut(); }}/>`}
-    ${eodEdit && html`<${EodDialog} user=${user} tasks=${tasks} worked=${0} mode="edit" day=${eodEdit} noHours=${isMgr} onSend=${sendEdit} onCancel=${() => setEodEdit(null)}/>`}
-    ${eodLate && html`<${EodDialog} user=${user} tasks=${tasks} worked=${0} mode="late" day=${eodLate} noHours=${false} onSend=${sendLate} onCancel=${() => setEodLate(null)}/>`}
-    ${eodAsk && html`<${EodDialog} user=${user} tasks=${tasks} worked=${workedNet(sessionsOf(att, user.n), getDay(att, user.n, dayKeyNow()).away, Date.now())} mode=${eodAsk} noHours=${isMgr} onSend=${sendEod} onCancel=${() => setEodAsk(null)}/>`}
+    ${eodEdit && html`<${EodDialog} att=${att} user=${user} tasks=${tasks} worked=${0} mode="edit" day=${eodEdit} noHours=${isMgr} onSend=${sendEdit} onCancel=${() => setEodEdit(null)}/>`}
+    ${eodLate && html`<${EodDialog} att=${att} user=${user} tasks=${tasks} worked=${0} mode="late" day=${eodLate} noHours=${false} onSend=${sendLate} onCancel=${() => setEodLate(null)}/>`}
+    ${eodAsk && html`<${EodDialog} att=${att} user=${user} tasks=${tasks} worked=${workedNet(sessionsOf(att, user.n), getDay(att, user.n, dayKeyNow()).away, Date.now())} mode=${eodAsk} noHours=${isMgr} onSend=${sendEod} onCancel=${() => setEodAsk(null)}/>`}
     ${taskSel && html`<${TaskDetail} key=${taskSel.id} id=${taskSel.id} ctx=${taskSel.ctx} tasks=${tasks} setTasks=${setTasks} user=${user} role=${role} leaves=${leaves} custom=${custom} close=${() => setTaskSel(null)}/>`}
     <nav className="bnav" style=${{ gridTemplateColumns: 'repeat(' + mob.length + ', 1fr)' }} aria-label="Main">${mob.map(k => k === 'more'
       ? html`<button key=${k} className=${more.includes(active) || moreOpen ? 'on' : ''} onClick=${() => setMoreOpen(o => !o)} aria-expanded=${moreOpen}><${Icon} n="dots" s=${22}/>More</button>`

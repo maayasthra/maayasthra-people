@@ -10,7 +10,7 @@ import { useConfirm } from '../Confirm.jsx';
 import { leaveDialog } from '../leaveFacts.js';
 import { CopyLeave } from '../CopyLeave.jsx';
 import { isOpen } from '../tasks.js';
-import { SessionList, useDay, dayNote } from '../Attendance.jsx';
+import { SessionList, AwaySummary, useDay, dayNote } from '../Attendance.jsx';
 import { hm, lunchInfo, checkIn, checkOut, dayInfo, useNow, clock, minuteOfDay, getDay, addDays, whyLabel, awayOpen } from '../attendance.js';
 import { myEodDays } from '../eodDb.js';
 import {
@@ -165,11 +165,12 @@ function TeamPanel({ user, open }) {
 }
 
 function YourDay({ user, att, setAtt, onOut }) {
-  const { now, sessions, live, worked } = useDay(user, att);
+  const { now, sessions, live, away, worked } = useDay(user, att);
   const lunch = lunchInfo(now);
   return html`<${Panel} title="Your day" sub=${'Shift ' + fmtTime(user.shiftStart) + ' – ' + fmtTime(user.shiftEnd)}>
     <div className=${'dy-l' + (lunch.state === 'on' ? ' on' : '')}><${Icon} n="cup" s=${16}/> ${lunch.state === 'over' ? 'Lunch was 1:00 – 2:00 PM' : lunch.text}</div>
     <${SessionList} sessions=${sessions} now=${now}/>
+    <${AwaySummary} sessions=${sessions} away=${away} worked=${worked} now=${now}/>
     <div className="dy-f"><span>${dayNote(sessions, user)}</span>
       <button className=${'btn sm ' + (live ? 'ghost' : 'pri')} onClick=${() => { if (live) onOut(); else { checkInSound(); setAtt(a => checkIn(a, user.n)); } }}>${live ? 'Check out' : sessions.length ? 'Check in again' : 'Check in'}</button></div>
   <//>`;

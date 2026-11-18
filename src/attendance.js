@@ -80,6 +80,8 @@ export function checkOut(att, n, at = Date.now()) { const iso = dayKey(), cur = 
 export const AWAY_WHY = [['power', 'Power cut', 'zap'], ['net', 'Internet down', 'wifioff'], ['out', 'Stepped out', 'logout'], ['break', 'Break', 'cup'], ['meet', 'Meeting away from desk', 'people'], ['other', 'Other', 'dots']];
 export const EARLY_WHY = [['personal', 'Personal', 'user'], ['unwell', 'Unwell', 'heart'], ['power', 'Power cut or internet', 'zap'], ['work', 'Working elsewhere', 'building'], ['other', 'Other', 'dots']];
 export const whyLabel = (k, list = AWAY_WHY) => (list.find(x => x[0] === k) || [0, 'Away'])[1];
+// A person's breaks on one day as [{ from, to }], for taking them out of task time
+export const awayIntervals = (att, n, iso) => (getDay(att, n, iso).away || []).map(a => ({ from: a.from, to: a.to == null ? null : a.to }));
 export const awayOpen = away => (away || []).find(a => a.to == null) || null;
 const closeAway = (away, at) => (away || []).map(a => a.to == null ? { ...a, to: Math.max(at, a.from) } : a);
 // Milliseconds of away time that fall inside checked-in time

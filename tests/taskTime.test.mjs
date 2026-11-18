@@ -52,3 +52,19 @@ test('tasks running together each keep their own full time, the same figure the 
   assert.equal(workedIn(ts[0], 7, 10 * H, 24 * H, 20 * H), H);                        // a window clips the time
 });
 
+
+test('breaks are not worked time, even when the clock was left running', async () => {
+  const { workedIn, trackedIn } = await import('../src/taskTime.js');
+  const H = 3600000, t = { id: 'a', title: 'A', time: [{ id: 's', emp: 1, start: 10 * H, end: 18 * H }] };   // 10:00 to 18:00
+  const brk = [{ from: 13 * H + 16 * 60000, to: 14 * H + 39 * 60000 }];                                     // 1:16 to 2:39 PM, 1h 23m
+  assert.equal(workedIn(t, 1, 0, 24 * H, 20 * H), 8 * H);
+  assert.equal(workedIn(t, 1, 0, 24 * H, 20 * H, brk), 8 * H - 83 * 60000);
+  assert.equal(trackedIn([t], 1, 0, 24 * H, 20 * H, brk)[0].ms, 8 * H - 83 * 60000);
+  // still away now: the open break counts up to now
+  const run = { id: 'b', time: [{ id: 's', emp: 1, start: 10 * H, end: null }] };
+  assert.equal(workedIn(run, 1, 0, 24 * H, 15 * H, [{ from: 14 * H, to: null }]), 4 * H);
+  // a break outside the window, or before the work began, takes nothing off
+  assert.equal(workedIn(t, 1, 0, 24 * H, 20 * H, [{ from: 8 * H, to: 9 * H }]), 8 * H);
+  // two breaks add up
+  assert.equal(workedIn(t, 1, 0, 24 * H, 20 * H, [{ from: 12 * H, to: 13 * H }, { from: 15 * H, to: 15 * H + 30 * 60000 }]), 8 * H - 90 * 60000);
+});

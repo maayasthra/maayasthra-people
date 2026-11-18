@@ -9,12 +9,12 @@ import { dayKey, dayStart } from '../attendance.js';
 
 // My Tasks: Pending, In progress, Completed. Several cards can be In progress at once. Pause sends it back to Pending and keeps the time worked on it;
 // the time so far shows on the card and fills the end-of-day report.
-export function MyTasks({ tasks, setTasks, user, tq, openTask, canDelete, tick, onEdit }) {
+export function MyTasks({ tasks, setTasks, user, tq, openTask, canDelete, tick, onEdit, away }) {
   const [title, setTitle] = useState(''), [drag, setDrag] = useState(null), [over, setOver] = useState(null), [allDone, setAllDone] = useState(false), [adding, setAdding] = useState(false), [ask, setAsk] = useState(null), [tab, setTab] = useState('tasks');
   const [now, setNow] = useState(Date.now());
   useEffect(() => { const i = setInterval(() => setNow(Date.now()), 30000); return () => clearInterval(i); }, []);   // keeps the time on the cards fresh
   // The time on a card is today's time on it: the same figure the end-of-day report fills in
-  const dFrom = dayStart(dayKey(now)), todayOf = t => workedIn(t, user.n, dFrom, dFrom + 86400000, now);
+  const dFrom = dayStart(dayKey(now)), todayOf = t => workedIn(t, user.n, dFrom, dFrom + 86400000, now, away);
   const spent = t => { const d = todayOf(t); return d >= 60000 ? shortDur(d) + ' today' : workedMs(t, user.n, now) >= 60000 ? shortDur(workedMs(t, user.n, now)) + ' so far' : shortDur(d) + ' today'; };
   const term = tq.trim().toLowerCase();
   const mine = myTasksOf(tasks, user.n).filter(t => !term || t.title.toLowerCase().includes(term));
