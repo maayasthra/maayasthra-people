@@ -28,8 +28,13 @@ const sessions=[{id:'mine-hot',emp:a.id,start:start+3600000,end:start+7200000},{
 await q("insert into tasks(id,title,cols,by_emp,descr,time_log) values('reassigned','Former task label',$1,$2,'Private new-owner details',$3)",[JSON.stringify([b.id]),admin.id,JSON.stringify(sessions)]);
 await q("insert into task_time_archive(task_id,sessions) values('reassigned',$1)",[JSON.stringify([{id:'mine-archive',emp:a.id,start:start-3600000,end:start+1800000}])]);
 assert.equal((await as(a,"select count(*)::int n from tasks where id='reassigned'"))[0].n,0);
+await q("insert into attendance_days(employee_id,day,sessions,away) values($1,$2,$3,$4)",
+  [a.id,day,JSON.stringify([{in:start,out:start+7200000}]),JSON.stringify([{from:start+3600000,to:start+4200000,why:'net'}])]);
+await assert.rejects(as(a,"select task_timer('untouched','stop_all')"),/Only managers/);
+await assert.rejects(as(a,"select task_timer('untouched',null)"),/Invalid timer/);
+await assert.rejects(as(a,"update tasks set cols=cols || '[\"done\"]'::jsonb where id='untouched'"),/completion_lane/);
 const own=(await as(a,'select my_task_time_for_day($1) rows',[day]))[0].rows;
-assert.deepEqual(own,[{id:'reassigned',title:'Former task label',ms:5400000}]);
+assert.deepEqual(own,[{id:'reassigned',title:'Previously assigned task',ms:4800000}]);
 const theirs=(await as(b,'select my_task_time_for_day($1) rows',[day]))[0].rows;
 assert.equal(theirs[0].ms,36000000);
 console.log('PASS reassigned own time includes archive/day clipping without exposing other sessions or card details');
@@ -37,4 +42,7 @@ await assert.rejects(as(a,"select my_task_time_for_day(today_ist()+1)"),/Invalid
 await assert.rejects(as(a,"select my_task_time_for_day(today_ist()-8)"),/Invalid report day/);
 await q('update profiles set active=false where id=$1',[a.uid]);await assert.rejects(as(a,'select my_task_time_for_day($1)',[day]),/Not allowed/);
 console.log('PASS history date scope and inactive-session revocation enforced');
+await q("insert into notifications(employee_id,key,kind,title) values($1,'test-only','task','Dummy')",[a.id]);
+assert.equal((await as(a,"select count(*)::int n from notifications"))[0].n,0);
+await assert.rejects(as(a,"insert into user_state(employee_id) values($1)",[a.id]),/row-level security/);
 await db.close();

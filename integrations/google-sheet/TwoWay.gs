@@ -27,6 +27,11 @@ function wbFingerprint(r){var text=JSON.stringify(r.slice(1,8).concat([r[10]]).m
 // Adapter core persists the exact request BEFORE HTTP. Retries never send newer cell contents.
 // Every response is located by draft ID, not row number, to tolerate whole-row sorting.
 function wbProcess(a){var rows=a.rows(),counts={},results=[];rows.forEach(function(r){var id=wbText(r[9]);if(id)counts[id]=(counts[id]||0)+1;});
+ // Discard retained payloads from older versions only after a terminal state was recorded.
+ rows.forEach(function(r){
+   var id=wbText(r[9]);
+   if(r[0]==='CONFLICT' && wbText(r[8]).indexOf('Rejected: ')===0 && id && counts[id]===1 && a.getJournal(id)) a.removeJournal(id);
+ });
  rows.forEach(function(r){if(r[0]!=='READY')return;var id=wbText(r[9]);if(!id||counts[id]!==1){results.push('Duplicate or missing draft ID; no write sent');return;}var j=a.getJournal(id);
  var latest=a.find(id);if(!latest||latest[0]!=='READY'){results.push('Draft no longer READY '+id);return;}
  if(!j&&wbFingerprint(latest)!==wbFingerprint(r)){a.write(id,{state:'REVIEW',status:'Draft changed while earlier requests ran; review before setting READY again'});results.push('Draft changed '+id);return;}
@@ -34,7 +39,7 @@ function wbProcess(a){var rows=a.rows(),counts={},results=[];rows.forEach(functi
  var answer=a.mutate(j.request,j.payload);if(!answer||typeof answer.revision!=='string')throw Error('Uncertain response; retry will use the same request ID');
  var current=a.find(id);if(current){var changed=wbFingerprint(current)!==j.fingerprint||current[0]!=='READY';a.write(id,{state:changed?'REVIEW':'APPLIED',request:j.request,status:changed?'Original request applied; cells changed meanwhile. Review and create a new draft.':'Applied; revision '+answer.revision});}
  a.removeJournal(id);results.push('Applied '+id);
- }catch(e){var permanent=e.httpStatus>=400&&e.httpStatus<500&&e.httpStatus!==408&&e.httpStatus!==429;a.write(id,{state:permanent?'CONFLICT':j?'READY':'ERROR',status:permanent?'Rejected: '+e.message:j?'Pending: '+e.message:e.message});results.push('Not applied '+id);}});return results;
+ }catch(e){var permanent=e.httpStatus>=400&&e.httpStatus<500&&e.httpStatus!==408&&e.httpStatus!==429;a.write(id,{state:permanent?'CONFLICT':j?'READY':'ERROR',status:permanent?'Rejected: '+e.message:j?'Pending: '+e.message:e.message});if(permanent&&j)a.removeJournal(id);results.push('Not applied '+id);}});return results;
 }
 function onOpen(){SpreadsheetApp.getUi().createMenu('Worklog sync').addItem('Connect this NEW workbook','wbConnect').addItem('Choose month / refresh','wbChooseMonth').addSeparator().addItem('Edit selected worklog','wbQueueEdit').addItem('Delete selected worklog','wbQueueDelete').addItem('Create worklog','wbQueueCreate').addItem('Send READY drafts','wbSend').addSeparator().addItem('Start scheduled sync','wbStart').addItem('Stop scheduled sync','wbStop').addToUi();}
 function wbProps(){return PropertiesService.getScriptProperties();}

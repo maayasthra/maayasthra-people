@@ -392,3 +392,15 @@ test('day rollover refreshes Team state without report edits, including month bo
   assert.ok(fake.log.values.some(x=>x[0]==='Nov 2026 Team'));assert.equal(fake.props.TEAM_DAY,today);
   fake.log.values.length=0;api.syncChanges();assert.equal(fake.log.values.length,0);
 });
+
+for (const name of ['Nov 2026', 'Summary']) {
+  test('rebuild preserves personal tab named ' + name, () => {
+    const fake = connected(fakeGoogle(data));
+    const ss = fake.g.SpreadsheetApp.getActiveSpreadsheet();
+    const personal = ss.insertSheet(name);
+    personal.getRange(1, 1).setValue('Personal note');
+    assert.throws(() => loadWith(fake).rebuildAll(), /not owned/);
+    assert.equal(fake.sheets.get(name), personal);
+    assert.equal(personal.usedRows, 1);
+  });
+}

@@ -268,30 +268,42 @@ function rebuildAll() {
   } finally { lock.releaseLock(); }
 }
 
+// A name can be reused by a personal tab. Only a stored tab ID proves ownership.
+function exportTab(ss, key, name, create, deleting) {
+  var props = PropertiesService.getScriptProperties(), id = props.getProperty(key);
+  var named = ss.getSheetByName(name);
+  if (named && String(named.getSheetId()) === id) return named;
+  if (deleting) return null;
+  if (named) throw new Error('Existing tab ' + name + ' is not owned by EOD sync. Rename it before syncing.');
+  if (id && ss.getSheets().some(function (s) { return String(s.getSheetId()) === id; }))
+    throw new Error('Restore the name of the generated tab: ' + name);
+  if (!create) return null;
+  var tab = ss.insertSheet(name);
+  props.setProperty(key, String(tab.getSheetId()));
+  return tab;
+}
+
 function rebuildMonth(ym) {
   var lines = rpc('eod_export_month', { p_month: ym });
   var props = PropertiesService.getScriptProperties(), list = JSON.parse(props.getProperty('MONTHS') || '[]');
-  var ss = SpreadsheetApp.getActiveSpreadsheet(), name = monthName(ym), sheet = ss.getSheetByName(name);
-  var teamId = props.getProperty('TEAM_ID_' + ym);
-  var teamSheet = teamId ? ss.getSheets().filter(function (s) { return String(s.getSheetId()) === teamId; })[0] : null;
-  // MONTHS is a legacy manifest for the original month tab only, never Team ownership.
-  var namedTeam = ss.getSheetByName(teamName(ym));
-  if (lines.length && namedTeam && (!teamSheet || namedTeam.getSheetId() !== teamSheet.getSheetId())) throw new Error('Existing tab ' + teamName(ym) + ' is not owned by EOD sync. Rename it before syncing; no data was changed.');
+  var ss = SpreadsheetApp.getActiveSpreadsheet(), name = monthName(ym);
+  var sheet = exportTab(ss, 'MONTH_ID_' + ym, name, false, !lines.length);
+  var teamSheet = exportTab(ss, 'TEAM_ID_' + ym, teamName(ym), false, !lines.length);
   if (!lines.length) {
     if (list.indexOf(ym) >= 0 && (sheet || teamSheet)) {
-      if (!ss.getSheetByName(SUMMARY)) ss.insertSheet(SUMMARY); // Google requires at least one tab.
+      exportTab(ss, 'SUMMARY_ID', SUMMARY, true); // Google requires at least one tab.
       if (sheet) ss.deleteSheet(sheet);
       if (teamSheet) ss.deleteSheet(teamSheet);
     }
     props.setProperty('MONTHS', JSON.stringify(list.filter(function (m) { return m !== ym; })));
-    props.deleteProperty('PEOPLE_' + ym); props.deleteProperty('NAMES_' + ym); props.deleteProperty('TEAM_ID_' + ym);
+    props.deleteProperty('PEOPLE_' + ym); props.deleteProperty('NAMES_' + ym); props.deleteProperty('TEAM_ID_' + ym); props.deleteProperty('MONTH_ID_' + ym);
     return;
   }
   var grid = buildMonthGrid(lines, {
     parseDay: function (iso) { return Utilities.parseDate(iso + ' 12:00', TZ, 'yyyy-MM-dd HH:mm'); },
     fmtTime: function (ts) { return ts ? Utilities.formatDate(new Date(ts), TZ, 'd MMM, h:mm a') : ''; }
   });
-  sheet = sheet || ss.insertSheet(name);
+  sheet = sheet || exportTab(ss, 'MONTH_ID_' + ym, name, true);
   writeMonth(sheet, ym, grid);
   if (!teamSheet) { teamSheet = ss.insertSheet(teamName(ym)); props.setProperty('TEAM_ID_' + ym, String(teamSheet.getSheetId())); }
   writeTeam(teamSheet, ym, buildTeamGrid(lines, ym, { parseDay: function (iso) { return Utilities.parseDate(iso + ' 12:00', TZ, 'yyyy-MM-dd HH:mm'); }, today: Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd') }));
@@ -445,8 +457,8 @@ function writeTeam(sheet, ym, g) {
 
 function rebuildSummary() {
   var ss = SpreadsheetApp.getActiveSpreadsheet(), props = PropertiesService.getScriptProperties();
-  var months = sortMonthsDesc(JSON.parse(props.getProperty('MONTHS') || '[]')).filter(function (ym) { return ss.getSheetByName(monthName(ym)); });
-  var sheet = ss.getSheetByName(SUMMARY) || ss.insertSheet(SUMMARY);
+  var months = sortMonthsDesc(JSON.parse(props.getProperty('MONTHS') || '[]')).filter(function (ym) { return exportTab(ss, 'MONTH_ID_' + ym, monthName(ym), false); });
+  var sheet = exportTab(ss, 'SUMMARY_ID', SUMMARY, true);
   // A previous title can extend beyond the used-data range; unmerge the whole owned tab.
   sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns()).breakApart(); sheet.clear();
   var nameSet = Object.create(null);
@@ -523,7 +535,7 @@ function styleHeader(range) {
 
 function colLetter(n) { var s = ''; while (n > 0) { var m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; }
 
-/** Summary first, then months newest to oldest. Removes the empty starter tab. */
+/** Summary first, then months newest to oldest. */
 function tidyTabs() {
   var ss = SpreadsheetApp.getActiveSpreadsheet(), props = PropertiesService.getScriptProperties();
   var months = sortMonthsDesc(JSON.parse(props.getProperty('MONTHS') || '[]')), pos = 1;
@@ -535,7 +547,5 @@ function tidyTabs() {
       if (s) { ss.setActiveSheet(s); ss.moveActiveSheet(pos); pos++; }
     });
   });
-  var starter = ss.getSheetByName('Sheet1');
-  if (starter && starter.getLastRow() === 0 && ss.getSheets().length > 1) ss.deleteSheet(starter);
   if (sum) ss.setActiveSheet(sum);
 }
