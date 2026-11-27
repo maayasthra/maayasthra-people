@@ -194,13 +194,13 @@ export async function persistAnnouncements(prev, next, me) {
 }
 
 // Other people's changes arrive as they happen.
-export function subscribeTables(name, tables, onChange) {
+export function subscribeTables(name, tables, onChange, onStatus) {
   const ch = supabase.channel(name);
   tables.forEach(table => ch.on('postgres_changes', { event: '*', schema: 'public', table }, onChange));
-  ch.subscribe();
+  ch.subscribe(onStatus);
   return () => { supabase.removeChannel(ch); };
 }
-export const subscribeBoard = onChange => subscribeTables('mp-board', ['tasks', 'task_board', 'announcements', 'board_layout'], onChange);
+export const subscribeBoard = (onChange, onStatus) => subscribeTables('mp-board', ['tasks', 'task_board', 'announcements', 'board_layout'], onChange, onStatus);
 
 // Used only by Clear completed, after pending board writes have been flushed.
 // Do not route these removals through persistBoard's ordinary unconditional deletion.
